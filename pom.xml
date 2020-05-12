@@ -15,7 +15,7 @@
     <version>1.1.0</version>
     <packaging>jar</packaging>
 
-    <description>Server to broadcast media content to KODI media player</description>
+    <description>Server to broadcast media content to KODI compatible media players</description>
 
     <url>https://github.com/raydac/ravikoodi-server</url>
 
@@ -290,7 +290,7 @@
                             <versionInfo>
                                 <fileVersion>1.1.0.0</fileVersion>
                                 <txtFileVersion>${project.version}</txtFileVersion>
-                                <fileDescription>RaviKoodi server to broadcast content to KODI player</fileDescription>
+                                <fileDescription>Server to broadcast content to KODI compatible players</fileDescription>
                                 <copyright>2018-2020 Igor Maznitsa</copyright>
                                 <productVersion>1.1.0.0</productVersion>
                                 <txtProductVersion>${project.version}</txtProductVersion>

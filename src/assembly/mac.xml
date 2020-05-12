@@ -15,7 +15,7 @@
       <directory>${project.basedir}${file.separator}src${file.separator}assembly${file.separator}mac</directory>
       <outputDirectory>${file.separator}</outputDirectory>
       <excludes>
-        <exclude>RaviKoodi.app${file.separator}Contents${file.separator}MacOS${file.separator}ravikoodi</exclude>
+        <exclude>Ravikoodi.app${file.separator}Contents${file.separator}MacOS${file.separator}ravikoodi</exclude>
         <exclude>
           RaviKoodi.app${file.separator}Contents${file.separator}Resources${file.separator}**${file.separator}*
         </exclude>
@@ -29,13 +29,13 @@
       <directory>${project.basedir}${file.separator}src${file.separator}assembly${file.separator}mac</directory>
       <outputDirectory>${file.separator}</outputDirectory>
       <includes>
-        <include>RaviKoodi.app${file.separator}Contents${file.separator}Resources${file.separator}*</include>
+        <include>Ravikoodi.app${file.separator}Contents${file.separator}Resources${file.separator}*</include>
       </includes>
       <filtered>false</filtered>
     </fileSet>
     <fileSet>
       <directory>${project.build.directory}${file.separator}jre_macos</directory>
-      <outputDirectory>${file.separator}RaviKoodi.app${file.separator}Contents${file.separator}MacOS${file.separator}jre</outputDirectory>
+      <outputDirectory>${file.separator}Ravikoodi.app${file.separator}Contents${file.separator}MacOS${file.separator}jre</outputDirectory>
       <includes>
         <include>*/**</include>
       </includes>
@@ -43,15 +43,15 @@
   </fileSets>
   <files>
     <file>
-      <source>${project.basedir}${file.separator}src${file.separator}assembly${file.separator}mac${file.separator}RaviKoodi.app${file.separator}Contents${file.separator}MacOS${file.separator}ravikoodi</source>
+      <source>${project.basedir}${file.separator}src${file.separator}assembly${file.separator}mac${file.separator}Ravikoodi.app${file.separator}Contents${file.separator}MacOS${file.separator}ravikoodi</source>
       <destName>ravikoodi</destName>
-      <outputDirectory>${file.separator}RaviKoodi.app${file.separator}Contents${file.separator}MacOS</outputDirectory>
+      <outputDirectory>${file.separator}Ravikoodi.app${file.separator}Contents${file.separator}MacOS</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
       <source>${project.build.directory}${file.separator}${artifactId}-${version}.jar</source>
       <destName>${artifactId}-${version}.jar</destName>
-      <outputDirectory>${file.separator}RaviKoodi.app${file.separator}Contents${file.separator}MacOS</outputDirectory>
+      <outputDirectory>${file.separator}Ravikoodi.app${file.separator}Contents${file.separator}MacOS</outputDirectory>
     </file>
   </files>
 </assembly>

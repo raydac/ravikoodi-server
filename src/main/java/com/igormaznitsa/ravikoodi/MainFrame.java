@@ -610,7 +610,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
     menuAbout = new javax.swing.JMenuItem();
 
     setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-    setTitle("RaviKoodi server");
+    setTitle("Ravikoodi content server");
 
     mainPanelSplit.setDividerLocation(255);
 
