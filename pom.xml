@@ -17,7 +17,7 @@
 
     <description>Server to broadcast media content to KODI media player</description>
 
-    <url>https://github.com/raydac/kodi-videoserver-app</url>
+    <url>https://github.com/raydac/ravikoodi-server</url>
 
     <inceptionYear>2018</inceptionYear>
 
@@ -32,13 +32,13 @@
 
     <issueManagement>
         <system>GitHub Issues</system>
-        <url>https://github.com/raydac/kodi-videoserver-app/issues</url>
+        <url>https://github.com/raydac/ravikoodi-server/issues</url>
     </issueManagement>
 
     <scm>
-        <url>https://github.com/raydac/kodi-videoserver-app</url>
-        <connection>scm:git:git://github.com/raydac/kodi-videoserver-app.git</connection>
-        <developerConnection>scm:git:git@github.com:raydac/kodi-videoserver-app.git</developerConnection>
+        <url>https://github.com/raydac/ravikoodi-server</url>
+        <connection>scm:git:git://github.com/raydac/ravikoodi-server.git</connection>
+        <developerConnection>scm:git:git@github.com:raydac/ravikoodi-server.git</developerConnection>
     </scm>
 
     <prerequisites>
