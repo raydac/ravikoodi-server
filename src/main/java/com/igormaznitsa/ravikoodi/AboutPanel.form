@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<Form version="1.3" maxVersion="1.9" type="org.netbeans.modules.form.forminfo.JPanelFormInfo">
+  <AuxValues>
+    <AuxValue name="FormSettings_autoResourcing" type="java.lang.Integer" value="0"/>
+    <AuxValue name="FormSettings_autoSetComponentName" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_generateFQN" type="java.lang.Boolean" value="true"/>
+    <AuxValue name="FormSettings_generateMnemonicsCode" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_i18nAutoMode" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_layoutCodeTarget" type="java.lang.Integer" value="1"/>
+    <AuxValue name="FormSettings_listenerGenerationStyle" type="java.lang.Integer" value="0"/>
+    <AuxValue name="FormSettings_variablesLocal" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_variablesModifier" type="java.lang.Integer" value="2"/>
+    <AuxValue name="designerSize" type="java.awt.Dimension" value="-84,-19,0,5,115,114,0,18,106,97,118,97,46,97,119,116,46,68,105,109,101,110,115,105,111,110,65,-114,-39,-41,-84,95,68,20,2,0,2,73,0,6,104,101,105,103,104,116,73,0,5,119,105,100,116,104,120,112,0,0,1,112,0,0,1,-9"/>
+  </AuxValues>
+
+  <Layout class="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout"/>
+  <SubComponents>
+    <Component class="javax.swing.JLabel" name="labelIcon">
+      <Properties>
+        <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+          <Image iconType="3" name="/icons/64_app_icon.png"/>
+        </Property>
+        <Property name="verticalAlignment" type="int" value="1"/>
+      </Properties>
+      <Constraints>
+        <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout" value="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout$GridBagConstraintsDescription">
+          <GridBagConstraints gridX="0" gridY="0" gridWidth="1" gridHeight="1" fill="1" ipadX="0" ipadY="0" insetsTop="8" insetsLeft="8" insetsBottom="0" insetsRight="8" anchor="18" weightX="0.0" weightY="0.0"/>
+        </Constraint>
+      </Constraints>
+    </Component>
+    <Container class="javax.swing.JPanel" name="jPanel1">
+      <Properties>
+        <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+          <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+            <EmptyBorder bottom="8" left="8" right="8" top="32"/>
+          </Border>
+        </Property>
+      </Properties>
+      <Constraints>
+        <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout" value="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout$GridBagConstraintsDescription">
+          <GridBagConstraints gridX="1" gridY="0" gridWidth="1" gridHeight="1" fill="1" ipadX="0" ipadY="0" insetsTop="0" insetsLeft="0" insetsBottom="0" insetsRight="0" anchor="10" weightX="1000.0" weightY="1000.0"/>
+        </Constraint>
+      </Constraints>
+
+      <Layout class="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout"/>
+      <SubComponents>
+        <Component class="com.igormaznitsa.ravikoodi.JHtmlLabel" name="labelText">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="&lt;html&gt;&#xa;&lt;h2&gt;RaviKoodi&lt;/h2&gt;&#xa;&lt;hr&gt;&#xa;&lt;p&gt;Version: ${version}&lt;/p&gt;&lt;br&gt;&#xa;&lt;ul&gt;&#xa;&lt;li&gt;Author: &lt;a href=&quot;https://www.igormaznitsa.com/&quot;&gt;Igor Maznitsa&lt;/a&gt;&lt;/li&gt;&#xa;&lt;li&gt;Projet page: &lt;a href=&quot;https://github.com/raydac/kodi-videoserver-app&quot;&gt;https://github.com/raydac/kodi-videoserver-app&lt;/a&gt;&lt;/li&gt;&#xa;&lt;li&gt;License: &lt;a href=&quot;https://github.com/raydac/kodi-videoserver-app/blob/master/LICENSE&quot;&gt;Apache 2.0&lt;/a&gt;&lt;/li&gt;&#xa;&lt;hr&gt;&#xa;&lt;p&gt;&#xa;Small server to broadcast local media-content to &lt;a href=&quot;https://kodi.tv/&quot;&gt;KODI media player&lt;/a&gt;. It supports HTTP and HTTPS conections.&lt;br&gt;&lt;br&gt;&#xa;3th side required software:&#xa;&lt;ul&gt;&#xa;&lt;li&gt;&lt;a href=&quot;https://bell-sw.com/&quot;&gt;Java 1.8+&lt;/a&gt; for work&lt;/li&gt;&#xa;&lt;li&gt;&lt;a href=&quot;http://ffmpeg.org/download.html&quot;&gt;FFmpeg&lt;/a&gt; for screencast functionality&lt;/li&gt;&#xa;&lt;/ul&gt;&#xa;&lt;/p&gt;&#xa;&lt;br&gt;&#xa;&lt;p&gt;Application icons provided by &lt;b&gt;&lt;a href=&quot;https://www.fatcow.com/free-icons&quot;&gt;FatCow&lt;/a&gt;&lt;/b&gt;&lt;/p&gt;&#xa;&lt;br&gt;&#xa;&lt;p&gt;&#xa;&lt;b&gt;If the application is useful for you, you can &lt;a href=&quot;open_donation&quot;&gt;make some donation&lt;/a&gt;,&lt;/b&gt;&#xa;&lt;/p&gt;&#xa;&lt;/html&gt;"/>
+            <Property name="verticalAlignment" type="int" value="1"/>
+          </Properties>
+          <Constraints>
+            <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout" value="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout$BorderConstraintsDescription">
+              <BorderConstraints direction="Center"/>
+            </Constraint>
+          </Constraints>
+        </Component>
+      </SubComponents>
+    </Container>
+  </SubComponents>
+</Form>

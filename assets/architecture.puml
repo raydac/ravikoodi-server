@@ -1,0 +1,37 @@
+@startuml 
+
+title Components in the system
+
+package "Raspberry PI 3" {
+	node OpenELEC #LightBlue {
+		[KODI] as KDI
+		interface "JSON API" as JSAP
+		JSAP -right- KDI
+	}
+}
+
+
+
+package "Home computer"  {
+	package Java {
+		component "Spring Boot" #Yellow {	
+			[Kodi Video App] as KVA
+			[Jetty Web server] as SRW
+			[Uploading File Repository] as UFR
+			interface "HTTP" as HTTPFS
+			KVA -- UFR
+			UFR - SRW
+			HTTPFS -down- SRW
+			note right of HTTPFS
+				allows range
+				content loading
+			end note
+		}
+	}
+
+}
+
+KVA --> JSAP #Red : **Control events**
+KDI --> HTTPFS #Green : **File content requests**
+
+@enduml

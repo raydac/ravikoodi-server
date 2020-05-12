@@ -1,0 +1,10 @@
+spring:
+   jmx:
+     enabled: false
+---     
+spring:
+  profiles: debug
+
+logging:
+  level.igormaznitsa.ravikoodi: DEBUG
+  file: app-debug.log
