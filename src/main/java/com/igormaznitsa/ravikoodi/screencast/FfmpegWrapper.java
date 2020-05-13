@@ -313,10 +313,10 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
   }
 
   @Override
-  public void onGrabbed(final ScreenGrabber source, final BufferedImage grabbedImage) {
+  public void onGrabbed(final ScreenGrabber source, final byte [] rgbImageData) {
     final FfmpegNetCommunicator currentCommunicator = this.communicator.get();
     if (currentCommunicator != null) {
-      currentCommunicator.getScreenWriter().add(extractRgb(grabbedImage));
+      currentCommunicator.getScreenWriter().add(rgbImageData);
     }
   }
 

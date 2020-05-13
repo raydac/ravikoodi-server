@@ -995,10 +995,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
       }
 
       try {
-        final ScreenGrabber newScreenGrabber = new ScreenGrabber(
-                this.preferences,
-                ScreenGrabber.ImageType.TYPE_INT_RGB
-        );
+        final ScreenGrabber newScreenGrabber = new ScreenGrabber(this.preferences);
         this.timeWhenEndScreencastFlowEnable.set(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30));
 
         final FfmpegWrapper ffmpwrapper = new FfmpegWrapper(
