@@ -1222,7 +1222,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
     if (parent == this) {
       return this.videoFiles.get(index);
     } else {
-      return ((ContentFolder) parent).files.get(index);
+      return parent instanceof ContentFolder ? ((ContentFolder) parent).files.get(index) : 0;
     }
   }
 
@@ -1231,7 +1231,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
     if (parent == this) {
       return this.videoFiles.size();
     } else {
-      return ((ContentFolder) parent).files.size();
+      return parent instanceof ContentFolder ? ((ContentFolder) parent).files.size() : 0;
     }
   }
 

@@ -12,7 +12,7 @@
 
     <groupId>com.igormaznitsa</groupId>
     <artifactId>ravikoodi</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <description>Server to broadcast media content to KODI compatible media players</description>
@@ -288,11 +288,11 @@
                                 <opt>-Xverify:none</opt>
                             </opts>
                             <versionInfo>
-                                <fileVersion>1.1.0.0</fileVersion>
+                                <fileVersion>1.1.1.0</fileVersion>
                                 <txtFileVersion>${project.version}</txtFileVersion>
                                 <fileDescription>Server to broadcast content to KODI compatible players</fileDescription>
                                 <copyright>2018-2020 Igor Maznitsa</copyright>
-                                <productVersion>1.1.0.0</productVersion>
+                                <productVersion>1.1.1.0</productVersion>
                                 <txtProductVersion>${project.version}</txtProductVersion>
                                 <productName>${project.name}</productName>
                                 <companyName>igormaznitsa.com</companyName>

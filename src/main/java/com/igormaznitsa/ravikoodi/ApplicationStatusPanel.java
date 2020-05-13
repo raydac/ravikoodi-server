@@ -4,6 +4,7 @@ import com.igormaznitsa.ravikoodi.kodijsonapi.ApplicationProperties;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ExecuteAction;
 import com.igormaznitsa.ravikoodi.kodijsonapi.KodiService;
 import java.awt.Component;
+import java.awt.event.KeyEvent;
 import java.util.Hashtable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -11,9 +12,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JSlider;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -124,8 +127,19 @@ public class ApplicationStatusPanel extends javax.swing.JPanel {
         }
       }
     });
+    
+    this.initShortcuts();
   }
 
+  private void initShortcuts() {
+    this.registerKeyboardAction(e -> this.buttonLeft.doClick(), KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.ALT_DOWN_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
+    this.registerKeyboardAction(e -> this.buttonRight.doClick(), KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.ALT_DOWN_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
+    this.registerKeyboardAction(e -> this.buttonUp.doClick(), KeyStroke.getKeyStroke(KeyEvent.VK_UP, KeyEvent.ALT_DOWN_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
+    this.registerKeyboardAction(e -> this.buttonDown.doClick(), KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, KeyEvent.ALT_DOWN_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
+    this.registerKeyboardAction(e -> this.buttonBack.doClick(), KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, KeyEvent.ALT_DOWN_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
+    this.registerKeyboardAction(e -> this.buttonSelect.doClick(), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, KeyEvent.ALT_DOWN_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
+  }
+  
   private KodiAddress makeKodiAddress() {
     return new KodiAddress(
             this.preferences.getKodiAddress(),

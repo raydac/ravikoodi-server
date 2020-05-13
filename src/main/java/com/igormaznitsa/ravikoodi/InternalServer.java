@@ -154,7 +154,7 @@ public class InternalServer {
     final Server currentServer = this.serverRef.get();
     if (currentServer != null) {
       final Optional<ServerConnector> serverConnector = Stream.of(currentServer.getConnectors()).filter(x -> x instanceof ServerConnector).map(x -> (ServerConnector)x).findFirst();
-      result = serverConnector.isEmpty() ? "" : serverConnector.get().getHost();
+      result = serverConnector.isPresent()? serverConnector.get().getHost() : "<server_inactive>";
     }
     return result;
   }
@@ -164,7 +164,7 @@ public class InternalServer {
     final Server currentServer = this.serverRef.get();
     if (currentServer != null) {
       final Optional<ServerConnector> serverConnector = Stream.of(currentServer.getConnectors()).filter(x -> x instanceof ServerConnector).map(x -> (ServerConnector) x).findFirst();
-      result = serverConnector.isEmpty() ? -1 : serverConnector.get().getLocalPort();
+      result = serverConnector.isPresent() ? serverConnector.get().getLocalPort() : -1;
     }
     return result;
   }

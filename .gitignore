@@ -1,4 +1,5 @@
 target/
+ffmpeg*.log.temp
 ffmpeg*.log
 pom.xml.tag
 pom.xml.releaseBackup
