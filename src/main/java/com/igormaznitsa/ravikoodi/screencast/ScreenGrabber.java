@@ -44,9 +44,23 @@ public final class ScreenGrabber implements Closeable {
   public ScreenGrabber(final ApplicationPreferences preferences) throws AWTException {
     this.showCursor = preferences.isGrabCursor();
     this.snapsPerSecond = preferences.getSnapsPerSecond();
-    this.screenSource = new RobotScreenSource(this.showCursor);
 
-    LOGGER.info("Prepared screen grabber for {}x{}, show cursor = {}, {} snapshots per second", this.screenSource.getBounds().width, this.screenSource.getBounds().height, this.showCursor, this.snapsPerSecond);
+    ScreenSource scrSource;
+    try {
+      final Class<?> fastRobot = Class.forName("com.igormaznitsa.ravikoodi.screencast.FastRobotScreenSource");
+      scrSource = (ScreenSource) fastRobot.getConstructor(boolean.class).newInstance(this.showCursor);
+    } catch (Throwable ex) {
+      LOGGER.warn("Can't create fast robot", ex);
+      scrSource = null;
+    }
+
+    if (scrSource == null) {
+      this.screenSource = new RobotScreenSource(this.showCursor);
+    } else {
+      this.screenSource = scrSource;
+    }
+
+    LOGGER.info("Prepared screen grabber {} for {}x{}, show cursor = {}, {} snapshots per second", this.screenSource, this.screenSource.getBounds().width, this.screenSource.getBounds().height, this.showCursor, this.snapsPerSecond);
   }
 
   public int getSnapsPerSecond() {

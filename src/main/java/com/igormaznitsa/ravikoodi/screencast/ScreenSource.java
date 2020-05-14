@@ -15,10 +15,14 @@
  */
 package com.igormaznitsa.ravikoodi.screencast;
 
+import com.igormaznitsa.ravikoodi.Utils;
+import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
 
 public interface ScreenSource {
+
+  static final Image MOUSE_ICON = Utils.loadImage("64_mouse_pointer.png");
 
   Point getPointer();
 
