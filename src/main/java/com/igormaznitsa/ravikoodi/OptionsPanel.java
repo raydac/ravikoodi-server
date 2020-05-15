@@ -1,5 +1,6 @@
 package com.igormaznitsa.ravikoodi;
 
+import com.igormaznitsa.ravikoodi.ApplicationPreferences.GrabberType;
 import com.igormaznitsa.ravikoodi.screencast.JavaSoundAdapter;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences.Quality;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences.SpeedProfile;
@@ -46,6 +47,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     private String soundInput;
     private int bandwidth;
     private Quality quality;
+    private GrabberType grabberType;
     private SpeedProfile speedProfile;
     private boolean kodiSsl;
     private float soundOffset;
@@ -67,6 +69,7 @@ public class OptionsPanel extends javax.swing.JPanel {
       this.bandwidth = preferences.getBandwidth();
       this.soundOffset = preferences.getSoundOffset();
       this.speedProfile = preferences.getSpeedProfile();
+      this.grabberType = preferences.getGrabberType();
     }
 
     public void save(@NonNull final ApplicationPreferences preferences) {
@@ -82,6 +85,7 @@ public class OptionsPanel extends javax.swing.JPanel {
       preferences.setSpeedProfile(this.speedProfile);
       preferences.setBandwidth(this.bandwidth);
       preferences.setSoundOffset(this.soundOffset);
+      preferences.setGrabberType(this.grabberType);
       
       preferences.setKodiAddress(this.kodiAddress);
       preferences.setKodiName(this.kodiName);
@@ -93,6 +97,15 @@ public class OptionsPanel extends javax.swing.JPanel {
       preferences.flush();
     }
 
+    @NonNull
+    public GrabberType getGrabberType() {
+      return this.grabberType;
+    }
+    
+    public void setGrabberType(@NonNull final GrabberType grabberType) {
+      this.grabberType = grabberType;
+    }
+    
     public int getBandwidth() {
       return this.bandwidth;
     }
@@ -307,8 +320,8 @@ public class OptionsPanel extends javax.swing.JPanel {
     this.comboSoundLine.setModel(new DefaultComboBoxModel<>(inputLines.toArray(new String[inputLines.size()])));
     this.comboSoundLine.setSelectedItem(data.getSoundInput());
     
+    this.comboGrabberType.setModel(new DefaultComboBoxModel<>(Stream.of(GrabberType.values()).map(x -> x.name()).toArray(String[]::new)));
     this.comboQuality.setModel(new DefaultComboBoxModel<>(Stream.of(Quality.values()).map(x -> x.getViewName()).toArray(String[]::new)));
-    
     this.comboSpeedProfile.setModel(new DefaultComboBoxModel<>(Stream.of(SpeedProfile.values()).map(x -> x.getViewName()).toArray(String[]::new)));
     
     this.comboInterface.setModel(new DefaultComboBoxModel<>(ne.toArray(new String[ne.size()])));
@@ -322,6 +335,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
     this.textFieldFfmpeg.setText(data.getFfmpegPath());
     this.checkGrabCursor.setSelected(data.isGrabCursor());
+    this.comboGrabberType.setSelectedItem(data.getGrabberType().name());
     this.comboQuality.setSelectedItem(data.getQuality().getViewName());
     this.comboSpeedProfile.setSelectedItem(data.getSpeedProfile().getViewName());
     this.spinnerSnapsPerSecond.setValue(data.getSnapsPerSecond());
@@ -387,6 +401,8 @@ public class OptionsPanel extends javax.swing.JPanel {
     spinnerSoundOffset = new javax.swing.JSpinner();
     jLabel12 = new javax.swing.JLabel();
     comboSpeedProfile = new javax.swing.JComboBox<>();
+    jLabel13 = new javax.swing.JLabel();
+    comboGrabberType = new javax.swing.JComboBox<>();
 
     setLayout(new java.awt.GridBagLayout());
 
@@ -620,7 +636,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     jLabel7.setText("Grab cursor:");
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 0;
-    gridBagConstraints.gridy = 7;
+    gridBagConstraints.gridy = 8;
     gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(jLabel7, gridBagConstraints);
@@ -632,7 +648,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 1;
-    gridBagConstraints.gridy = 7;
+    gridBagConstraints.gridy = 8;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(checkGrabCursor, gridBagConstraints);
 
@@ -640,7 +656,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     jLabel8.setText("Sound source:");
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 0;
-    gridBagConstraints.gridy = 5;
+    gridBagConstraints.gridy = 6;
     gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(jLabel8, gridBagConstraints);
@@ -654,7 +670,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 1;
-    gridBagConstraints.gridy = 5;
+    gridBagConstraints.gridy = 6;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(comboSoundLine, gridBagConstraints);
 
@@ -684,7 +700,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     jLabel10.setText("Quality:");
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 0;
-    gridBagConstraints.gridy = 4;
+    gridBagConstraints.gridy = 5;
     gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
     panelScreenCast.add(jLabel10, gridBagConstraints);
 
@@ -696,7 +712,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 1;
-    gridBagConstraints.gridy = 4;
+    gridBagConstraints.gridy = 5;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(comboQuality, gridBagConstraints);
 
@@ -704,7 +720,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     jLabel11.setText("Sound offset (sec):");
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 0;
-    gridBagConstraints.gridy = 6;
+    gridBagConstraints.gridy = 7;
     gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
     panelScreenCast.add(jLabel11, gridBagConstraints);
 
@@ -717,7 +733,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 1;
-    gridBagConstraints.gridy = 6;
+    gridBagConstraints.gridy = 7;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(spinnerSoundOffset, gridBagConstraints);
 
@@ -740,6 +756,26 @@ public class OptionsPanel extends javax.swing.JPanel {
     gridBagConstraints.gridy = 1;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(comboSpeedProfile, gridBagConstraints);
+
+    jLabel13.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+    jLabel13.setText("Grabber type:");
+    gridBagConstraints = new java.awt.GridBagConstraints();
+    gridBagConstraints.gridx = 0;
+    gridBagConstraints.gridy = 4;
+    gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+    panelScreenCast.add(jLabel13, gridBagConstraints);
+
+    comboGrabberType.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+    comboGrabberType.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(java.awt.event.ActionEvent evt) {
+        comboGrabberTypeActionPerformed(evt);
+      }
+    });
+    gridBagConstraints = new java.awt.GridBagConstraints();
+    gridBagConstraints.gridx = 1;
+    gridBagConstraints.gridy = 4;
+    gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+    panelScreenCast.add(comboGrabberType, gridBagConstraints);
 
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 0;
@@ -824,11 +860,16 @@ public class OptionsPanel extends javax.swing.JPanel {
     this.currentData.setSpeedProfile(SpeedProfile.findForViewName(this.comboSpeedProfile.getSelectedItem().toString()));
   }//GEN-LAST:event_comboSpeedProfileActionPerformed
 
+  private void comboGrabberTypeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboGrabberTypeActionPerformed
+    this.currentData.setGrabberType(GrabberType.findForName(this.comboGrabberType.getSelectedItem().toString()));
+  }//GEN-LAST:event_comboGrabberTypeActionPerformed
+
   // Variables declaration - do not modify//GEN-BEGIN:variables
   private javax.swing.JButton buttonTestKodiConnection;
   private javax.swing.JCheckBox checkGrabCursor;
   private javax.swing.JCheckBox checkKodiSsl;
   private javax.swing.JCheckBox checkServerSsl;
+  private javax.swing.JComboBox<String> comboGrabberType;
   private javax.swing.JComboBox<String> comboInterface;
   private javax.swing.JComboBox<String> comboQuality;
   private javax.swing.JComboBox<String> comboSoundLine;
@@ -838,6 +879,7 @@ public class OptionsPanel extends javax.swing.JPanel {
   private javax.swing.JLabel jLabel10;
   private javax.swing.JLabel jLabel11;
   private javax.swing.JLabel jLabel12;
+  private javax.swing.JLabel jLabel13;
   private javax.swing.JLabel jLabel2;
   private javax.swing.JLabel jLabel3;
   private javax.swing.JLabel jLabel4;

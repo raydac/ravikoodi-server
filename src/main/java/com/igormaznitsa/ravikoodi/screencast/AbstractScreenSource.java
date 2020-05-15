@@ -26,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 public abstract class AbstractScreenSource {
 
@@ -33,30 +34,22 @@ public abstract class AbstractScreenSource {
 
   private final AtomicBoolean disposed = new AtomicBoolean();
 
-  private final boolean grabPointer;
+  private final boolean showPointer;
   
-  public AbstractScreenSource(final boolean grabPointer) {
-    this.grabPointer = grabPointer;
+  public AbstractScreenSource(final boolean showPointer) {
+    this.showPointer = showPointer;
   }
   
-  public boolean isGrabPointer() {
-    return this.grabPointer;
+  public boolean isShowPointer() {
+    return this.showPointer;
   }
   
-  protected final void assertNotDisposed() {
-    if (this.disposed.get()) {
-      throw new IllegalStateException("Disposed");
-    }
-  }
-
   @NonNull
   public abstract GraphicsDevice getSourceDevice();
 
   @NonNull
   public Point getPointer() {
-    this.assertNotDisposed();
     Point result = null;
-
     final GraphicsDevice device = this.getSourceDevice();
     final PointerInfo info = MouseInfo.getPointerInfo();
     if (device.getIDstring().equals(info.getDevice().getIDstring())) {
@@ -71,10 +64,7 @@ public abstract class AbstractScreenSource {
 
   public abstract Rectangle getBounds();
 
-  public CompletableFuture<byte[]> grabRgbAsync() {
-    return null;
-  }
-
+  @Nullable
   protected abstract byte[] grabRgb();
 
   public final void dispose() {

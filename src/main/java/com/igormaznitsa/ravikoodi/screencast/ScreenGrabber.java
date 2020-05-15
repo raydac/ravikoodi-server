@@ -16,8 +16,8 @@
 package com.igormaznitsa.ravikoodi.screencast;
 
 import com.igormaznitsa.ravikoodi.ApplicationPreferences;
+import com.igormaznitsa.ravikoodi.ApplicationPreferences.GrabberType;
 import java.awt.AWTException;
-import java.awt.HeadlessException;
 import java.awt.Rectangle;
 import java.io.Closeable;
 import java.io.IOException;
@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 
 public final class ScreenGrabber implements Closeable {
 
@@ -38,31 +39,67 @@ public final class ScreenGrabber implements Closeable {
   private final int snapsPerSecond;
   private final boolean showCursor;
   private final List<ScreenGrabberListener> listeners = new CopyOnWriteArrayList<>();
-
+  private final Rectangle targetSize;
   private final AbstractScreenSource screenSource;
-
+  
   public ScreenGrabber(final ApplicationPreferences preferences) throws AWTException {
     this.showCursor = preferences.isGrabCursor();
     this.snapsPerSecond = preferences.getSnapsPerSecond();
 
-    AbstractScreenSource scrSource;
+    final GrabberType grabberType = preferences.getGrabberType();
+    
+    AbstractScreenSource srcSource = null;
+    switch(grabberType) {
+      case AUTO : {
+        srcSource = makeFastRobotGrabber(this.showCursor);
+        if (srcSource == null) {
+          srcSource = makeRobotGrabber(this.showCursor);
+        }
+      }break;
+      case ROBOT : {
+        srcSource = makeRobotGrabber(this.showCursor);
+      }break;
+      case ROBOT_FAST : {
+        srcSource = makeFastRobotGrabber(this.showCursor);
+      }break;
+    }
+
+    if (srcSource == null) {
+      throw new RuntimeException("Can't create grabber "+ grabberType.name());
+    } else {
+      this.screenSource = srcSource;
+    }
+    
+    this.targetSize = this.screenSource.getBounds();
+    
+    LOGGER.info("Prepared screen grabber {} for {}x{}, show cursor = {}, {} snapshots per second", this.screenSource, this.targetSize.width, this.targetSize.height, this.showCursor, this.snapsPerSecond);
+  }
+  
+  @Nullable
+  private AbstractScreenSource makeRobotGrabber(final boolean showPointer) {
+    AbstractScreenSource result;
+    try {
+      result = new RobotScreenSource(showPointer);
+    } catch (Throwable ex) {
+      LOGGER.warn("Can't create robot", ex);
+      result = null;
+    }
+    return result;
+  }
+  
+  @Nullable
+  private AbstractScreenSource makeFastRobotGrabber(final boolean showPointer) {
+    AbstractScreenSource result = null;
     try {
       final Class<?> fastRobot = Class.forName("com.igormaznitsa.ravikoodi.screencast.FastRobotScreenSource");
-      scrSource = (AbstractScreenSource) fastRobot.getConstructor(boolean.class).newInstance(this.showCursor);
+      result = (AbstractScreenSource) fastRobot.getConstructor(boolean.class).newInstance(this.showCursor);
     } catch (Throwable ex) {
       LOGGER.warn("Can't create fast robot", ex);
-      scrSource = null;
+      result = null;
     }
-
-    if (scrSource == null) {
-      this.screenSource = new RobotScreenSource(this.showCursor);
-    } else {
-      this.screenSource = scrSource;
-    }
-
-    LOGGER.info("Prepared screen grabber {} for {}x{}, show cursor = {}, {} snapshots per second", this.screenSource, this.screenSource.getBounds().width, this.screenSource.getBounds().height, this.showCursor, this.snapsPerSecond);
+    return result;
   }
-
+  
   public int getSnapsPerSecond() {
     return this.snapsPerSecond;
   }
@@ -76,7 +113,7 @@ public final class ScreenGrabber implements Closeable {
   }
 
   public Rectangle getBounds() {
-    return this.screenSource.getBounds();
+    return this.targetSize;
   }
 
   public boolean isShowCursor() {

@@ -56,20 +56,40 @@ public class ApplicationPreferences {
     } 
   }
   
+  public enum GrabberType {
+    AUTO,
+    ROBOT,
+    ROBOT_FAST;
+
+    @NonNull
+    public static GrabberType findForName(@Nullable final String name) {
+      return Stream.of(GrabberType.values())
+              .filter(x -> x.name().equalsIgnoreCase(name))
+              .findFirst()
+              .orElse(AUTO);
+    }
+  }
+
   public enum Quality {
-    MODE144P("144p","-2:144"),
-    MODE240P("240p","-2:240"),
-    MODE360P("360p","-2:360"),
-    MODE480P("480p","-2:480"),
-    MODE720P("720p","-2:720"),
-    MODE1080P("1080p","-2:1080");
+    MODE144P("144p","-2:144", 144),
+    MODE240P("240p","-2:240", 240),
+    MODE360P("360p","-2:360", 360),
+    MODE480P("480p","-2:480", 480),
+    MODE720P("720p","-2:720", 720),
+    MODE1080P("1080p","-2:1080", 1080);
     
     private final String viewName;
     private final String ffmpegScale;
+    private final int height;
     
-    private Quality(final String viewName, final String ffmpegScale) {
+    private Quality(final String viewName, final String ffmpegScale, final int height) {
       this.viewName = viewName;
       this.ffmpegScale = ffmpegScale;
+      this.height = height;
+    }
+    
+    public int getHeight() {
+      return this.height;
     }
     
     @NonNull
@@ -100,6 +120,7 @@ public class ApplicationPreferences {
     SCREENCAST_BANDWIDTH("screencast.bandwidth"),
     SCREENCAST_SOUNDOFFSET("screencast.sndoffset"),
     SCREENCAST_SPEED_PROFILE("screencast.speed.profile"),
+    SCREENCAST_GRABBER_TYPE("screencast.grabber.type"),
     SERVER_PORT("server.port"),
     SERVER_INTERFACE("server.interface"),
     SERVER_SSL("server.ssl"),
@@ -139,6 +160,20 @@ public class ApplicationPreferences {
   public void setLookAndFeelClassName(@Nullable final String lafClassName) {
     synchronized (this.preferences) {
       this.preferences.put(Option.LANDF.getPropertyName(), lafClassName == null ? UIManager.getSystemLookAndFeelClassName() : lafClassName);
+    }
+  }
+  
+
+  @NonNull
+  public GrabberType getGrabberType() {
+    synchronized (this.preferences) {
+      return GrabberType.findForName(this.preferences.get(Option.SCREENCAST_GRABBER_TYPE.getPropertyName(), GrabberType.AUTO.name()));
+    }
+  }
+  
+  public void setGrabberType(@NonNull final GrabberType grabberType) {
+    synchronized (this.preferences) {
+      this.preferences.put(Option.SCREENCAST_GRABBER_TYPE.getPropertyName(), grabberType.name());
     }
   }
   
