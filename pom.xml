@@ -340,8 +340,8 @@
                             <bundleName>${app.name}</bundleName>
                             <diskImageFile>${project.build.directory}/${project.build.finalName}_OSX.dmg</diskImageFile>
                             <mainClass>org.springframework.boot.loader.JarLauncher</mainClass>
-                            <iconFile>logo.icns</iconFile>
-                            <bundleName>RaviKoodiServer</bundleName>
+                            <iconFile>appico.icns</iconFile>
+                            <bundleName>RavikoodiServer</bundleName>
                             <generateDiskImageFile>true</generateDiskImageFile>
                             <includeApplicationsSymlink>true</includeApplicationsSymlink>
                             <diskImageInternetEnable>true</diskImageInternetEnable>

@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -338,6 +337,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
   public MainFrame() throws Exception {
     SwingUtilities.invokeAndWait(() -> {
       initComponents();
+      this.setTitle(RaviKoodiServer.TITLE);
       this.setIconImage(Utils.loadImage("ravikoodi-logo-256.png"));
 
       this.treeVideoFiles.setCellRenderer(new FileTreeRenderer());
@@ -610,7 +610,6 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
     menuAbout = new javax.swing.JMenuItem();
 
     setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-    setTitle("Ravikoodi content server");
 
     mainPanelSplit.setDividerLocation(255);
 

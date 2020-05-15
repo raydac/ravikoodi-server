@@ -18,9 +18,7 @@ package com.igormaznitsa.ravikoodi.screencast;
 import java.awt.AWTException;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
-import java.awt.MouseInfo;
 import java.awt.Point;
-import java.awt.PointerInfo;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
@@ -29,9 +27,7 @@ import java.awt.peer.RobotPeer;
 import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class FastRobotScreenSource implements ScreenSource {
-
-  private final boolean grabPointer;
+public final class FastRobotScreenSource extends AbstractScreenSource {
 
   private final Toolkit toolkit;
   private final GraphicsDevice sourceDevice;
@@ -45,7 +41,7 @@ public class FastRobotScreenSource implements ScreenSource {
   private final AtomicBoolean disposed = new AtomicBoolean();
 
   public FastRobotScreenSource(final boolean grabPointer) throws AWTException {
-    this.grabPointer = grabPointer;
+    super(grabPointer);
     this.toolkit = Toolkit.getDefaultToolkit();
     this.sourceDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
     this.screenBounds = this.sourceDevice.getDefaultConfiguration().getBounds();
@@ -83,33 +79,24 @@ public class FastRobotScreenSource implements ScreenSource {
   }
 
   @Override
-  public Point getPointer() {
-    if (this.disposed.get()) {
-      throw new IllegalStateException("Disposed");
-    } else {
-      final PointerInfo info = MouseInfo.getPointerInfo();
-      if (this.sourceDevice.getIDstring().equals(info.getDevice().getIDstring())) {
-        return info.getLocation();
-      } else {
-        return new Point(this.screenBounds.width, this.screenBounds.height);
-      }
-    }
+  public GraphicsDevice getSourceDevice() {
+    this.assertNotDisposed();
+    return this.sourceDevice;
   }
 
   @Override
   public Rectangle getBounds() {
+    this.assertNotDisposed();
     return this.screenBounds;
   }
 
   @Override
   public synchronized byte[] grabRgb() {
-    if (this.disposed.get()) {
-      throw new IllegalStateException("Disposed");
-    } else {
+    this.assertNotDisposed();
       final int[] grabbed = this.robotPeer.getRGBPixels(this.screenBounds);
       final int grabbedLen = grabbed.length;
 
-      if (this.grabPointer) {
+      if (this.isGrabPointer()) {
         final Point mousePoint = this.getPointer();
         final int visibleWidth = Math.min(this.screenBounds.width - mousePoint.x, this.cursorWidth);
         final int visibleHeight = Math.min(this.screenBounds.height - mousePoint.y, this.cursorHeight);
@@ -149,12 +136,6 @@ public class FastRobotScreenSource implements ScreenSource {
         result[dataIndex++] = (byte) rgb;
       }
       return result;
-    }
-  }
-
-  @Override
-  public void dispose() {
-    this.disposed.set(true);
   }
 
   @Override

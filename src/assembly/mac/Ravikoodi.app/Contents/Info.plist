@@ -7,7 +7,7 @@
     <key>CFBundleGetInfoString</key>
     <string>${project.description}</string>
     <key>CFBundleIconFile</key>
-    <string>logo.icns</string>
+    <string>appico</string>
     <key>CFBundleIdentifier</key>
     <string>com.igormaznitsa.ravikoodi</string>
     <key>CFBundleInfoDictionaryVersion</key>

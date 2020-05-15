@@ -16,9 +16,7 @@
       <outputDirectory>${file.separator}</outputDirectory>
       <excludes>
         <exclude>Ravikoodi.app${file.separator}Contents${file.separator}MacOS${file.separator}ravikoodi</exclude>
-        <exclude>
-          RaviKoodi.app${file.separator}Contents${file.separator}Resources${file.separator}**${file.separator}*
-        </exclude>
+        <exclude>Ravikoodi.app${file.separator}Contents${file.separator}Resources${file.separator}**${file.separator}*</exclude>
       </excludes>
       <includes>
        <include>*/**</include>
