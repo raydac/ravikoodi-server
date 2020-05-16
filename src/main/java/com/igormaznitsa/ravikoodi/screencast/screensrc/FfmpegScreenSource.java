@@ -154,6 +154,8 @@ public class FfmpegScreenSource extends AbstractScreenSource {
       args.add(deviceId);
     } else if (SystemUtils.IS_OS_WINDOWS) {
       args.add("gdigrab");
+      args.add("-draw_mouse");
+      args.add("0");
       args.add("-offset_x");
       args.add(Integer.toString(screenBounds.x));
       args.add("-offset_y");
