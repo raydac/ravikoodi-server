@@ -58,11 +58,16 @@ public class FfmpegScreenSource extends AbstractScreenSource {
   private final int [] scaledMouseCursorARGB;
   private final int scaledMouseCursorWidth;
   private final int scaledMouseCursorHeight;
+  private final double scaleX;
+  private final double scaleY;
   
   public FfmpegScreenSource(final ApplicationPreferences preferences, final boolean showPointer) throws IOException {
     super(showPointer);
     this.sourceDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-    this.screenBounds = this.sourceDevice.getDefaultConfiguration().getBounds();
+    final AffineTransform affineTransform = this.sourceDevice.getDefaultConfiguration().getDefaultTransform();
+    this.scaleX = affineTransform.getScaleX();
+    this.scaleY = affineTransform.getScaleY();
+    this.screenBounds = scale(this.sourceDevice.getDefaultConfiguration().getBounds(), this.scaleX, this.scaleY);
     this.targetSize = calculateTargetSize(preferences.getQuality(), this.screenBounds);
     this.aspectWidth = (double)this.targetSize.width / (double)this.screenBounds.width;
     this.aspectHeight = (double)this.targetSize.height / (double)this.screenBounds.height;
@@ -110,6 +115,16 @@ public class FfmpegScreenSource extends AbstractScreenSource {
     LOGGER.info("created ffmpeg grabber, device={}, bounds={}, target_size={}x{}", this.sourceDevice.getIDstring(), this.screenBounds, this.targetSize.width, this.targetSize.height);
   }
 
+  @Override
+  public double getScaleX() {
+    return this.scaleX;
+  }
+
+  @Override
+  public double getScaleY() {
+    return this.scaleY;
+  }
+  
   @NonNull
   private BufferedImage makeScaledMousePointer(final double aspectWidth, final double aspectHeight) {
     final int scaledWidth = (int)Math.round(aspectWidth * MOUSE_ICON.getWidth(null));

@@ -22,6 +22,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
+import java.awt.geom.AffineTransform;
 import java.awt.image.PixelGrabber;
 import java.awt.peer.RobotPeer;
 import java.lang.reflect.Field;
@@ -39,12 +40,21 @@ public final class FastRobotScreenSource extends AbstractScreenSource {
   private final int cursorHeight;
   private final int[] cursorPixels;
   private final Lock grabLock = new ReentrantLock();
-
+  private final double scaleX;
+  private final double scaleY;
+  
   public FastRobotScreenSource(final boolean grabPointer) throws AWTException {
     super(grabPointer);
     this.toolkit = Toolkit.getDefaultToolkit();
     this.sourceDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-    this.screenBounds = this.sourceDevice.getDefaultConfiguration().getBounds();
+    
+    final AffineTransform deviceTransform = this.sourceDevice.getDefaultConfiguration().getDefaultTransform();
+    this.scaleX = deviceTransform.getScaleX();
+    this.scaleY = deviceTransform.getScaleY();
+
+    final Rectangle baseBounds = this.sourceDevice.getDefaultConfiguration().getBounds();
+    this.screenBounds = scale(this.sourceDevice.getDefaultConfiguration().getBounds(), this.scaleX, this.scaleY);
+    
     this.robot = new Robot(this.sourceDevice);
 
     this.cursorWidth = MOUSE_ICON.getWidth(null);
@@ -76,6 +86,16 @@ public final class FastRobotScreenSource extends AbstractScreenSource {
         throw new IllegalStateException("Can't grab robot peer field data", ex);
       }
     }
+  }
+
+  @Override
+  public double getScaleX() {
+    return this.scaleX;
+  }
+
+  @Override
+  public double getScaleY() {
+    return this.scaleY;
   }
 
   @Override

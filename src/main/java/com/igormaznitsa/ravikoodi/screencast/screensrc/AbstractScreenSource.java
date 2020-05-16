@@ -22,9 +22,7 @@ import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.PointerInfo;
 import java.awt.Rectangle;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
@@ -38,6 +36,31 @@ public abstract class AbstractScreenSource {
   
   public AbstractScreenSource(final boolean showPointer) {
     this.showPointer = showPointer;
+  }
+  
+  public abstract double getScaleX();
+  public abstract double getScaleY();
+  
+  protected static Rectangle scale(final Rectangle src, final double scaleX, final double scaleY) {
+    if (scaleX == 1 && scaleY == 1) {
+      return src;
+    } else {
+      final int x = (int) Math.round(src.x * scaleX);
+      final int y = (int) Math.round(src.y * scaleY);
+      final int w = (int) Math.round(src.width * scaleX);
+      final int h = (int) Math.round(src.height * scaleY);
+      return new Rectangle(x, y, w, h);
+    }
+  }
+
+  protected static Point scale(final Point src, final double scaleX, final double scaleY) {
+    if (scaleX == 1 && scaleY == 1) {
+      return src;
+    } else {
+      final int x = (int) Math.round(src.x * scaleX);
+      final int y = (int) Math.round(src.y * scaleY);
+      return new Point(x, y);
+    }
   }
   
   public boolean isShowPointer() {

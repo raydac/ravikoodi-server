@@ -23,6 +23,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.DataBuffer;
@@ -38,13 +39,28 @@ public final class RobotScreenSource extends AbstractScreenSource {
   private final GraphicsDevice sourceDevice;
   private final Robot robot;
   private final Rectangle screenBounds;
+  private final double scaleX;
+  private final double scaleY;
   
   public RobotScreenSource(final boolean grabPointer) throws AWTException {
     super(grabPointer);
     this.toolkit = Toolkit.getDefaultToolkit();
     this.sourceDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+    final AffineTransform affineTransform = this.sourceDevice.getDefaultConfiguration().getDefaultTransform();
+    this.scaleX = affineTransform.getScaleX();
+    this.scaleY = affineTransform.getScaleY();
     this.screenBounds = this.sourceDevice.getDefaultConfiguration().getBounds();
     this.robot = new Robot(this.sourceDevice);
+  }
+
+  @Override
+  public double getScaleX() {
+    return this.scaleX;
+  }
+
+  @Override
+  public double getScaleY() {
+    return this.scaleY;
   }
 
   @Override
