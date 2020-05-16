@@ -603,13 +603,14 @@ public class OptionsPanel extends javax.swing.JPanel {
     gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
     panelScreenCast.add(jLabel5, gridBagConstraints);
 
+    textFieldFfmpeg.setColumns(32);
     textFieldFfmpeg.setToolTipText("FFmpeg execution path");
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 1;
     gridBagConstraints.gridy = 0;
     gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-    gridBagConstraints.weightx = 1000.0;
+    gridBagConstraints.weightx = 1.0;
     panelScreenCast.add(textFieldFfmpeg, gridBagConstraints);
 
     jLabel6.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
