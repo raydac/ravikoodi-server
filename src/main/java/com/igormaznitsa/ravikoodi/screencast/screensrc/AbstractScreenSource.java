@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.igormaznitsa.ravikoodi.screencast;
+package com.igormaznitsa.ravikoodi.screencast.screensrc;
 
 import com.igormaznitsa.ravikoodi.Utils;
 import java.awt.GraphicsDevice;
@@ -65,7 +65,7 @@ public abstract class AbstractScreenSource {
   public abstract Rectangle getBounds();
 
   @Nullable
-  protected abstract byte[] grabRgb();
+  public abstract byte[] grabRgb();
 
   public final void dispose() {
     if (this.disposed.compareAndSet(false, true)) {

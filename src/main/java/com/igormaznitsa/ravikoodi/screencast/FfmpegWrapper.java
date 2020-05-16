@@ -68,7 +68,7 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
         } finally {
           LOGGER.info("Sound grabbing thread completed");
         }
-      });
+      },"snd-reader-"+theSoundPort.getName());
       soundThread.setDaemon(true);
       return Optional.of(soundThread);
     } catch (LineUnavailableException ex) {

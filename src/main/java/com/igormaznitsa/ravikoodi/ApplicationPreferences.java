@@ -59,7 +59,8 @@ public class ApplicationPreferences {
   public enum GrabberType {
     AUTO,
     ROBOT,
-    ROBOT_FAST;
+    ROBOT_FAST,
+    FFMPEG;
 
     @NonNull
     public static GrabberType findForName(@Nullable final String name) {

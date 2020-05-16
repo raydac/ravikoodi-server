@@ -181,7 +181,9 @@ public class InternalServer {
 
     LOGGER.info("Starting server on {}:{}", host, port);
 
-    theServer = new Server(new QueuedThreadPool(32, 4, 120000));
+    final int cpuNumber = Runtime.getRuntime().availableProcessors();
+    
+    theServer = new Server(new QueuedThreadPool(Math.max(1, cpuNumber - 1), 1, 40000));
 
     final ServerConnector connector;
     if (this.options.isServerSsl()) {
@@ -256,6 +258,7 @@ public class InternalServer {
                       break;
                     }
                   } else {
+                    screencastActive.set(true);
                     if (next.length > 0) {
                       try {
                         out.write(next);

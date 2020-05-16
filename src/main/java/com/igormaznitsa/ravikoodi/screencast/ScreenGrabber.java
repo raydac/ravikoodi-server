@@ -15,8 +15,11 @@
  */
 package com.igormaznitsa.ravikoodi.screencast;
 
+import com.igormaznitsa.ravikoodi.screencast.screensrc.RobotScreenSource;
+import com.igormaznitsa.ravikoodi.screencast.screensrc.AbstractScreenSource;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences.GrabberType;
+import com.igormaznitsa.ravikoodi.screencast.screensrc.FfmpegScreenSource;
 import java.awt.AWTException;
 import java.awt.Rectangle;
 import java.io.Closeable;
@@ -26,6 +29,7 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.prefs.Preferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
@@ -62,6 +66,9 @@ public final class ScreenGrabber implements Closeable {
       case ROBOT_FAST : {
         srcSource = makeFastRobotGrabber(this.showCursor);
       }break;
+      case FFMPEG : {
+        srcSource = makeFfmpegGrabber(preferences, this.showCursor);
+      }break;
     }
 
     if (srcSource == null) {
@@ -72,7 +79,19 @@ public final class ScreenGrabber implements Closeable {
     
     this.targetSize = this.screenSource.getBounds();
     
-    LOGGER.info("Prepared screen grabber {} for {}x{}, show cursor = {}, {} snapshots per second", this.screenSource, this.targetSize.width, this.targetSize.height, this.showCursor, this.snapsPerSecond);
+    LOGGER.info("Prepared screen grabber {} for {}x{}, device {}, show cursor = {}, {} snapshots per second", this.screenSource, this.targetSize.width, this.targetSize.height, this.screenSource.getSourceDevice().getIDstring(), this.showCursor, this.snapsPerSecond);
+  }
+  
+  @Nullable
+  private AbstractScreenSource makeFfmpegGrabber(final ApplicationPreferences preferences, final boolean showPointer) {
+    AbstractScreenSource result;
+    try {
+      result = new FfmpegScreenSource(preferences, showPointer);
+    } catch (Throwable ex) {
+      LOGGER.warn("Can't create ffmpeg grabber", ex);
+      result = null;
+    }
+    return result;
   }
   
   @Nullable
@@ -81,7 +100,7 @@ public final class ScreenGrabber implements Closeable {
     try {
       result = new RobotScreenSource(showPointer);
     } catch (Throwable ex) {
-      LOGGER.warn("Can't create robot", ex);
+      LOGGER.warn("Can't create robot grabber", ex);
       result = null;
     }
     return result;
@@ -91,10 +110,10 @@ public final class ScreenGrabber implements Closeable {
   private AbstractScreenSource makeFastRobotGrabber(final boolean showPointer) {
     AbstractScreenSource result = null;
     try {
-      final Class<?> fastRobot = Class.forName("com.igormaznitsa.ravikoodi.screencast.FastRobotScreenSource");
+      final Class<?> fastRobot = Class.forName("com.igormaznitsa.ravikoodi.screencast.screensrc.FastRobotScreenSource");
       result = (AbstractScreenSource) fastRobot.getConstructor(boolean.class).newInstance(this.showCursor);
     } catch (Throwable ex) {
-      LOGGER.warn("Can't create fast robot", ex);
+      LOGGER.warn("Can't create fast robot grabber", ex);
       result = null;
     }
     return result;

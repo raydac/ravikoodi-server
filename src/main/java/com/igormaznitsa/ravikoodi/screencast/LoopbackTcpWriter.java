@@ -56,7 +56,10 @@ public class LoopbackTcpWriter extends NetConnection {
     this.active = Objects.requireNonNull(active);
     this.buffer = new PreemptiveBuffer(maxQueuedItems);
     this.serverSocket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress());
-    this.thread = new Thread(this::doWork, id + this.serverSocket.getLocalPort());
+    this.thread = new Thread(
+            this::doWork, id + this.serverSocket.getLocalPort()
+    );
+    this.thread.setDaemon(true);
   }
 
   public void add(@NonNull final byte[] data) {
@@ -136,7 +139,6 @@ public class LoopbackTcpWriter extends NetConnection {
                 this.listeners.forEach(x -> x.onDataFlowTimeout(this, this.dataFlowTimeout));
                 nextWatchTime = System.currentTimeMillis() + watchTimeDelayMs;
               }
-              Thread.yield();
             } else {
               outStream.write(portion);
               outStream.flush();

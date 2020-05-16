@@ -1040,7 +1040,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
         if (this.currentScreenGrabber.compareAndSet(null, newScreenGrabber)) {
           newScreenGrabber.start();
 
-          final Timer timer = new Timer((int) TimeUnit.SECONDS.toMillis(30), e -> {
+          this.executorService.schedule(()->{
             if (this.server.isScreencastFlowActive()) {
               LOGGER.info("Detected started screencast flow");
             } else {
@@ -1049,10 +1049,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                 this.stopScreenCast();
               }
             }
-          });
-          timer.setRepeats(false);
-          timer.start();
-
+          }, 30, TimeUnit.SECONDS);
         } else {
           LOGGER.warn("Detected already active screen grabber!");
         }

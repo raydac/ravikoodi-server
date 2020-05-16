@@ -19,8 +19,10 @@ public class Config {
 
   @Bean
   public ScheduledExecutorService createScheduledExecutorService() {
-    return new ScheduledThreadPoolExecutor(15, (Runnable r) -> {
-      final Thread result = new Thread(r);
+    return new ScheduledThreadPoolExecutor(
+            2,
+            (Runnable r) -> {
+      final Thread result = new Thread(r,"scheduled-executor-service-"+System.nanoTime());
       result.setDaemon(true);
       return result;
     });

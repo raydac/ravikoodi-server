@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.igormaznitsa.ravikoodi.screencast;
+package com.igormaznitsa.ravikoodi.screencast.screensrc;
 
 import java.awt.AWTException;
 import java.awt.GraphicsDevice;
