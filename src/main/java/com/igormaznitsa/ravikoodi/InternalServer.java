@@ -333,7 +333,8 @@ public class InternalServer {
                     LOGGER.info("Start sending data for {} ({}) to device, requested range = {}, expected length = {} bytes", uuid, record.getFile(), range, range.getLength());
 
                     while (pos <= range.getEnd() && !Thread.currentThread().isInterrupted()) {
-                      final int read = in.read(buffer, 0, Math.min((int) (range.getEnd() - pos + 1), buffer.length));
+                      final long rangeEndPos = range.getEnd() - pos + 1;
+                      final int read = in.read(buffer, 0, Math.min(rangeEndPos > (long)Integer.MAX_VALUE ? buffer.length : (int) rangeEndPos, buffer.length));
                       if (read < 0) {
                         break;
                       }
