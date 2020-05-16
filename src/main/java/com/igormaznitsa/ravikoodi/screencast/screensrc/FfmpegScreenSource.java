@@ -159,7 +159,7 @@ public class FfmpegScreenSource extends AbstractScreenSource {
       args.add("-offset_y");
       args.add(Integer.toString(screenBounds.y));
       args.add("-i");
-      args.add("desktop" + deviceId);
+      args.add("desktop");
     } else {
       args.add("x11grab");
       args.add("-i");
