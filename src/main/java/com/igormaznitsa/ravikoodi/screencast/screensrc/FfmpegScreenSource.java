@@ -153,9 +153,13 @@ public class FfmpegScreenSource extends AbstractScreenSource {
       args.add("-i");
       args.add(deviceId);
     } else if (SystemUtils.IS_OS_WINDOWS) {
-      args.add("dshow");
+      args.add("gdigrab");
+      args.add("-offset_x");
+      args.add(Integer.toString(screenBounds.x));
+      args.add("-offset_y");
+      args.add(Integer.toString(screenBounds.y));
       args.add("-i");
-      args.add("video=" + deviceId);
+      args.add("desktop" + deviceId);
     } else {
       args.add("x11grab");
       args.add("-i");
@@ -213,8 +217,6 @@ public class FfmpegScreenSource extends AbstractScreenSource {
     return new Rectangle((int) Math.round(screenSize.width * aspect) & 0xFFFFFFFE, quality.getHeight());
   }
 
-  
-  
   @Override
   @NonNull
   public GraphicsDevice getSourceDevice() {

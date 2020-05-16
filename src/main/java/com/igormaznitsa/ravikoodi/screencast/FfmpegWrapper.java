@@ -262,8 +262,6 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
     args.add("libx264");
     args.add("-qmin");
     args.add("5");
-    args.add("-x264-params");
-    args.add("keyint=24:min-keyint=24:no-scenecut");
     args.add("-qmax");
     args.add("50");
     args.add("-pix_fmt");
