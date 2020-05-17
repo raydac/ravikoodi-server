@@ -1,8 +1,7 @@
 package com.igormaznitsa.ravikoodi;
 
-import com.igormaznitsa.ravikoodi.HttpRange;
-import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Test;
 
 public class HttpRangeTest {
   

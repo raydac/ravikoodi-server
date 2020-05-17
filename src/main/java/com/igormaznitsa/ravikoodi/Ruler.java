@@ -22,7 +22,7 @@ import java.awt.RenderingHints;
 import javax.swing.JComponent;
 import javax.swing.UIManager;
 
-public class Ruler extends JComponent {
+public final class Ruler extends JComponent {
 
   private boolean down = true;
 

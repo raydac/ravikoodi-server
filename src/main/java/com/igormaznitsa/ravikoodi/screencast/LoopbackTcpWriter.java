@@ -76,6 +76,7 @@ public class LoopbackTcpWriter extends NetConnection {
   }
 
   @NonNull
+  @Override
   public String getAddress() {
     return String.format("%s:%d", this.getInetAddress().getHostAddress(), this.getPort());
   }

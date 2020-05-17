@@ -20,15 +20,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.PostConstruct;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Line;
-import javax.sound.sampled.Line.Info;
-import javax.sound.sampled.LineEvent;
-import javax.sound.sampled.LineListener;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.TargetDataLine;
@@ -61,7 +56,7 @@ public class JavaSoundAdapter {
       final int toread = Math.min(targetDataLine.available(), len);
       if (toread == 0) {
         return targetDataLine.read(buffer, start, len);
-      } else if (toread > 0){
+      } else if (toread > 0) {
         return targetDataLine.read(buffer, start, toread);
       } else {
         return -1;
@@ -156,27 +151,27 @@ public class JavaSoundAdapter {
     int counter = 1;
     for (final Mixer.Info mixerInfo : mixers) {
       LOGGER.info(String.format(" %d: %s (vendor=%s, version=%s, description=%s)", counter++, mixerInfo.getName(), mixerInfo.getVendor(), mixerInfo.getVersion(), mixerInfo.getDescription()));
-      final Mixer mixer = AudioSystem.getMixer(mixerInfo);
-      try {
-        mixer.open();
-      } catch (LineUnavailableException ex) {
-        LOGGER.error("Can't open mixer {}: {}", mixer, ex.getMessage());
-        continue;
-      }
-      final Line.Info[] targetLineInfo = mixer.getTargetLineInfo();
-      int lineCounter = 1;
-      for (final Line.Info lineInfo : targetLineInfo) {
+      try (Mixer mixer = AudioSystem.getMixer(mixerInfo)) {
         try {
-          final Line line = mixer.getLine(lineInfo);
-          if (line instanceof TargetDataLine) {
-            LOGGER.info(String.format("  %d: %s, %s ", lineCounter++, lineInfo.getLineClass().getSimpleName(), line.getLineInfo()));
-            this.foundPorts.add(new SoundPort(mixer, mixerInfo.getName() + ':' + line.getLineInfo().toString(), line));
-          }
+          mixer.open();
         } catch (LineUnavailableException ex) {
-          LOGGER.error("Line unavailable: {}", lineInfo);
+          LOGGER.error("Can't open mixer {}: {}", mixer, ex.getMessage());
+          continue;
+        }
+        final Line.Info[] targetLineInfo = mixer.getTargetLineInfo();
+        int lineCounter = 1;
+        for (final Line.Info lineInfo : targetLineInfo) {
+          try {
+            final Line line = mixer.getLine(lineInfo);
+            if (line instanceof TargetDataLine) {
+              LOGGER.info(String.format("  %d: %s, %s ", lineCounter++, lineInfo.getLineClass().getSimpleName(), line.getLineInfo()));
+              this.foundPorts.add(new SoundPort(mixer, mixerInfo.getName() + ':' + line.getLineInfo().toString(), line));
+            }
+          } catch (LineUnavailableException ex) {
+            LOGGER.error("Line unavailable: {}", lineInfo);
+          }
         }
       }
-      mixer.close();
     }
   }
 

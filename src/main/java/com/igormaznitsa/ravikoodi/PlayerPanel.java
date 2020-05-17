@@ -30,7 +30,7 @@ import javax.swing.plaf.basic.BasicProgressBarUI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PlayerPanel extends javax.swing.JPanel {
+public final class PlayerPanel extends javax.swing.JPanel {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PlayerPanel.class);
 

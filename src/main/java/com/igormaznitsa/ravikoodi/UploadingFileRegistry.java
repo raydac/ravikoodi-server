@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -112,6 +111,7 @@ public class UploadingFileRegistry {
     }
   
     @NonNull
+    @Override
     public String toString() {
       return String.format("FileRecord(%s,file=%s)", this.uuid, this.file.getFileName().toString());
     }

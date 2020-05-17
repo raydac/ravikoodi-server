@@ -2,11 +2,15 @@ package com.igormaznitsa.ravikoodi;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.lang.NonNull;
 
 public class AboutPanel extends javax.swing.JPanel {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(AboutPanel.class);
+  
   public AboutPanel(@NonNull final DonationController donationController, @NonNull final BuildProperties buildProperties) {
     initComponents();
     this.labelText.setText(this.labelText.getText()
@@ -20,7 +24,7 @@ public class AboutPanel extends javax.swing.JPanel {
         try{
           Utils.showURLExternal(new URL(link));
         }catch(MalformedURLException ex){
-          ex.printStackTrace();
+          LOGGER.error("detected malformed URL: {}", link, ex);
         }
       }
     });

@@ -15,7 +15,6 @@
  */
 package com.igormaznitsa.ravikoodi;
 
-import com.igormaznitsa.ravikoodi.Utils;
 import org.junit.Test;
 import static org.junit.Assert.*;
 

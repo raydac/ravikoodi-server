@@ -70,6 +70,7 @@ public class LoopbackTcpReader extends NetConnection {
   }
 
   @NonNull
+  @Override
   public String getAddress() {
     return this.serverAddress.getHostAddress() + ':' + this.serverPort;
   }
@@ -127,8 +128,8 @@ public class LoopbackTcpReader extends NetConnection {
       final long timeInterval = this.dataFlowTimeout.toMillis();
 
       final byte[] buffer = new byte[this.bufferSize];
+      long maxTimeWithoutActivity = System.currentTimeMillis() + timeInterval;
       while (!Thread.currentThread().isInterrupted() && this.active.get() && !this.disposed.get()) {
-        long maxTimeWithoutActivity = System.currentTimeMillis() + timeInterval;
         final int read = inStream.read(buffer);
         if (read < 0 || this.disposed.get()) {
           break;

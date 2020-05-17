@@ -26,6 +26,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.PixelGrabber;
 import java.awt.peer.RobotPeer;
 import java.lang.reflect.Field;
+import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -133,7 +134,7 @@ public final class FastRobotScreenSource extends AbstractScreenSource {
     final int grabbedLen = grabbed.length;
 
     if (this.isShowPointer()) {
-      final Point mousePoint = scale(this.getPointer(), this.scaleX, this.scaleY);
+      final Point mousePoint = Objects.requireNonNull(scale(this.getPointer(), this.scaleX, this.scaleY));
       final int visibleWidth = Math.min(this.screenBounds.width - mousePoint.x, this.cursorWidth);
       final int visibleHeight = Math.min(this.screenBounds.height - mousePoint.y, this.cursorHeight);
 

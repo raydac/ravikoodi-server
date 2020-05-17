@@ -307,9 +307,9 @@ public class OptionsPanel extends javax.swing.JPanel {
 
     final List<String> inputLines = new ArrayList<>();
     inputLines.add("(none)");
-    for(JavaSoundAdapter.SoundPort port : soundAdapter.getAvailableSoundPorts()) {
+    soundAdapter.getAvailableSoundPorts().forEach((port) -> {
       inputLines.add(port.getName());
-    }
+    });
     
     this.spinnerKodiPort.setEditor(new JSpinner.NumberEditor(this.spinnerKodiPort, "#"));
     this.spinnerServerPort.setEditor(new JSpinner.NumberEditor(this.spinnerServerPort, "#"));

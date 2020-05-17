@@ -3,7 +3,6 @@ package com.igormaznitsa.ravikoodi;
 import java.awt.Desktop;
 import java.awt.Image;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;

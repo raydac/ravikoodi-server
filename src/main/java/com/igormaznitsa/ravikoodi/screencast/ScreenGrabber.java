@@ -15,11 +15,11 @@
  */
 package com.igormaznitsa.ravikoodi.screencast;
 
-import com.igormaznitsa.ravikoodi.screencast.screensrc.RobotScreenSource;
-import com.igormaznitsa.ravikoodi.screencast.screensrc.AbstractScreenSource;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences.GrabberType;
+import com.igormaznitsa.ravikoodi.screencast.screensrc.AbstractScreenSource;
 import com.igormaznitsa.ravikoodi.screencast.screensrc.FfmpegScreenSource;
+import com.igormaznitsa.ravikoodi.screencast.screensrc.RobotScreenSource;
 import java.awt.AWTException;
 import java.awt.Rectangle;
 import java.io.Closeable;
@@ -29,7 +29,6 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.prefs.Preferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
@@ -108,7 +107,7 @@ public final class ScreenGrabber implements Closeable {
   
   @Nullable
   private AbstractScreenSource makeFastRobotGrabber(final boolean showPointer) {
-    AbstractScreenSource result = null;
+    AbstractScreenSource result;
     try {
       final Class<?> fastRobot = Class.forName("com.igormaznitsa.ravikoodi.screencast.screensrc.FastRobotScreenSource");
       result = (AbstractScreenSource) fastRobot.getConstructor(boolean.class).newInstance(this.showCursor);

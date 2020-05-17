@@ -167,10 +167,12 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
         } else {
           try {
             processFfmpeg.destroyForcibly();
+          } catch (Throwable thr) {
+            // DO NOTHING JUST FOR GUARANTIE
           } finally {
             CloseUtil.closeQuietly(ffmpegCom);
-            throw new IOException("Detected already started FFmpeg");
           }
+          throw new IOException("Detected already started FFmpeg");
         }
       } catch (IOException ex) {
         LOGGER.error("Can't start ffmpeg process", ex);

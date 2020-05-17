@@ -29,11 +29,9 @@ import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -53,6 +51,26 @@ public class FfmpegScreenSource extends AbstractScreenSource {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FfmpegScreenSource.class);
 
+  @NonNull
+  private static byte[] readAllButes(@NonNull final InputStream stream) throws IOException {
+    final ByteArrayOutputStream buffer = new ByteArrayOutputStream(16384);
+    while (!Thread.currentThread().isInterrupted()) {
+      final int next = stream.read();
+      if (next < 0) {
+        break;
+      }
+      buffer.write(next);
+    }
+    buffer.close();
+    return buffer.toByteArray();
+  }
+  
+  @NonNull
+  private static Rectangle calculateTargetSize(@NonNull final ApplicationPreferences.Quality quality, @NonNull final Rectangle screenSize) {
+    final double aspect = (double) quality.getHeight() / (double) screenSize.height;
+    return new Rectangle((int) Math.round(screenSize.width * aspect) & 0xFFFFFFFE, quality.getHeight());
+  }
+
   private final GraphicsDevice sourceDevice;
   private final Rectangle screenBounds;
   private final Rectangle targetSize;
@@ -68,8 +86,9 @@ public class FfmpegScreenSource extends AbstractScreenSource {
   private final double scaleX;
   private final double scaleY;
   private final int captureDeviceIndex;
+  private int rgbBufferPositon = 0;
 
-  public FfmpegScreenSource(final ApplicationPreferences preferences, final boolean showPointer) throws IOException {
+  public FfmpegScreenSource(@NonNull final ApplicationPreferences preferences, final boolean showPointer) throws IOException {
     super(showPointer);
     this.sourceDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
     final AffineTransform affineTransform = this.sourceDevice.getDefaultConfiguration().getDefaultTransform();
@@ -129,7 +148,7 @@ public class FfmpegScreenSource extends AbstractScreenSource {
     LOGGER.info("created ffmpeg grabber, device={}, bounds={}, target_size={}x{}", this.sourceDevice.getIDstring(), this.screenBounds, this.targetSize.width, this.targetSize.height);
   }
 
-  private int findMacCaptureDeviceIndex(final ApplicationPreferences preferences) {
+  private int findMacCaptureDeviceIndex(@NonNull final ApplicationPreferences preferences) {
     final List<String> cmd = new ArrayList<>();
     cmd.add(preferences.getFfmpegPath());
     cmd.add("-nostats");
@@ -194,19 +213,6 @@ public class FfmpegScreenSource extends AbstractScreenSource {
     }
   }
 
-  @NonNull
-  private static byte[] readAllButes(@NonNull final InputStream stream) throws IOException {
-    final ByteArrayOutputStream buffer = new ByteArrayOutputStream(16384);
-    while (!Thread.currentThread().isInterrupted()) {
-      final int next = stream.read();
-      if (next < 0) {
-        break;
-      }
-      buffer.write(next);
-    }
-    buffer.close();
-    return buffer.toByteArray();
-  }
 
   @Override
   public double getScaleX() {
@@ -299,7 +305,6 @@ public class FfmpegScreenSource extends AbstractScreenSource {
             .start();
   }
 
-  private int rgbBufferPositon = 0;
 
   private void consumeInData(@NonNull final Integer length, @NonNull final byte[] data) {
     int len = length;
@@ -322,10 +327,6 @@ public class FfmpegScreenSource extends AbstractScreenSource {
     }
   }
 
-  private static Rectangle calculateTargetSize(final ApplicationPreferences.Quality quality, final Rectangle screenSize) {
-    final double aspect = (double) quality.getHeight() / (double) screenSize.height;
-    return new Rectangle((int) Math.round(screenSize.width * aspect) & 0xFFFFFFFE, quality.getHeight());
-  }
 
   @Override
   @NonNull
@@ -340,6 +341,7 @@ public class FfmpegScreenSource extends AbstractScreenSource {
   }
 
   @NonNull
+  @Override
   public Point getPointer() {
     Point result = null;
     final GraphicsDevice device = this.getSourceDevice();
