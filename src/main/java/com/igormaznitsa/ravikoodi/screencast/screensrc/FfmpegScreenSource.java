@@ -29,12 +29,19 @@ import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Exchanger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
@@ -55,12 +62,13 @@ public class FfmpegScreenSource extends AbstractScreenSource {
   private final Exchanger<byte[]> dataExchanger = new Exchanger<>();
   private final double aspectWidth;
   private final double aspectHeight;
-  private final int [] scaledMouseCursorARGB;
+  private final int[] scaledMouseCursorARGB;
   private final int scaledMouseCursorWidth;
   private final int scaledMouseCursorHeight;
   private final double scaleX;
   private final double scaleY;
-  
+  private final int captureDeviceIndex;
+
   public FfmpegScreenSource(final ApplicationPreferences preferences, final boolean showPointer) throws IOException {
     super(showPointer);
     this.sourceDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
@@ -69,16 +77,22 @@ public class FfmpegScreenSource extends AbstractScreenSource {
     this.scaleY = affineTransform.getScaleY();
     this.screenBounds = scale(this.sourceDevice.getDefaultConfiguration().getBounds(), this.scaleX, this.scaleY);
     this.targetSize = calculateTargetSize(preferences.getQuality(), this.screenBounds);
-    this.aspectWidth = (double)this.targetSize.width / (double)this.screenBounds.width;
-    this.aspectHeight = (double)this.targetSize.height / (double)this.screenBounds.height;
+    this.aspectWidth = (double) this.targetSize.width / (double) this.screenBounds.width;
+    this.aspectHeight = (double) this.targetSize.height / (double) this.screenBounds.height;
     this.targetRgbBuffer = new byte[this.targetSize.width * this.targetSize.height * 3];
-    
+
+    if (SystemUtils.IS_OS_MAC) {
+      this.captureDeviceIndex = findMacCaptureDeviceIndex(preferences);
+    } else {
+      this.captureDeviceIndex = 0;
+    }
+
     final BufferedImage scaledMouseCursor = makeScaledMousePointer(this.aspectWidth, this.aspectHeight);
     this.scaledMouseCursorWidth = scaledMouseCursor.getWidth();
     this.scaledMouseCursorHeight = scaledMouseCursor.getHeight();
 
-    this.scaledMouseCursorARGB = Arrays.copyOf(((DataBufferInt)scaledMouseCursor.getRaster().getDataBuffer()).getData(),this.scaledMouseCursorWidth * this.scaledMouseCursorHeight);
-    
+    this.scaledMouseCursorARGB = Arrays.copyOf(((DataBufferInt) scaledMouseCursor.getRaster().getDataBuffer()).getData(), this.scaledMouseCursorWidth * this.scaledMouseCursorHeight);
+
     LoopbackTcpReader reader = null;
     try {
       reader = new LoopbackTcpReader(
@@ -115,6 +129,85 @@ public class FfmpegScreenSource extends AbstractScreenSource {
     LOGGER.info("created ffmpeg grabber, device={}, bounds={}, target_size={}x{}", this.sourceDevice.getIDstring(), this.screenBounds, this.targetSize.width, this.targetSize.height);
   }
 
+  private int findMacCaptureDeviceIndex(final ApplicationPreferences preferences) {
+    final List<String> cmd = new ArrayList<>();
+    cmd.add(preferences.getFfmpegPath());
+    cmd.add("-nostats");
+    cmd.add("-hide_banner");
+    cmd.add("-list_devices");
+    cmd.add("true");
+    cmd.add("-f");
+    cmd.add("avfoundation");
+    cmd.add("-i");
+    cmd.add("dummy");
+
+    LOGGER.info("executing FFmpeg command line: {}", cmd.stream().collect(Collectors.joining(" ")));
+
+    final Process process;
+    try {
+      process = new ProcessBuilder(cmd)
+              .redirectError(ProcessBuilder.Redirect.PIPE)
+              .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+              .start();
+    } catch (IOException ex) {
+      LOGGER.error("can't start external process", ex);
+      return 0;
+    }
+
+    final String outputData;
+    try {
+      outputData = new String(readAllButes(process.getErrorStream()), Charset.defaultCharset());
+    } catch (IOException ex) {
+      LOGGER.error("can't read output data for started ffmpeg process", ex);
+      return 0;
+    }
+
+    LOGGER.info("got response of process: {}", outputData);
+
+    try {
+      process.waitFor();
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+      return 0;
+    }
+
+    final Pattern CAPTURE_SCREEN = Pattern.compile("^.*\\[(\\d+)]\\s+capture\\s+screen\\s+(\\d+)\\s*$", Pattern.CASE_INSENSITIVE);
+    int foundDeviceId = -1;
+    final String[] lines = outputData.split("\\r?\\n");
+    LOGGER.info("avfoundation generated output {} lines", lines.length);
+    for (final String s : lines) {
+      final Matcher matcher = CAPTURE_SCREEN.matcher(s);
+      if (matcher.find()) {
+        foundDeviceId = Integer.parseInt(matcher.group(1));
+        final int scrNumber = Integer.parseInt(matcher.group(2));
+        LOGGER.info("detected capture screen {}:{} at '{}'", foundDeviceId, scrNumber, s);
+        break;
+      } else {
+        LOGGER.debug("No match: {}", s);
+      }
+    }
+    if (foundDeviceId < 0) {
+      LOGGER.warn("Can't find any capture screen id among, trying use 0: {}", Arrays.toString(lines));
+      return 0;
+    } else {
+      return foundDeviceId;
+    }
+  }
+
+  @NonNull
+  private static byte[] readAllButes(@NonNull final InputStream stream) throws IOException {
+    final ByteArrayOutputStream buffer = new ByteArrayOutputStream(16384);
+    while (!Thread.currentThread().isInterrupted()) {
+      final int next = stream.read();
+      if (next < 0) {
+        break;
+      }
+      buffer.write(next);
+    }
+    buffer.close();
+    return buffer.toByteArray();
+  }
+
   @Override
   public double getScaleX() {
     return this.scaleX;
@@ -124,21 +217,21 @@ public class FfmpegScreenSource extends AbstractScreenSource {
   public double getScaleY() {
     return this.scaleY;
   }
-  
+
   @NonNull
   private BufferedImage makeScaledMousePointer(final double aspectWidth, final double aspectHeight) {
-    final int scaledWidth = (int)Math.round(aspectWidth * MOUSE_ICON.getWidth(null));
-    final int scaledHeight = (int)Math.round(aspectHeight * MOUSE_ICON.getHeight(null));
+    final int scaledWidth = (int) Math.round(aspectWidth * MOUSE_ICON.getWidth(null));
+    final int scaledHeight = (int) Math.round(aspectHeight * MOUSE_ICON.getHeight(null));
     final BufferedImage result = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
     final Graphics2D gfx = result.createGraphics();
-    try{
+    try {
       gfx.drawImage(MOUSE_ICON, AffineTransform.getScaleInstance(aspectWidth, aspectHeight), null);
-    }finally{
+    } finally {
       gfx.dispose();
     }
     return result;
   }
-  
+
   private Process startFfmpeg(
           final String ffmpegPath,
           final String deviceId,
@@ -150,12 +243,12 @@ public class FfmpegScreenSource extends AbstractScreenSource {
     final List<String> args = new ArrayList<>();
 
     args.add(ffmpegPath);
-    
+
     args.add("-loglevel");
     args.add("error");
     args.add("-nostats");
     args.add("-hide_banner");
-    
+
     args.add("-video_size");
     args.add(String.format("%dx%d", screenBounds.width, screenBounds.height));
 
@@ -166,7 +259,7 @@ public class FfmpegScreenSource extends AbstractScreenSource {
     if (SystemUtils.IS_OS_MAC) {
       args.add("avfoundation");
       args.add("-i");
-      args.add(deviceId);
+      args.add(Integer.toString(this.captureDeviceIndex));
     } else if (SystemUtils.IS_OS_WINDOWS) {
       args.add("gdigrab");
       args.add("-draw_mouse");
@@ -180,7 +273,7 @@ public class FfmpegScreenSource extends AbstractScreenSource {
     } else {
       args.add("x11grab");
       args.add("-i");
-      args.add(String.format("%s+%d,%d", deviceId,screenBounds.x, screenBounds.y));
+      args.add(String.format("%s+%d,%d", deviceId, screenBounds.x, screenBounds.y));
     }
 
     args.add("-s");
@@ -192,7 +285,7 @@ public class FfmpegScreenSource extends AbstractScreenSource {
     args.add("rawvideo");
     args.add("-pix_fmt");
     args.add("rgb24");
-    
+
     args.add("-f");
     args.add("rawvideo");
 
@@ -207,7 +300,7 @@ public class FfmpegScreenSource extends AbstractScreenSource {
   }
 
   private int rgbBufferPositon = 0;
-  
+
   private void consumeInData(@NonNull final Integer length, @NonNull final byte[] data) {
     int len = length;
 
@@ -257,12 +350,12 @@ public class FfmpegScreenSource extends AbstractScreenSource {
     if (result == null) {
       result = new Point(this.targetSize.width, this.targetSize.height);
     } else {
-      result = new Point((int)Math.round(result.x * this.aspectWidth), (int)Math.round(result.y * this.aspectWidth));
+      result = new Point((int) Math.round(result.x * this.aspectWidth), (int) Math.round(result.y * this.aspectWidth));
     }
     return result;
   }
 
-  private void drawPointer(final Point mousePoint, final byte [] rgbArray) {
+  private void drawPointer(final Point mousePoint, final byte[] rgbArray) {
     final int visibleWidth = Math.min(this.targetSize.width - mousePoint.x, this.scaledMouseCursorWidth);
     final int visibleHeight = Math.min(this.targetSize.height - mousePoint.y, this.scaledMouseCursorHeight);
 
@@ -283,9 +376,9 @@ public class FfmpegScreenSource extends AbstractScreenSource {
 
         final int argb = this.scaledMouseCursorARGB[posAtCursor];
         if (argb != 0) {
-          final byte r = (byte) (argb >>> 16); 
-          final byte g = (byte) (argb >>> 8); 
-          final byte b = (byte) argb; 
+          final byte r = (byte) (argb >>> 16);
+          final byte g = (byte) (argb >>> 8);
+          final byte b = (byte) argb;
           rgbArray[targetPos++] = r;
           rgbArray[targetPos++] = g;
           rgbArray[targetPos] = b;
@@ -295,9 +388,9 @@ public class FfmpegScreenSource extends AbstractScreenSource {
       }
       scry++;
     }
-   
+
   }
-  
+
   @Override
   @Nullable
   public byte[] grabRgb() {
@@ -308,11 +401,11 @@ public class FfmpegScreenSource extends AbstractScreenSource {
       Thread.currentThread().interrupt();
       return null;
     }
-    
+
     if (this.isShowPointer()) {
       this.drawPointer(this.getPointer(), resultRgbArray);
     }
-    
+
     return resultRgbArray;
   }
 
