@@ -12,18 +12,18 @@ At home I use [Raspberry PI 3](https://www.raspberrypi.org/products/raspberry-pi
 ## If you don't have installed Java or don't care about that
 
 It is a Java application so that in ideal it needs pre-installed Java 1.8+, but since 1.1.0 release Iprovide also pre-built versions with embedded JDK images, they can be started without installed Java:
- - [version for Linux with JDK image](https://github.com/raydac/kodi-videoserver-app/releases/download/1.1.0/kodi-video-1.1.0-linux-withjdk.tar.gz)
- - [version for Windows with JDK image](https://github.com/raydac/kodi-videoserver-app/releases/download/1.1.0/kodi-video-1.1.0-windows-withjdk.zip)
- - [version for MacOS with JDK image](https://github.com/raydac/kodi-videoserver-app/releases/download/1.1.0/kodi-video-1.1.0-macos-withjdk.zip)
+ - [version for Linux with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.1/ravikoodi-server-1.1.1-linux-withjdk.tar.gz)
+ - [version for Windows with JDK image](https://github.com/raydac/kodi-videoserver-app/releases/download/1.1.1/ravikoodi-server-1.1.1-windows-withjdk.zip)
+ - [version for MacOS with JDK image](https://github.com/raydac/kodi-videoserver-app/releases/download/1.1.1/ravikoodi-server-1.1.1-macos-withjdk.zip)
 
-You can just load needed archive, unpack in a folder and start its executable file. 
+You can just load needed archive, unpack in a folder and start its executable file.
 
 ## If you have installed Java and need less size distributives
 
 If you have pre-installed Java 1.8+, you can load files without embedded JDK:
- - [version for Linux](https://github.com/raydac/kodi-videoserver-app/releases/download/1.1.0/kodi-video-1.1.0.sh)
- - [version for Windows](https://github.com/raydac/kodi-videoserver-app/releases/download/1.1.0/kodi-video-1.1.0.exe)
- - [version for MacOS](https://github.com/raydac/kodi-videoserver-app/releases/download/1.1.0/kodi-video-1.1.0_OSX.dmg)
+ - [version for Linux](https://github.com/raydac/ravikoodi-server/releases/download/1.1.1/kodi-video-1.1.1.sh)
+ - [version for Windows](https://github.com/raydac/ravikoodi-server/releases/download/1.1.1/kodi-video-1.1.1.exe)
+ - [version for MacOS](https://github.com/raydac/ravikoodi-server/releases/download/1.1.1/kodi-video-1.1.1_OSX.dmg)
 
 ## Requirements
 
@@ -43,7 +43,7 @@ It is a Spring Boot based application with embedded Jetty web server. For screen
 
 ## How to build?
 It is absolutely free and open-source application (under Apache 2.0 license), I don't ask for any fee for use of it (but you could make some donation and I would be very appreciate for that).
-1. For build distributived you need JDK 1.8 (you can use JDK 9+ but some release plug-ins of Maven can work only with JDK 1.8) 
+1. For build distributived you need JDK 1.8 (you can use JDK 9+ but some release plug-ins of Maven can work only with JDK 1.8)
 2. You need Maven to build project
 3. Go to into project folder and call `mvn clean install` to get compiled JAR, it can be started separately through `java -jar <JAR_FILE>`
 4. To get release versions, you should use `mvn clean install -Ppublish`, in the `target` folder you will find all prepared archives
