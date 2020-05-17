@@ -252,7 +252,7 @@ public class FfmpegScreenSource extends AbstractScreenSource {
     final GraphicsDevice device = this.getSourceDevice();
     final PointerInfo info = MouseInfo.getPointerInfo();
     if (device.getIDstring().equals(info.getDevice().getIDstring())) {
-      result = info.getLocation();
+      result = scale(info.getLocation(), this.scaleX, this.scaleY);
     }
     if (result == null) {
       result = new Point(this.targetSize.width, this.targetSize.height);

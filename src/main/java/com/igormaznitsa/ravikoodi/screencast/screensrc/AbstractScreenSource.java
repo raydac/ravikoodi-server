@@ -33,15 +33,20 @@ public abstract class AbstractScreenSource {
   private final AtomicBoolean disposed = new AtomicBoolean();
 
   private final boolean showPointer;
-  
+
   public AbstractScreenSource(final boolean showPointer) {
     this.showPointer = showPointer;
   }
-  
+
   public abstract double getScaleX();
+
   public abstract double getScaleY();
-  
-  protected static Rectangle scale(final Rectangle src, final double scaleX, final double scaleY) {
+
+  @Nullable
+  protected static Rectangle scale(@Nullable final Rectangle src, final double scaleX, final double scaleY) {
+    if (src == null) {
+      return null;
+    }
     if (scaleX == 1 && scaleY == 1) {
       return src;
     } else {
@@ -53,7 +58,11 @@ public abstract class AbstractScreenSource {
     }
   }
 
-  protected static Point scale(final Point src, final double scaleX, final double scaleY) {
+  @Nullable
+  protected static Point scale(@Nullable final Point src, final double scaleX, final double scaleY) {
+    if (src == null) {
+      return null;
+    }
     if (scaleX == 1 && scaleY == 1) {
       return src;
     } else {
@@ -62,11 +71,11 @@ public abstract class AbstractScreenSource {
       return new Point(x, y);
     }
   }
-  
+
   public boolean isShowPointer() {
     return this.showPointer;
   }
-  
+
   @NonNull
   public abstract GraphicsDevice getSourceDevice();
 
