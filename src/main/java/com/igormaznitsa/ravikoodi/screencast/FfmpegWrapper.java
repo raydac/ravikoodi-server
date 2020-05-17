@@ -204,7 +204,9 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
 
     args.add("-threads");
     args.add(Integer.toString(Math.max(0,threads)));
-    
+    args.add("-thread_type");
+    args.add("frame");
+            
     args.add("-fflags");
     args.add("+flush_packets+genpts");
     args.add("-use_wallclock_as_timestamps");
@@ -277,7 +279,9 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
     args.add("fast_bilinear");
     args.add("-movflags");
     args.add("+faststart");
-
+    args.add("-g");
+    args.add(Integer.toString(snapsPerSecond * 5));
+    
     args.add("-map");
     args.add("0:v");
     if (soundWriter != null) {
