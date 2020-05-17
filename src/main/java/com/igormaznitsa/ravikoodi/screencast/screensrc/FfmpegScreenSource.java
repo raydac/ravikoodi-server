@@ -282,8 +282,8 @@ public class FfmpegScreenSource extends AbstractScreenSource {
       args.add(String.format("%s+%d,%d", deviceId, screenBounds.x, screenBounds.y));
     }
 
-    args.add("-s");
-    args.add(String.format("%dx%d", targetSize.width, targetSize.height));
+    args.add("-vf");
+    args.add(String.format("scale=%d:%d", targetSize.width, targetSize.height));
     args.add("-sws_flags");
     args.add("fast_bilinear");
 

@@ -156,6 +156,7 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
         final Process processFfmpeg = startFfmpeg(
                 this.preferences.getFfmpegPath(),
                 "tcp://" + ffmpegCom.getReader().getAddress(),
+                this.preferences.getThreads(),
                 ffmpegCom.getSoundWriter().orElse(null),
                 ffmpegCom.getScreenWriter(),
                 source.getSnapsPerSecond(),
@@ -186,6 +187,7 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
   private Process startFfmpeg(
           final String ffmpegPath,
           final String output,
+          final int threads,
           final LoopbackTcpWriter soundWriter,
           final LoopbackTcpWriter videoWriter,
           final int snapsPerSecond,
@@ -200,6 +202,9 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
     args.add("-nostats");
     args.add("-hide_banner");
 
+    args.add("-threads");
+    args.add(Integer.toString(Math.max(0,threads)));
+    
     args.add("-fflags");
     args.add("+flush_packets+genpts");
     args.add("-use_wallclock_as_timestamps");
@@ -245,7 +250,7 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
     }
 
     args.add("-b:v");
-    args.add(String.format("%dM", this.preferences.getBandwidth()));
+    args.add(String.format("%dM", Math.max(1, this.preferences.getBandwidth() - 1)));
     args.add("-maxrate");
     args.add(String.format("%dM", this.preferences.getBandwidth() + 1));
     args.add("-bufsize");
@@ -258,8 +263,6 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
     args.add("-tune");
     args.add("zerolatency");
 
-    args.add("-qscale:v");
-    args.add("1");
     args.add("-c:v");
     args.add("libx264");
     args.add("-qmin");
@@ -272,8 +275,6 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
     args.add(String.format("scale=%s", this.preferences.getQuality().getFfmpegScale()));
     args.add("-sws_flags");
     args.add("fast_bilinear");
-    args.add("-pass");
-    args.add("1");
     args.add("-movflags");
     args.add("+faststart");
 

@@ -36,6 +36,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
     private String host;
     private int port;
+    private int threads;
     private boolean serverSsl;
     private String kodiAddress;
     private String kodiName;
@@ -53,6 +54,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     private float soundOffset;
 
     public Data(@NonNull final ApplicationPreferences preferences) {
+      this.threads = preferences.getThreads();
       this.host = preferences.getServerHost();
       this.port = preferences.getServerPort();
       this.kodiAddress = preferences.getKodiAddress();
@@ -86,6 +88,7 @@ public class OptionsPanel extends javax.swing.JPanel {
       preferences.setBandwidth(this.bandwidth);
       preferences.setSoundOffset(this.soundOffset);
       preferences.setGrabberType(this.grabberType);
+      preferences.setThreads(this.threads);
       
       preferences.setKodiAddress(this.kodiAddress);
       preferences.setKodiName(this.kodiName);
@@ -95,6 +98,14 @@ public class OptionsPanel extends javax.swing.JPanel {
       preferences.setKodiPort(this.kodiPort);
 
       preferences.flush();
+    }
+    
+    public int getThreads() {
+      return this.threads;
+    }
+    
+    public void setThreads(final int threads) {
+      this.threads = threads;
     }
 
     @NonNull
@@ -312,6 +323,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     });
     
     this.spinnerKodiPort.setEditor(new JSpinner.NumberEditor(this.spinnerKodiPort, "#"));
+    this.spinnerGrabThreads.setEditor(new JSpinner.NumberEditor(this.spinnerGrabThreads, "##"));
     this.spinnerServerPort.setEditor(new JSpinner.NumberEditor(this.spinnerServerPort, "#"));
     this.spinnerSnapsPerSecond.setEditor(new JSpinner.NumberEditor(this.spinnerSnapsPerSecond, "##"));
     this.spinnerBandwidth.setEditor(new JSpinner.NumberEditor(this.spinnerBandwidth,"##"));
@@ -340,6 +352,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     this.comboSpeedProfile.setSelectedItem(data.getSpeedProfile().getViewName());
     this.spinnerSnapsPerSecond.setValue(data.getSnapsPerSecond());
     this.spinnerBandwidth.setValue(data.getBandwidth());
+    this.spinnerGrabThreads.setValue(data.getThreads());
     
     this.checkServerSsl.setSelected(data.isServerSsl());
     this.checkKodiSsl.setSelected(data.isKodiSsl());
@@ -403,6 +416,8 @@ public class OptionsPanel extends javax.swing.JPanel {
     comboSpeedProfile = new javax.swing.JComboBox<>();
     jLabel13 = new javax.swing.JLabel();
     comboGrabberType = new javax.swing.JComboBox<>();
+    jLabel14 = new javax.swing.JLabel();
+    spinnerGrabThreads = new javax.swing.JSpinner();
 
     setLayout(new java.awt.GridBagLayout());
 
@@ -617,7 +632,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     jLabel6.setText("Frame rate:");
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 0;
-    gridBagConstraints.gridy = 2;
+    gridBagConstraints.gridy = 3;
     gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
     panelScreenCast.add(jLabel6, gridBagConstraints);
 
@@ -629,7 +644,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 1;
-    gridBagConstraints.gridy = 2;
+    gridBagConstraints.gridy = 3;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(spinnerSnapsPerSecond, gridBagConstraints);
 
@@ -637,7 +652,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     jLabel7.setText("Grab cursor:");
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 0;
-    gridBagConstraints.gridy = 8;
+    gridBagConstraints.gridy = 9;
     gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(jLabel7, gridBagConstraints);
@@ -649,7 +664,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 1;
-    gridBagConstraints.gridy = 8;
+    gridBagConstraints.gridy = 9;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(checkGrabCursor, gridBagConstraints);
 
@@ -657,7 +672,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     jLabel8.setText("Sound source:");
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 0;
-    gridBagConstraints.gridy = 6;
+    gridBagConstraints.gridy = 7;
     gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(jLabel8, gridBagConstraints);
@@ -671,7 +686,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 1;
-    gridBagConstraints.gridy = 6;
+    gridBagConstraints.gridy = 7;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(comboSoundLine, gridBagConstraints);
 
@@ -679,7 +694,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     jLabel9.setText("Bandwidth (Mbits):");
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 0;
-    gridBagConstraints.gridy = 3;
+    gridBagConstraints.gridy = 4;
     gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
     panelScreenCast.add(jLabel9, gridBagConstraints);
@@ -693,7 +708,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 1;
-    gridBagConstraints.gridy = 3;
+    gridBagConstraints.gridy = 4;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(spinnerBandwidth, gridBagConstraints);
 
@@ -701,7 +716,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     jLabel10.setText("Quality:");
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 0;
-    gridBagConstraints.gridy = 5;
+    gridBagConstraints.gridy = 6;
     gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
     panelScreenCast.add(jLabel10, gridBagConstraints);
 
@@ -713,7 +728,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 1;
-    gridBagConstraints.gridy = 5;
+    gridBagConstraints.gridy = 6;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(comboQuality, gridBagConstraints);
 
@@ -721,7 +736,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     jLabel11.setText("Sound offset (sec):");
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 0;
-    gridBagConstraints.gridy = 7;
+    gridBagConstraints.gridy = 8;
     gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
     panelScreenCast.add(jLabel11, gridBagConstraints);
 
@@ -734,7 +749,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 1;
-    gridBagConstraints.gridy = 7;
+    gridBagConstraints.gridy = 8;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(spinnerSoundOffset, gridBagConstraints);
 
@@ -762,7 +777,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     jLabel13.setText("Grabber type:");
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 0;
-    gridBagConstraints.gridy = 4;
+    gridBagConstraints.gridy = 5;
     gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
     panelScreenCast.add(jLabel13, gridBagConstraints);
 
@@ -774,9 +789,29 @@ public class OptionsPanel extends javax.swing.JPanel {
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 1;
-    gridBagConstraints.gridy = 4;
+    gridBagConstraints.gridy = 5;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
     panelScreenCast.add(comboGrabberType, gridBagConstraints);
+
+    jLabel14.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+    jLabel14.setText("Threads:");
+    gridBagConstraints = new java.awt.GridBagConstraints();
+    gridBagConstraints.gridx = 0;
+    gridBagConstraints.gridy = 2;
+    gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+    panelScreenCast.add(jLabel14, gridBagConstraints);
+
+    spinnerGrabThreads.setModel(new javax.swing.SpinnerNumberModel(0, 0, 99, 1));
+    spinnerGrabThreads.addChangeListener(new javax.swing.event.ChangeListener() {
+      public void stateChanged(javax.swing.event.ChangeEvent evt) {
+        spinnerGrabThreadsStateChanged(evt);
+      }
+    });
+    gridBagConstraints = new java.awt.GridBagConstraints();
+    gridBagConstraints.gridx = 1;
+    gridBagConstraints.gridy = 2;
+    gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+    panelScreenCast.add(spinnerGrabThreads, gridBagConstraints);
 
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 0;
@@ -865,6 +900,10 @@ public class OptionsPanel extends javax.swing.JPanel {
     this.currentData.setGrabberType(GrabberType.findForName(this.comboGrabberType.getSelectedItem().toString()));
   }//GEN-LAST:event_comboGrabberTypeActionPerformed
 
+  private void spinnerGrabThreadsStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spinnerGrabThreadsStateChanged
+    this.currentData.setThreads((Integer) this.spinnerGrabThreads.getValue());
+  }//GEN-LAST:event_spinnerGrabThreadsStateChanged
+
   // Variables declaration - do not modify//GEN-BEGIN:variables
   private javax.swing.JButton buttonTestKodiConnection;
   private javax.swing.JCheckBox checkGrabCursor;
@@ -881,6 +920,7 @@ public class OptionsPanel extends javax.swing.JPanel {
   private javax.swing.JLabel jLabel11;
   private javax.swing.JLabel jLabel12;
   private javax.swing.JLabel jLabel13;
+  private javax.swing.JLabel jLabel14;
   private javax.swing.JLabel jLabel2;
   private javax.swing.JLabel jLabel3;
   private javax.swing.JLabel jLabel4;
@@ -897,6 +937,7 @@ public class OptionsPanel extends javax.swing.JPanel {
   private javax.swing.JPanel panelScreenCast;
   private javax.swing.JPanel panelServerOptions;
   private javax.swing.JSpinner spinnerBandwidth;
+  private javax.swing.JSpinner spinnerGrabThreads;
   private javax.swing.JSpinner spinnerKodiPort;
   private javax.swing.JSpinner spinnerServerPort;
   private javax.swing.JSpinner spinnerSnapsPerSecond;

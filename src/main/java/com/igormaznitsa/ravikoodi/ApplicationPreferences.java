@@ -113,6 +113,7 @@ public class ApplicationPreferences {
   }
   
   public enum Option {
+    SCREENCAST_THREADS("screencast.threads"),
     SCREENCAST_SOUND_INPUT("screencast.sound.input"),
     SCREENCAST_GRAB_CURSOR("screencast.grab.cursor"),
     SCREENCAST_FFMPEG_PATH("screencast.ffmpeg.path"),
@@ -201,6 +202,18 @@ public class ApplicationPreferences {
   public void setBandwidth(final int bandwidth) {
     synchronized (this.preferences) {
       this.preferences.putInt(Option.SCREENCAST_BANDWIDTH.getPropertyName(), Math.max(1, bandwidth));
+    }
+  }
+  
+  public int getThreads() {
+    synchronized (this.preferences) {
+      return Math.max(0, this.preferences.getInt(Option.SCREENCAST_THREADS.getPropertyName(), 0));
+    }
+  }
+  
+  public void setThreads(final int threads) {
+    synchronized (this.preferences) {
+      this.preferences.putInt(Option.SCREENCAST_THREADS.getPropertyName(), Math.max(0, threads));
     }
   }
   
