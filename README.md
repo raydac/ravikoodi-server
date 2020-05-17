@@ -5,25 +5,25 @@
 
 # Introduction
 
-At home I use [Raspberry PI 3](https://www.raspberrypi.org/products/raspberry-pi-3-model-b/) (with installed [KODI media center](https://kodi.tv/)) to watch TV-shows and clips. There are number of browser plug-ins to open web links directly on KODI, but I need broadcast some media-content directly from my laptop. KODI supports sharing through Samba etc. but I am too lazy and like one-button solutions. So I decided to write a small easy utility. I have been programming in Java since 1999 and Java was chosen as development platform, also it was interesting for me to try Java Swing GUI together with Spring Boot.   
+At home I use [Raspberry PI 3](https://www.raspberrypi.org/products/raspberry-pi-3-model-b/) (with installed [KODI media center](https://kodi.tv/)) to watch TV-shows and clips. There are number of browser plug-ins to open web links directly on KODI, but I need broadcast some media-content directly from my laptop. KODI supports sharing through Samba etc. but I am too lazy and like one-button solutions. So I decided to write a small easy utility to provide needed one-button way.
 
 # How to load and start?
 
 ## If you don't have installed Java or don't care about that
 
 It is a Java application so that in ideal it needs pre-installed Java 1.8+, but since 1.1.0 release Iprovide also pre-built versions with embedded JDK images, they can be started without installed Java:
- - [version for Linux with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.1/ravikoodi-server-1.1.1-linux-withjdk.tar.gz)
- - [version for Windows with JDK image](https://github.com/raydac/kodi-videoserver-app/releases/download/1.1.1/ravikoodi-server-1.1.1-windows-withjdk.zip)
- - [version for MacOS with JDK image](https://github.com/raydac/kodi-videoserver-app/releases/download/1.1.1/ravikoodi-server-1.1.1-macos-withjdk.zip)
+ - [version for Linux with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.1/ravikoodi-1.1.1-linux-withjdk.tar.gz)
+ - [version for Windows with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.1/ravikoodi-1.1.1-windows-withjdk.tar.gz)
+ - [version for MacOS with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.1/ravikoodi-1.1.1-macos-withjdk.tar.gz)
 
 You can just load needed archive, unpack in a folder and start its executable file.
 
 ## If you have installed Java and need less size distributives
 
 If you have pre-installed Java 1.8+, you can load files without embedded JDK:
- - [version for Linux](https://github.com/raydac/ravikoodi-server/releases/download/1.1.1/kodi-video-1.1.1.sh)
- - [version for Windows](https://github.com/raydac/ravikoodi-server/releases/download/1.1.1/kodi-video-1.1.1.exe)
- - [version for MacOS](https://github.com/raydac/ravikoodi-server/releases/download/1.1.1/kodi-video-1.1.1_OSX.dmg)
+ - [version for Linux](https://github.com/raydac/ravikoodi-server/releases/download/1.1.1/ravikoodi-1.1.1.sh)
+ - [version for Windows](https://github.com/raydac/ravikoodi-server/releases/download/1.1.1/ravikoodi-1.1.1.exe)
+ - [version for MacOS](https://github.com/raydac/ravikoodi-server/releases/download/1.1.1/ravikoodi-1.1.1_OSX.dmg)
 
 ## Requirements
 
