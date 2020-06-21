@@ -160,6 +160,7 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
                 ffmpegCom.getSoundWriter().orElse(null),
                 ffmpegCom.getScreenWriter(),
                 source.getSnapsPerSecond(),
+                this.preferences.getCrf(),
                 source.getBounds().width,
                 source.getBounds().height
         );
@@ -191,6 +192,7 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
           final LoopbackTcpWriter soundWriter,
           final LoopbackTcpWriter videoWriter,
           final int snapsPerSecond,
+          final int crf,
           final int width,
           final int height
   ) throws IOException {
@@ -198,7 +200,7 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
 
     args.add(ffmpegPath);
     args.add("-loglevel");
-    args.add("info");
+    args.add("warning");
     args.add("-nostats");
     args.add("-hide_banner");
 
@@ -209,6 +211,9 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
     args.add("+flush_packets+genpts");
     args.add("-use_wallclock_as_timestamps");
     args.add("1");
+
+    args.add("-thread_queue_size");
+    args.add("1024");
 
     args.add("-f");
     args.add("rawvideo");
@@ -225,6 +230,12 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
     args.add("tcp://" + videoWriter.getAddress());
 
     if (soundWriter != null) {
+      args.add("-thread_queue_size");
+      args.add("1024");
+
+      args.add("-use_wallclock_as_timestamps");
+      args.add("1");
+
       args.add("-ac");
       args.add("2");
       args.add("-ar");
@@ -246,7 +257,7 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
       args.add("320k");
 
       args.add("-af");
-      args.add("aresample=async=44100:first_pts=0");
+      args.add("aresample=async=44100");
     }
 
     args.add("-b:v");
@@ -265,10 +276,6 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
 
     args.add("-c:v");
     args.add("libx264");
-    args.add("-qmin");
-    args.add("5");
-    args.add("-qmax");
-    args.add("50");
     args.add("-pix_fmt");
     args.add("yuv420p");
     args.add("-vf");
@@ -289,6 +296,28 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
       args.add("-map");
       args.add("1:a");
     }
+
+    args.add("-vsync");
+    args.add("cfr");
+
+    args.add("-mpegts_flags");
+    args.add("resend_headers");
+
+    args.add("-muxpreload");
+    args.add("0");
+    args.add("-muxdelay");
+    args.add("0");
+
+    args.add("-avoid_negative_ts");
+    args.add("disabled");
+    
+    if (crf>=0) {
+        args.add("-crf");
+        args.add(Integer.toString(crf));
+    }   
+    
+    args.add("-pcr_period");
+    args.add("50");
 
     args.add("-f");
     args.add("mpegts");

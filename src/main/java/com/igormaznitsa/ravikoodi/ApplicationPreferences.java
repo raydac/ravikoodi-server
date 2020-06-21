@@ -121,6 +121,7 @@ public class ApplicationPreferences {
     SCREENCAST_QUALITY("screencast.quality"),
     SCREENCAST_BANDWIDTH("screencast.bandwidth"),
     SCREENCAST_SOUNDOFFSET("screencast.sndoffset"),
+    SCREENCAST_CRF("screencast.crf"),
     SCREENCAST_SPEED_PROFILE("screencast.speed.profile"),
     SCREENCAST_GRABBER_TYPE("screencast.grabber.type"),
     SERVER_PORT("server.port"),
@@ -214,6 +215,18 @@ public class ApplicationPreferences {
   public void setThreads(final int threads) {
     synchronized (this.preferences) {
       this.preferences.putInt(Option.SCREENCAST_THREADS.getPropertyName(), Math.max(0, threads));
+    }
+  }
+  
+  public int getCrf() {
+    synchronized (this.preferences) {
+      return Math.max(-1, this.preferences.getInt(Option.SCREENCAST_CRF.getPropertyName(), -1));
+    }
+  }
+  
+  public void setCrf(final int value) {
+    synchronized (this.preferences) {
+      this.preferences.putInt(Option.SCREENCAST_CRF.getPropertyName(), Math.max(-1, value));
     }
   }
   
