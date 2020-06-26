@@ -8,12 +8,12 @@
 # Changelog
 
 - 1.1.2-SNAPSHOT
- - updated Spring Boot version to 2.3.1.RELEASE
- - added streaming FFmpeg parameter CRF (Constant Rate Factor, 0 - lossless...51 - worst quality) into Options
+  - updated Spring Boot version to 2.3.1.RELEASE
+  - added streaming FFmpeg parameter CRF (Constant Rate Factor, 0 - lossless...51 - worst quality) into Options
 
 - 1.1.1 (18-may-2020)
- - rebranding to RaviKoodi
- - added support of streaming through FFmpeg
+  - rebranding to RaviKoodi
+  - added support of streaming through FFmpeg
 
 # Introduction
 
