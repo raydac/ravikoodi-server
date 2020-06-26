@@ -7,7 +7,7 @@
 
 # Changelog
 
-- __1.1.2-SNAPSHOT__
+- __1.1.2 (26-jun-2020)__
   - updated Spring Boot version to 2.3.1.RELEASE
   - added streaming FFmpeg parameter CRF (Constant Rate Factor, 0 - lossless...51 - worst quality) into Options
 
