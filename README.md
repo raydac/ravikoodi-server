@@ -5,6 +5,16 @@
 [![PayPal donation](https://img.shields.io/badge/donation-PayPal-red.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=AHWJHJFBAWGL2)
 [![Yandex.Money donation](https://img.shields.io/badge/donation-Я.деньги-yellow.svg)](http://yasobe.ru/na/iamoss)
 
+# Changelog
+
+- 1.1.2-SNAPSHOT
+ - updated Spring Boot version to 2.3.1.RELEASE
+ - added streaming FFmpeg parameter CRF (Constant Rate Factor, 0 - lossless...51 - worst quality) into Options
+
+- 1.1.1 (18-may-2020)
+ - rebranding to RaviKoodi
+ - added support of streaming through FFmpeg
+
 # Introduction
 
 At home I use [Raspberry PI 3](https://www.raspberrypi.org/products/raspberry-pi-3-model-b/) (with installed [KODI media center](https://kodi.tv/)) to watch TV-shows and clips. There are number of browser plug-ins to open web links directly on KODI, but I need broadcast some media-content directly from my laptop. KODI supports sharing through Samba etc. but I am too lazy and like one-button solutions. So I decided to write a small easy utility to provide needed one-button way.
