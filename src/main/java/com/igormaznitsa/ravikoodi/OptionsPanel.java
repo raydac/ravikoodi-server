@@ -829,7 +829,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         jLabel16.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel16.setText("CRF:");
-        jLabel16.setToolTipText("Constant Rate Factor, if -1 - turn off, 0 - losless, 51 - worst quality");
+        jLabel16.setToolTipText("Constant Rate Factor, if -1 - turn off, 0 - lossless, 51 - worst quality"); // NOI18N
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 10;
