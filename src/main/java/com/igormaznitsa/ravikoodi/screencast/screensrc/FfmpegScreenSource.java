@@ -264,6 +264,8 @@ public class FfmpegScreenSource extends AbstractScreenSource {
     args.add("-f");
     if (SystemUtils.IS_OS_MAC) {
       args.add("avfoundation");
+      args.add("-capture_cursor");
+      args.add("0");
       args.add("-i");
       args.add(Integer.toString(this.captureDeviceIndex));
     } else if (SystemUtils.IS_OS_WINDOWS) {
@@ -278,6 +280,8 @@ public class FfmpegScreenSource extends AbstractScreenSource {
       args.add("desktop");
     } else {
       args.add("x11grab");
+      args.add("-draw_mouse");
+      args.add("0");
       args.add("-i");
       args.add(String.format("%s+%d,%d", deviceId, screenBounds.x, screenBounds.y));
     }
