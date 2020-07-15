@@ -11,6 +11,7 @@ import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 public final class Utils {
 
@@ -57,6 +58,10 @@ public final class Utils {
     return getExtension(file.getName());
   }
 
+  public static boolean isBlank(@Nullable final String sequence) {
+      return sequence == null || sequence.length() == 0 || sequence.trim().length() == 0;
+  }
+  
   public static void showURLExternal(@NonNull final URL url) {
     if (Desktop.isDesktopSupported()) {
       final Desktop desktop = Desktop.getDesktop();
