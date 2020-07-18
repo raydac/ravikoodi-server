@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.AbstractCellEditor;
 import javax.swing.Box;
 import javax.swing.JButton;
@@ -65,8 +66,6 @@ public final class TimersTable extends JPanel {
 
     private final JTable timersTable;
 
-    private static File lastFolder = null;
-    
     static final class LocalTimeEditor extends JFormattedTextField {
 
         private static final MaskFormatter FORMAT;
@@ -125,9 +124,10 @@ public final class TimersTable extends JPanel {
 
         private final JTextField text;
         private final JButton button;
-
-        public FilePathEditor() {
+        
+        public FilePathEditor(@Nullable final AtomicReference<File> dir) {
             super(new GridBagLayout());
+            
             final GridBagConstraints gbc = new GridBagConstraints(GridBagConstraints.RELATIVE, 0, 1, 1, 10000, 1, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0);
 
             this.text = new JTextField();
@@ -139,7 +139,7 @@ public final class TimersTable extends JPanel {
             this.button.setFocusable(false);
             
             this.button.addActionListener(e -> {
-                final JFileChooser chooser = new JFileChooser(lastFolder);
+                final JFileChooser chooser = new JFileChooser(dir.get());
                 chooser.setAcceptAllFileFilterUsed(true);
                 chooser.setDialogTitle("Select media resource");
                 chooser.setMultiSelectionEnabled(false);
@@ -147,7 +147,7 @@ public final class TimersTable extends JPanel {
                 
                 if (chooser.showOpenDialog(SwingUtilities.getWindowAncestor(this)) == JFileChooser.APPROVE_OPTION){
                     final File file = chooser.getSelectedFile();
-                    lastFolder = file.getParentFile();
+                    dir.set(file.getParentFile());
                     this.text.setText(file.getAbsolutePath());
                 }
             });
@@ -170,10 +170,12 @@ public final class TimersTable extends JPanel {
 
     static final class FilePathCellEditor extends AbstractCellEditor implements TableCellEditor {
 
-        private final FilePathEditor editor = new FilePathEditor();
+        private final AtomicReference<File> dir = new AtomicReference<>();
+        private final FilePathEditor editor = new FilePathEditor(dir);
 
-        public FilePathCellEditor() {
+        public FilePathCellEditor(final File file) {
             super();
+            this.dir.set(file);
             editor.text.addActionListener(a -> {
                 this.stopCellEditing();
             });
@@ -229,7 +231,7 @@ public final class TimersTable extends JPanel {
         return new ArrayList<>(((TimersTableModel) this.timersTable.getModel()).timers);
     }
 
-    public TimersTable(@NonNull final List<Timer> timers) {
+    public TimersTable(@NonNull final File dir, @NonNull final List<Timer> timers) {
         super(new BorderLayout());
 
         this.timersTable = new JTable();
@@ -249,7 +251,7 @@ public final class TimersTable extends JPanel {
         this.timersTable.getColumnModel().getColumn(3).setCellRenderer(new LocalTimeCellRenderer());
         this.timersTable.getColumnModel().getColumn(3).setCellEditor(new LocalTimeCellEditor());
         this.timersTable.getColumnModel().getColumn(4).setCellRenderer(new FilePathCellRenderer());
-        this.timersTable.getColumnModel().getColumn(4).setCellEditor(new FilePathCellEditor());
+        this.timersTable.getColumnModel().getColumn(4).setCellEditor(new FilePathCellEditor(dir));
 
         final JPanel buttonPanel = new JPanel(new GridBagLayout());
 

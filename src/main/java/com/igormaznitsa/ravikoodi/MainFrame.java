@@ -3,8 +3,9 @@ package com.igormaznitsa.ravikoodi;
 import com.igormaznitsa.ravikoodi.screencast.JavaSoundAdapter;
 import com.igormaznitsa.ravikoodi.screencast.ScreenGrabber;
 import com.igormaznitsa.ravikoodi.screencast.FfmpegWrapper;
-import ch.qos.logback.core.util.CloseUtil;
+import com.igormaznitsa.ContentFolder;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences.Timer;
+import static com.igormaznitsa.ravikoodi.ContentTreeItem.CONTENT_ITEM_COMPARATOR;
 import com.igormaznitsa.ravikoodi.MimeTypes.ContentType;
 import com.igormaznitsa.ravikoodi.UploadingFileRegistry.FileRecord;
 import static com.igormaznitsa.ravikoodi.Utils.isBlank;
@@ -80,56 +81,60 @@ import org.springframework.lang.Nullable;
 @org.springframework.stereotype.Component
 public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorListener, InternalServer.InternalServerListener {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(MainFrame.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MainFrame.class);
 
-  private Path currentRootFolder;
+    private Path currentRootFolder;
 
-  private final List<TreeModelListener> treeListeners = new CopyOnWriteArrayList<>();
+    private final List<TreeModelListener> treeListeners = new CopyOnWriteArrayList<>();
 
-  @Autowired
-  private DonationController donationController;
-  @Autowired
-  private ScheduledExecutorService executorService;
-  @Autowired
-  private ApplicationPreferences preferences;
-  @Autowired
-  private UploadingFileRegistry fileRegstry;
-  @Autowired
-  private InternalServer server;
-  @Autowired
-  private MimeTypes mimeTypes;
-  @Autowired
-  private ApplicationContext context;
-  @Autowired
-  private BuildProperties buildProperties;
-  @Autowired
-  private JavaSoundAdapter soundAdapter;
+    @Autowired
+    private DonationController donationController;
+    @Autowired
+    private ScheduledExecutorService executorService;
+    @Autowired
+    private ApplicationPreferences preferences;
+    @Autowired
+    private UploadingFileRegistry fileRegstry;
+    @Autowired
+    private InternalServer server;
+    @Autowired
+    private MimeTypes mimeTypes;
+    @Autowired
+    private ApplicationContext context;
+    @Autowired
+    private BuildProperties buildProperties;
+    @Autowired
+    private JavaSoundAdapter soundAdapter;
+    @Autowired
+    private TimerScheduler timerScheduler;
+    @Autowired
+    private KodiComm kodiComm;
 
-  private final AtomicReference<OpeningFileInfoPanel> openingFileInfoPanel = new AtomicReference<>();
+    private final AtomicReference<OpeningFileInfoPanel> openingFileInfoPanel = new AtomicReference<>();
 
-  private final AtomicReference<ApplicationStatusPanel> applicationStatusPanel = new AtomicReference<>();
+    private final AtomicReference<ApplicationStatusPanel> applicationStatusPanel = new AtomicReference<>();
 
-  private final AtomicReference<ScreenGrabber> currentScreenGrabber = new AtomicReference<>();
+    private final AtomicReference<ScreenGrabber> currentScreenGrabber = new AtomicReference<>();
 
-  private final AtomicLong timeWhenEndScreencastFlowEnable = new AtomicLong();
+    private final AtomicLong timeWhenEndScreencastFlowEnable = new AtomicLong();
 
-  private WeakReference<FfmpegWrapper> lastFFmpegWrapper;
+    private WeakReference<FfmpegWrapper> lastFFmpegWrapper;
 
-  private static class FileTreeRenderer extends DefaultTreeCellRenderer {
+    private static class FileTreeRenderer extends DefaultTreeCellRenderer {
 
-    private static final Icon ICON_UNKNOWN = new ImageIcon(Utils.loadImage("tree/mask.png"));
-    private static final Icon ICON_AUDIO = new ImageIcon(Utils.loadImage("tree/music.png"));
-    private static final Icon ICON_VIDEO = new ImageIcon(Utils.loadImage("tree/movies.png"));
-    private static final Icon ICON_PICTURE = new ImageIcon(Utils.loadImage("tree/picture.png"));
-    private static final Icon ICON_FOLDER = new ImageIcon(Utils.loadImage("tree/folder.png"));
-    private static final Icon ICON_FOLDER_OPEN = new ImageIcon(Utils.loadImage("tree/folder_blue.png"));
+        private static final Icon ICON_UNKNOWN = new ImageIcon(Utils.loadImage("tree/mask.png"));
+        private static final Icon ICON_AUDIO = new ImageIcon(Utils.loadImage("tree/music.png"));
+        private static final Icon ICON_VIDEO = new ImageIcon(Utils.loadImage("tree/movies.png"));
+        private static final Icon ICON_PICTURE = new ImageIcon(Utils.loadImage("tree/picture.png"));
+        private static final Icon ICON_FOLDER = new ImageIcon(Utils.loadImage("tree/folder.png"));
+        private static final Icon ICON_FOLDER_OPEN = new ImageIcon(Utils.loadImage("tree/folder_blue.png"));
 
-    public FileTreeRenderer() {
-      super();
-    }
+        public FileTreeRenderer() {
+            super();
+        }
 
-    @Override
-    public Component getTreeCellRendererComponent(
+        @Override
+        public Component getTreeCellRendererComponent(
             final JTree tree,
             final Object value,
             final boolean selected,
@@ -137,450 +142,336 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
             final boolean leaf,
             final int row,
             final boolean hasFocus
-    ) {
-      DefaultTreeCellRenderer result = (DefaultTreeCellRenderer) super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
-      if (leaf) {
-        if (value instanceof ContentFile) {
-          switch (((ContentFile) value).getContentType()) {
-            case AUDIO:
-              result.setIcon(ICON_AUDIO);
-              break;
-            case VIDEO:
-              result.setIcon(ICON_VIDEO);
-              break;
-            case PICTURE:
-              result.setIcon(ICON_PICTURE);
-              break;
-            case UNKNOWN:
-              result.setIcon(ICON_UNKNOWN);
-              break;
-          }
-        } else {
-          result.setIcon(null);
-        }
-      } else {
-        result.setIcon(expanded ? ICON_FOLDER_OPEN : ICON_FOLDER);
-      }
-      return result;
-    }
-  }
-
-  @Override
-  public void flavorsChanged(final FlavorEvent e) {
-    this.updateToolButtons();
-  }
-
-  private interface ContentTreeItem {
-
-    @NonNull
-    String getFileNameAsString();
-  }
-
-  private static final Comparator<ContentTreeItem> CONTENT_ITEM_COMPARATOR = (@NonNull final ContentTreeItem o1, @NonNull final ContentTreeItem o2) -> {
-    if (o1 instanceof ContentFolder && o2 instanceof ContentFile) {
-      return -1;
-    } else if (o1 instanceof ContentFile && o2 instanceof ContentFolder) {
-      return 1;
-    } else {
-      return o1.getFileNameAsString().compareTo(o2.getFileNameAsString());
-    }
-  };
-
-  private final class ContentFolder implements ContentTreeItem {
-
-    private final Path file;
-    private final String fileName;
-    private final List<ContentTreeItem> files = new ArrayList<>();
-
-    ContentFolder(@NonNull final Path file) throws IOException {
-      this.file = file;
-      this.fileName = this.file.getFileName().toString();
-
-      Files.list(file).filter(f -> {
-        return Files.isReadable(f) && (Files.isDirectory(f) || ContentType.findType(f) != ContentType.UNKNOWN);
-      }).peek(f -> {
-        if (Files.isDirectory(f)) {
-          try {
-            this.files.add(new ContentFolder(f));
-          } catch (IOException ex) {
-            LOGGER.error("Can't read folder {}", f, ex);
-          }
-        } else {
-          this.files.add(new ContentFile(f, ContentType.findType(f)));
-        }
-      }).count();
-
-      Collections.sort(this.files, CONTENT_ITEM_COMPARATOR);
-    }
-
-    @Override
-    @NonNull
-    public String getFileNameAsString() {
-      return this.fileName;
-    }
-
-    @Override
-    @NonNull
-    public String toString() {
-      return this.getFileNameAsString();
-    }
-  }
-
-  private final class ContentFile implements ContentTreeItem {
-
-    private final Path file;
-    private final String fileName;
-    private final ContentType contentType;
-
-    ContentFile(@NonNull final Path file, final ContentType contentType) {
-      this.file = file;
-      this.fileName = this.file.getFileName().toString();
-      this.contentType = contentType;
-    }
-
-    @NonNull
-    public ContentType getContentType() {
-      return this.contentType;
-    }
-
-    @NonNull
-    public Path getFilePath() {
-      return this.file;
-    }
-
-    @NonNull
-    public String getFilePathAsString() {
-      return this.file.toString();
-    }
-
-    @Override
-    @NonNull
-    public String getFileNameAsString() {
-      return this.fileName;
-    }
-
-    @Override
-    @NonNull
-    public String toString() {
-      return this.getFileNameAsString();
-    }
-  }
-
-  private final List<ContentTreeItem> videoFiles = new ArrayList<>();
-
-  private void updateToolButtons() {
-    final TreePath treePath = this.treeVideoFiles.getSelectionPath();
-    final boolean contentFileFocused = treePath != null && treePath.getLastPathComponent() instanceof ContentFile;
-    if (this.toggleButtonScreencast.isSelected()) {
-      buttonPlaySelected.setEnabled(false);
-      buttonImageFromClipboard.setEnabled(false);
-    } else {
-      buttonPlaySelected.setEnabled(contentFileFocused);
-      try {
-        this.buttonImageFromClipboard.setEnabled(Toolkit.getDefaultToolkit().getSystemClipboard().isDataFlavorAvailable(DataFlavor.imageFlavor));
-      } catch (Exception ex) {
-        this.buttonImageFromClipboard.setEnabled(false);
-      }
-    }
-    buttonOpenSelectedFileInSystem.setEnabled(contentFileFocused);
-    this.repaint();
-  }
-
-  @PostConstruct
-  public void postInit() {
-    final Throwable lastServerError = this.server.getLastStartServerError();
-    if (lastServerError != null) {
-      LOGGER.error("Detected error during server start", lastServerError);
-      SwingUtilities.invokeLater(() -> {
-        JOptionPane.showMessageDialog(this, "Can't start embedded server: " + lastServerError.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        SpringApplication.exit(this.context, () -> 1);
-      });
-    } else {
-      this.server.addListener(this);
-      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-        if (this.lastFFmpegWrapper != null) {
-          final FfmpegWrapper lastWrapper = this.lastFFmpegWrapper.get();
-          if (lastWrapper != null) {
-            try {
-              lastWrapper.stopStartedExternalProcess();
-            } catch (Throwable ex) {
-              // ignoring
+        ) {
+            DefaultTreeCellRenderer result = (DefaultTreeCellRenderer) super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
+            if (leaf) {
+                if (value instanceof ContentFile) {
+                    switch (((ContentFile) value).getContentType()) {
+                        case AUDIO:
+                            result.setIcon(ICON_AUDIO);
+                            break;
+                        case VIDEO:
+                            result.setIcon(ICON_VIDEO);
+                            break;
+                        case PICTURE:
+                            result.setIcon(ICON_PICTURE);
+                            break;
+                        case UNKNOWN:
+                            result.setIcon(ICON_UNKNOWN);
+                            break;
+                    }
+                } else {
+                    result.setIcon(null);
+                }
+            } else {
+                result.setIcon(expanded ? ICON_FOLDER_OPEN : ICON_FOLDER);
             }
-          }
+            return result;
         }
-      }));
     }
-  }
 
-  private void stopScreenCast() {
-    CloseUtil.closeQuietly(this.currentScreenGrabber.getAndSet(null));
-    SwingUtilities.invokeLater(() -> {
-      if (this.toggleButtonScreencast.isSelected()) {
-        this.toggleButtonScreencast.setEnabled(true);
-        this.toggleButtonScreencast.setSelected(false);
-        this.toggleButtonScreencast.revalidate();
-        this.repaint();
-      }
-      updateToolButtons();
-    });
-  }
-
-  @Override
-  public void onScreencastStarted(final InternalServer source) {
-  }
-
-  @Override
-  public void onScreencastEnded(final InternalServer source) {
-    if (this.timeWhenEndScreencastFlowEnable.get() < System.currentTimeMillis()) {
-      this.stopScreenCast();
-    }
-  }
-
-  public MainFrame() throws Exception {
-    SwingUtilities.invokeAndWait(() -> {
-      initComponents();
-      this.setTitle(RaviKoodiServer.TITLE);
-      this.setIconImage(Utils.loadImage("ravikoodi-logo-256.png"));
-
-      this.treeVideoFiles.setCellRenderer(new FileTreeRenderer());
-
-      Toolkit.getDefaultToolkit().getSystemClipboard().addFlavorListener(this);
-      this.flavorsChanged(new FlavorEvent(Toolkit.getDefaultToolkit().getSystemClipboard()));
-      this.treeVideoFiles.getSelectionModel().setSelectionMode(SINGLE_TREE_SELECTION);
-      this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-
-      this.treeVideoFiles.getSelectionModel().addTreeSelectionListener((@NonNull final TreeSelectionEvent e) -> {
+    @Override
+    public void flavorsChanged(final FlavorEvent e) {
         this.updateToolButtons();
-      });
-
-      this.treeVideoFiles.setModel(this);
-      this.addWindowListener(new WindowAdapter() {
-        @Override
-        public void windowActivated(WindowEvent e) {
-          panelMain.invalidate();
-          panelMain.repaint();
-        }
-
-        @Override
-        public void windowDeiconified(WindowEvent e) {
-          panelMain.invalidate();
-          panelMain.repaint();
-        }
-
-        @Override
-        public void windowClosing(WindowEvent e) {
-          LOGGER.info("Closing main window");
-          if (!fileRegstry.hasActiveUploads() || JOptionPane.showConfirmDialog(MainFrame.this, "There are uploading files, do you rally want close application?", "Confirmation", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            LOGGER.info("Activate exit");
-            stopScreenCast();
-            SwingUtilities.invokeLater(()
-                    -> SpringApplication.exit(context, () -> 0));
-          }
-        }
-      });
-    });
-  }
-
-  private void fillLookAndFeel() {
-    final LookAndFeel current = UIManager.getLookAndFeel();
-    final ButtonGroup lfGroup = new ButtonGroup();
-    final String currentLFClassName = current.getClass().getName();
-    for (final UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-      final JRadioButtonMenuItem menuItem = new JRadioButtonMenuItem(info.getName());
-      lfGroup.add(menuItem);
-      if (currentLFClassName.equals(info.getClassName())) {
-        menuItem.setSelected(true);
-      }
-      menuItem.addActionListener((final ActionEvent e) -> {
-        try {
-          UIManager.setLookAndFeel(info.getClassName());
-          preferences.setLookAndFeelClassName(info.getClassName());
-          SwingUtilities.updateComponentTreeUI(MainFrame.this);
-          this.treeVideoFiles.repaint();
-        } catch (Exception ex) {
-          LOGGER.error("Can't change LF", ex); //NOI18N
-        }
-      });
-      this.menuLookAndFeel.add(menuItem);
-    }
-  }
-
-  @PreDestroy
-  public void preDestroy() {
-    SwingUtilities.invokeLater(() -> this.dispose());
-  }
-
-  @PostConstruct
-  public void postConstruct() {
-    SwingUtilities.invokeLater(() -> {
-      try {
-        UIManager.setLookAndFeel(preferences.getLookAndFeelClassName());
-      } catch (Exception ex) {
-        LOGGER.warn("Can't set L&F", ex);
-      }
-
-      fillLookAndFeel();
-
-      this.setSize(640, 500);
-
-      SwingUtilities.updateComponentTreeUI(this);
-      this.setExtendedState(this.getExtendedState() | MAXIMIZED_BOTH);
-
-      this.setVisible(true);
-      this.executorService.scheduleAtFixedRate(this::updatePlayers, 1000L, 1500L, TimeUnit.MILLISECONDS);
-      this.setFileRoot(this.preferences.getFileRoot());
-
-      this.applicationStatusPanel.set(new ApplicationStatusPanel(this, executorService, preferences));
-      this.panelPlayers.add(this.applicationStatusPanel.get());
-    });
-  }
-
-  @Nullable
-  private KodiService makeKodiService() {
-    try {
-      return new KodiService(new KodiAddress(
-              this.preferences.getKodiAddress(),
-              this.preferences.getKodiPort(),
-              this.preferences.getKodiName(),
-              this.preferences.getKodiPassword(),
-              this.preferences.isKodiSsl()
-      ));
-    } catch (MalformedURLException ex) {
-      LOGGER.error("Can't create kodi service : {}", ex.getMessage());
-      return null;
-    }
-  }
-
-  private boolean doesContainPlayer(final ActivePlayerInfo player) {
-    boolean result = false;
-
-    for (final Component c : this.panelPlayers.getComponents()) {
-      if (c instanceof PlayerPanel) {
-        final PlayerPanel panel = (PlayerPanel) c;
-        if (panel.getPlayerId() == player.getPlayerid()) {
-          result = true;
-          break;
-        }
-      }
     }
 
-    return result;
-  }
+    private final List<ContentTreeItem> videoFiles = new ArrayList<>();
 
-  private boolean removeNonListedPlayers(@NonNull final ActivePlayerInfo[] players) {
-    final Set<Long> playerId = Stream.of(players).map(x -> x.getPlayerid()).collect(Collectors.toSet());
-
-    boolean result = false;
-
-    for (final Component c : this.panelPlayers.getComponents()) {
-      if (c instanceof PlayerPanel) {
-        final PlayerPanel panel = (PlayerPanel) c;
-        if (!playerId.contains(panel.getPlayerId())) {
-          LOGGER.info("Removed player panel '{}'", panel);
-          this.panelPlayers.remove(c);
-          panel.dispose();
-          result = true;
-        }
-      }
-    }
-    return result;
-  }
-
-  private void updatePlayers() {
-    final KodiService kodiService = makeKodiService();
-    if (kodiService != null) {
-      try {
-        final ActivePlayerInfo[] players = kodiService.getActivePlayers();
-
-        SwingUtilities.invokeLater(() -> {
-          boolean changed = removeNonListedPlayers(players);
-
-          for (final ActivePlayerInfo p : players) {
-            if (!doesContainPlayer(p)) {
-              final PlayerPanel panel = new PlayerPanel(MainFrame.this, p, executorService, kodiService);
-              panelPlayers.add(panel);
-              LOGGER.info("Added player panel '{}'", panel);
-              changed = true;
-            }
-          }
-
-          if (changed) {
-            panelPlayers.revalidate();
-            panelPlayers.repaint();
-          }
-
-          int pausedCounter = 0;
-
-          for (final Component c : panelPlayers.getComponents()) {
-            if (c instanceof PlayerPanel) {
-              final PlayerPanel player = (PlayerPanel) c;
-              player.refresh();
-              if (player.isPaused()) {
-                pausedCounter++;
-              }
-            }
-          }
-
-          if (pausedCounter == 0) {
-            this.fileRegstry.resume();
-          } else {
-            this.fileRegstry.pause();
-          }
-        });
-
-      } catch (Throwable ex) {
-        LOGGER.warn("Error during player update : {}", ex.getMessage());
-      }
-    }
-  }
-
-  private void setFileRoot(@NonNull final String fileRootFolder) {
-    this.videoFiles.clear();
-
-    LOGGER.info("Selecting file root '{}'", fileRootFolder);
-
-    try {
-      if (!isBlank(fileRootFolder)) {
-        final File theFilePath = new File(fileRootFolder);
-
-        if (!theFilePath.isDirectory()) {
-          JOptionPane.showMessageDialog(this, "Can't find folder '" + fileRootFolder + "\'", "Can't fild folder", JOptionPane.ERROR_MESSAGE);
-          return;
-        }
-        this.currentRootFolder = theFilePath.toPath();
-
-        Files.list(this.currentRootFolder).filter(f -> {
-          return Files.isReadable(f)
-                  && (Files.isDirectory(f) || ContentType.findType(f) != ContentType.UNKNOWN);
-        }).forEach(f -> {
-          if (Files.isDirectory(f)) {
+    private void updateToolButtons() {
+        final TreePath treePath = this.treeVideoFiles.getSelectionPath();
+        final boolean contentFileFocused = treePath != null && treePath.getLastPathComponent() instanceof ContentFile;
+        if (this.toggleButtonScreencast.isSelected()) {
+            buttonPlaySelected.setEnabled(false);
+            buttonImageFromClipboard.setEnabled(false);
+        } else {
+            buttonPlaySelected.setEnabled(contentFileFocused);
             try {
-              this.videoFiles.add(new ContentFolder(f));
-            } catch (IOException ex) {
-              LOGGER.error("Can't read folder {}", f, ex);
+                this.buttonImageFromClipboard.setEnabled(Toolkit.getDefaultToolkit().getSystemClipboard().isDataFlavorAvailable(DataFlavor.imageFlavor));
+            } catch (Exception ex) {
+                this.buttonImageFromClipboard.setEnabled(false);
             }
-          } else {
-            this.videoFiles.add(new ContentFile(f, ContentType.findType(f)));
-          }
-        });
-
-        Collections.sort(this.videoFiles, CONTENT_ITEM_COMPARATOR);
-      }
-    } catch (IOException ex) {
-      LOGGER.error("Can't set file root", ex);
-    } finally {
-      this.treeListeners.forEach((l) -> {
-        l.treeStructureChanged(new TreeModelEvent(this, new TreePath(new Object[]{this})));
-      });
+        }
+        buttonOpenSelectedFileInSystem.setEnabled(contentFileFocused);
+        this.repaint();
     }
-  }
 
-  /**
-   * This method is called from within the constructor to initialize the form.
-   * WARNING: Do NOT modify this code. The content of this method is always
-   * regenerated by the Form Editor.
-   */
-  @SuppressWarnings("unchecked")
+    @PostConstruct
+    public void postInit() {
+        final Throwable lastServerError = this.server.getLastStartServerError();
+        if (lastServerError != null) {
+            LOGGER.error("Detected error during server start", lastServerError);
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(this, "Can't start embedded server: " + lastServerError.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                SpringApplication.exit(this.context, () -> 1);
+            });
+        } else {
+            this.server.addListener(this);
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                if (this.lastFFmpegWrapper != null) {
+                    final FfmpegWrapper lastWrapper = this.lastFFmpegWrapper.get();
+                    if (lastWrapper != null) {
+                        try {
+                            lastWrapper.stopStartedExternalProcess();
+                        } catch (Throwable ex) {
+                            // ignoring
+                        }
+                    }
+                }
+            }));
+        }
+    }
+
+    private void stopScreenCast() {
+        Utils.closeQuietly(this.currentScreenGrabber.getAndSet(null));
+        SwingUtilities.invokeLater(() -> {
+            if (this.toggleButtonScreencast.isSelected()) {
+                this.toggleButtonScreencast.setEnabled(true);
+                this.toggleButtonScreencast.setSelected(false);
+                this.toggleButtonScreencast.revalidate();
+                this.repaint();
+            }
+            updateToolButtons();
+        });
+    }
+
+    @Override
+    public void onScreencastStarted(final InternalServer source) {
+    }
+
+    @Override
+    public void onScreencastEnded(final InternalServer source) {
+        if (this.timeWhenEndScreencastFlowEnable.get() < System.currentTimeMillis()) {
+            this.stopScreenCast();
+        }
+    }
+
+    public MainFrame() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            initComponents();
+            this.setTitle(RaviKoodiServer.TITLE);
+            this.setIconImage(Utils.loadImage("ravikoodi-logo-256.png"));
+
+            this.treeVideoFiles.setCellRenderer(new FileTreeRenderer());
+
+            Toolkit.getDefaultToolkit().getSystemClipboard().addFlavorListener(this);
+            this.flavorsChanged(new FlavorEvent(Toolkit.getDefaultToolkit().getSystemClipboard()));
+            this.treeVideoFiles.getSelectionModel().setSelectionMode(SINGLE_TREE_SELECTION);
+            this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+
+            this.treeVideoFiles.getSelectionModel().addTreeSelectionListener((@NonNull final TreeSelectionEvent e) -> {
+                this.updateToolButtons();
+            });
+
+            this.treeVideoFiles.setModel(this);
+            this.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowActivated(WindowEvent e) {
+                    panelMain.invalidate();
+                    panelMain.repaint();
+                }
+
+                @Override
+                public void windowDeiconified(WindowEvent e) {
+                    panelMain.invalidate();
+                    panelMain.repaint();
+                }
+
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    LOGGER.info("Closing main window");
+                    if (!fileRegstry.hasActiveUploads() || JOptionPane.showConfirmDialog(MainFrame.this, "There are uploading files, do you rally want close application?", "Confirmation", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                        LOGGER.info("Activate exit");
+                        stopScreenCast();
+                        SwingUtilities.invokeLater(()
+                            -> SpringApplication.exit(context, () -> 0));
+                    }
+                }
+            });
+        });
+    }
+
+    private void fillLookAndFeel() {
+        final LookAndFeel current = UIManager.getLookAndFeel();
+        final ButtonGroup lfGroup = new ButtonGroup();
+        final String currentLFClassName = current.getClass().getName();
+        for (final UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+            final JRadioButtonMenuItem menuItem = new JRadioButtonMenuItem(info.getName());
+            lfGroup.add(menuItem);
+            if (currentLFClassName.equals(info.getClassName())) {
+                menuItem.setSelected(true);
+            }
+            menuItem.addActionListener((final ActionEvent e) -> {
+                try {
+                    UIManager.setLookAndFeel(info.getClassName());
+                    preferences.setLookAndFeelClassName(info.getClassName());
+                    SwingUtilities.updateComponentTreeUI(MainFrame.this);
+                    this.treeVideoFiles.repaint();
+                } catch (Exception ex) {
+                    LOGGER.error("Can't change LF", ex); //NOI18N
+                }
+            });
+            this.menuLookAndFeel.add(menuItem);
+        }
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        SwingUtilities.invokeLater(() -> this.dispose());
+    }
+
+    @PostConstruct
+    public void postConstruct() {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                UIManager.setLookAndFeel(preferences.getLookAndFeelClassName());
+            } catch (Exception ex) {
+                LOGGER.warn("Can't set L&F", ex);
+            }
+
+            fillLookAndFeel();
+
+            this.setSize(640, 500);
+
+            SwingUtilities.updateComponentTreeUI(this);
+            this.setExtendedState(this.getExtendedState() | MAXIMIZED_BOTH);
+
+            this.setVisible(true);
+            this.executorService.scheduleAtFixedRate(this::updatePlayers, 1000L, 1500L, TimeUnit.MILLISECONDS);
+            this.setFileRoot(this.preferences.getFileRoot());
+
+            this.applicationStatusPanel.set(new ApplicationStatusPanel(this, executorService, preferences));
+            this.panelPlayers.add(this.applicationStatusPanel.get());
+        });
+        this.timerScheduler.reloadTimers();
+    }
+
+    private boolean doesContainPlayer(final ActivePlayerInfo player) {
+        boolean result = false;
+
+        for (final Component c : this.panelPlayers.getComponents()) {
+            if (c instanceof PlayerPanel) {
+                final PlayerPanel panel = (PlayerPanel) c;
+                if (panel.getPlayerId() == player.getPlayerid()) {
+                    result = true;
+                    break;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private boolean removeNonListedPlayers(@NonNull final List<ActivePlayerInfo> players) {
+        final Set<Long> playerId = players.stream().map(x -> x.getPlayerid()).collect(Collectors.toSet());
+
+        boolean result = false;
+
+        for (final Component c : this.panelPlayers.getComponents()) {
+            if (c instanceof PlayerPanel) {
+                final PlayerPanel panel = (PlayerPanel) c;
+                if (!playerId.contains(panel.getPlayerId())) {
+                    LOGGER.info("Removed player panel '{}'", panel);
+                    this.panelPlayers.remove(c);
+                    panel.dispose();
+                    result = true;
+                }
+            }
+        }
+        return result;
+    }
+
+    private void updatePlayers() {
+        try {
+            final List<ActivePlayerInfo> players = this.kodiComm.findActivePlayers();
+
+            SwingUtilities.invokeLater(() -> {
+                boolean changed = removeNonListedPlayers(players);
+
+                for (final ActivePlayerInfo p : players) {
+                    if (!doesContainPlayer(p)) {
+                        final PlayerPanel panel = new PlayerPanel(MainFrame.this, p, executorService, this.kodiComm);
+                        panelPlayers.add(panel);
+                        LOGGER.info("Added player panel '{}'", panel);
+                        changed = true;
+                    }
+                }
+
+                if (changed) {
+                    panelPlayers.revalidate();
+                    panelPlayers.repaint();
+                }
+
+                int pausedCounter = 0;
+
+                for (final Component c : panelPlayers.getComponents()) {
+                    if (c instanceof PlayerPanel) {
+                        final PlayerPanel player = (PlayerPanel) c;
+                        player.refresh();
+                        if (player.isPaused()) {
+                            pausedCounter++;
+                        }
+                    }
+                }
+
+                if (pausedCounter == 0) {
+                    this.fileRegstry.resume();
+                } else {
+                    this.fileRegstry.pause();
+                }
+            });
+
+        } catch (Throwable ex) {
+            LOGGER.warn("Error during player update : {}", ex.getMessage());
+        }
+    }
+
+    private void setFileRoot(@NonNull final String fileRootFolder) {
+        this.videoFiles.clear();
+
+        LOGGER.info("Selecting file root '{}'", fileRootFolder);
+
+        try {
+            if (!isBlank(fileRootFolder)) {
+                final File theFilePath = new File(fileRootFolder);
+
+                if (!theFilePath.isDirectory()) {
+                    JOptionPane.showMessageDialog(this, "Can't find folder '" + fileRootFolder + "\'", "Can't fild folder", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                this.currentRootFolder = theFilePath.toPath();
+
+                Files.list(this.currentRootFolder).filter(f -> {
+                    return Files.isReadable(f)
+                        && (Files.isDirectory(f) || ContentType.findType(f) != ContentType.UNKNOWN);
+                }).forEach(f -> {
+                    if (Files.isDirectory(f)) {
+                        try {
+                            this.videoFiles.add(new ContentFolder(f));
+                        } catch (IOException ex) {
+                            LOGGER.error("Can't read folder {}", f, ex);
+                        }
+                    } else {
+                        this.videoFiles.add(new ContentFile(f, ContentType.findType(f)));
+                    }
+                });
+
+                Collections.sort(this.videoFiles, CONTENT_ITEM_COMPARATOR);
+            }
+        } catch (IOException ex) {
+            LOGGER.error("Can't set file root", ex);
+        } finally {
+            this.treeListeners.forEach((l) -> {
+                l.treeStructureChanged(new TreeModelEvent(this, new TreePath(new Object[]{this})));
+            });
+        }
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
@@ -814,384 +705,395 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
     }// </editor-fold>//GEN-END:initComponents
 
   private void buttonSelectFolderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonSelectFolderActionPerformed
-    final JFileChooser chooser = new JFileChooser();
-    chooser.setCurrentDirectory(new File(System.getProperty("user.home")));
-    chooser.setDialogTitle("Select video folder");
-    chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-    chooser.setAcceptAllFileFilterUsed(false);
-    if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-      final File folder = chooser.getSelectedFile();
-      setFileRoot(folder.getAbsolutePath());
-      this.preferences.setFileRoot(folder.getAbsolutePath());
-      this.preferences.flush();
-    }
+      final JFileChooser chooser = new JFileChooser();
+      chooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+      chooser.setDialogTitle("Select video folder");
+      chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+      chooser.setAcceptAllFileFilterUsed(false);
+      if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+          final File folder = chooser.getSelectedFile();
+          setFileRoot(folder.getAbsolutePath());
+          this.preferences.setFileRoot(folder.getAbsolutePath());
+          this.preferences.flush();
+      }
   }//GEN-LAST:event_buttonSelectFolderActionPerformed
 
   private void menuToolsOptionsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuToolsOptionsActionPerformed
-    final OptionsPanel.Data container = new OptionsPanel.Data(this.preferences);
-    if (JOptionPane.showConfirmDialog(this, new OptionsPanel(container, this.soundAdapter), "Options", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
-      container.save(this.preferences);
-      this.server.restartServer();
-    }
+      final OptionsPanel.Data container = new OptionsPanel.Data(this.preferences);
+      if (JOptionPane.showConfirmDialog(this, new OptionsPanel(container, this.soundAdapter), "Options", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+          container.save(this.preferences);
+          this.server.restartServer();
+      }
   }//GEN-LAST:event_menuToolsOptionsActionPerformed
 
   private void treeVideoFilesMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_treeVideoFilesMouseClicked
-    if (!evt.isPopupTrigger() && evt.getClickCount() > 1) {
-      final TreePath path = this.treeVideoFiles.getSelectionPath();
-      if (path != null) {
-        final Object last = path.getLastPathComponent();
-        if (last instanceof ContentFile) {
-          openInSystem((ContentFile) last);
-        }
+      if (!evt.isPopupTrigger() && evt.getClickCount() > 1) {
+          final TreePath path = this.treeVideoFiles.getSelectionPath();
+          if (path != null) {
+              final Object last = path.getLastPathComponent();
+              if (last instanceof ContentFile) {
+                  openInSystem((ContentFile) last);
+              }
+          }
       }
-    }
   }//GEN-LAST:event_treeVideoFilesMouseClicked
 
   private void buttonPlaySelectedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonPlaySelectedActionPerformed
-    final TreePath selected = this.treeVideoFiles.getSelectionPath();
-    if (selected != null && selected.getLastPathComponent() instanceof ContentFile) {
-      final ContentFile videoFile = (ContentFile) selected.getLastPathComponent();
-      if (this.fileRegstry.isFileAtPlay(videoFile.file)) {
-        JOptionPane.showMessageDialog(this, "The File is already playing", "File is playing", JOptionPane.WARNING_MESSAGE);
-      } else {
-        this.startPlaying(videoFile, null);
+      final TreePath selected = this.treeVideoFiles.getSelectionPath();
+      if (selected != null && selected.getLastPathComponent() instanceof ContentFile) {
+          final ContentFile videoFile = (ContentFile) selected.getLastPathComponent();
+          if (this.fileRegstry.isFileAtPlay(videoFile.getFilePath())) {
+              JOptionPane.showMessageDialog(this, "The File is already playing", "File is playing", JOptionPane.WARNING_MESSAGE);
+          } else {
+              this.startPlaying(videoFile, null);
+          }
       }
-    }
   }//GEN-LAST:event_buttonPlaySelectedActionPerformed
 
   private void buttonOpenSelectedFileInSystemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonOpenSelectedFileInSystemActionPerformed
-    final TreePath path = this.treeVideoFiles.getSelectionPath();
-    if (path.getLastPathComponent() instanceof ContentFile) {
-      openInSystem((ContentFile) path.getLastPathComponent());
-    }
+      final TreePath path = this.treeVideoFiles.getSelectionPath();
+      if (path.getLastPathComponent() instanceof ContentFile) {
+          openInSystem((ContentFile) path.getLastPathComponent());
+      }
   }//GEN-LAST:event_buttonOpenSelectedFileInSystemActionPerformed
 
   private void menuExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuExitActionPerformed
-    this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+      this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
   }//GEN-LAST:event_menuExitActionPerformed
 
   private void menuSelectFolderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuSelectFolderActionPerformed
-    this.buttonSelectFolder.doClick();
+      this.buttonSelectFolder.doClick();
   }//GEN-LAST:event_menuSelectFolderActionPerformed
 
   private void buttonImageFromClipboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonImageFromClipboardActionPerformed
-    try {
-      final Image image = (Image) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.imageFlavor);
-      if (image == null) {
-        LOGGER.warn("NULL image from clipboard");
-        JOptionPane.showMessageDialog(this, "Can't find image in clipboard!", "No clipboard image", JOptionPane.ERROR_MESSAGE);
-        return;
-      }
+      try {
+          final Image image = (Image) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.imageFlavor);
+          if (image == null) {
+              LOGGER.warn("NULL image from clipboard");
+              JOptionPane.showMessageDialog(this, "Can't find image in clipboard!", "No clipboard image", JOptionPane.ERROR_MESSAGE);
+              return;
+          }
 
-      final RenderedImage rendered;
-      if (image instanceof RenderedImage) {
-        rendered = (RenderedImage) image;
-      } else {
-        final BufferedImage bufferimage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
-        final Graphics g = bufferimage.createGraphics();
-        g.drawImage(image, 0, 0, null);
-        g.dispose();
-        rendered = bufferimage;
+          final RenderedImage rendered;
+          if (image instanceof RenderedImage) {
+              rendered = (RenderedImage) image;
+          } else {
+              final BufferedImage bufferimage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
+              final Graphics g = bufferimage.createGraphics();
+              g.drawImage(image, 0, 0, null);
+              g.dispose();
+              rendered = bufferimage;
+          }
+          LOGGER.info("Prepared clipboard image {}x{} to be sent", rendered.getWidth(), rendered.getHeight());
+          final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+          ImageIO.write(rendered, "png", buffer);
+          this.startPlaying(new ContentFile(Paths.get("clipboard_screenshot.png"), ContentType.PICTURE), buffer.toByteArray());
+      } catch (Exception ex) {
+          LOGGER.error("Can't send image from clipboard for error", ex);
+          JOptionPane.showMessageDialog(this, "Error during operation : " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
       }
-      LOGGER.info("Prepared clipboard image {}x{} to be sent", rendered.getWidth(), rendered.getHeight());
-      final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-      ImageIO.write(rendered, "png", buffer);
-      this.startPlaying(new ContentFile(Paths.get("clipboard_screenshot.png"), ContentType.PICTURE), buffer.toByteArray());
-    } catch (Exception ex) {
-      LOGGER.error("Can't send image from clipboard for error", ex);
-      JOptionPane.showMessageDialog(this, "Error during operation : " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-    }
   }//GEN-LAST:event_buttonImageFromClipboardActionPerformed
 
   private void menuOpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuOpenFileActionPerformed
-    final JFileChooser fileChooser = new JFileChooser(this.currentRootFolder == null ? null : this.currentRootFolder.toFile());
-    fileChooser.setDialogTitle("Open file on KODI");
-    fileChooser.setMultiSelectionEnabled(false);
-    fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-    fileChooser.setAcceptAllFileFilterUsed(false);
+      final JFileChooser fileChooser = new JFileChooser(this.currentRootFolder == null ? null : this.currentRootFolder.toFile());
+      fileChooser.setDialogTitle("Open file on KODI");
+      fileChooser.setMultiSelectionEnabled(false);
+      fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+      fileChooser.setAcceptAllFileFilterUsed(false);
 
-    for (final MimeTypes.ContentType c : MimeTypes.ContentType.values()) {
-      if (c != ContentType.UNKNOWN) {
-        fileChooser.addChoosableFileFilter(this.mimeTypes.makeFileFilter(c));
+      for (final MimeTypes.ContentType c : MimeTypes.ContentType.values()) {
+          if (c != ContentType.UNKNOWN) {
+              fileChooser.addChoosableFileFilter(this.mimeTypes.makeFileFilter(c));
+          }
       }
-    }
 
-    if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-      final File fileToOpen = fileChooser.getSelectedFile();
-      if (fileToOpen.isFile()) {
-        LOGGER.info("Opening file {}", fileToOpen);
-        startPlaying(new ContentFile(fileToOpen.toPath(), ContentType.findType(fileToOpen)), null);
-      } else {
-        LOGGER.warn("Can't find file {}", fileToOpen);
+      if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+          final File fileToOpen = fileChooser.getSelectedFile();
+          if (fileToOpen.isFile()) {
+              LOGGER.info("Opening file {}", fileToOpen);
+              startPlaying(new ContentFile(fileToOpen.toPath(), ContentType.findType(fileToOpen)), null);
+          } else {
+              LOGGER.warn("Can't find file {}", fileToOpen);
+          }
       }
-    }
   }//GEN-LAST:event_menuOpenFileActionPerformed
 
   private void menuAboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuAboutActionPerformed
-    JOptionPane.showMessageDialog(this, new AboutPanel(this.donationController, this.buildProperties), "About", JOptionPane.PLAIN_MESSAGE);
+      JOptionPane.showMessageDialog(this, new AboutPanel(this.donationController, this.buildProperties), "About", JOptionPane.PLAIN_MESSAGE);
   }//GEN-LAST:event_menuAboutActionPerformed
 
   private void menuFileOpenURLActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuFileOpenURLActionPerformed
-    final Icon icon = new ImageIcon(Utils.loadImage("32_url_link.png"));
-    final Object text = JOptionPane.showInputDialog(this, "Entered URL will be opened with KODI player", "Open URL", JOptionPane.PLAIN_MESSAGE, icon, null, null);
-    if (text == null) {
-      return;
-    }
-
-    final URI uri;
-    try {
-      uri = URI.create(text.toString().trim());
-      if (!uri.isAbsolute()) {
-        throw new IllegalArgumentException("Entered non-absolute URI: " + uri);
+      final Icon icon = new ImageIcon(Utils.loadImage("32_url_link.png"));
+      final Object text = JOptionPane.showInputDialog(this, "Entered URL will be opened with KODI player", "Open URL", JOptionPane.PLAIN_MESSAGE, icon, null, null);
+      if (text == null) {
+          return;
       }
-    } catch (Exception ex) {
-      LOGGER.error("Error URL {}", text, ex);
-      JOptionPane.showMessageDialog(this, "Unsupported or wrong formatted URL: " + text.toString(), "Can't open URL", JOptionPane.ERROR_MESSAGE);
-      return;
-    }
 
-    OpeningFileInfoPanel infoPanel = this.openingFileInfoPanel.get();
-    if (infoPanel == null) {
-      infoPanel = new OpeningFileInfoPanel();
-      this.openingFileInfoPanel.set(infoPanel);
-      this.setGlassPane(infoPanel);
-    }
-    infoPanel.setTextInfo("Opening URL '" + uri.toString() + "'");
-    infoPanel.setVisible(true);
+      final URI uri;
+      try {
+          uri = URI.create(text.toString().trim());
+          if (!uri.isAbsolute()) {
+              throw new IllegalArgumentException("Entered non-absolute URI: " + uri);
+          }
+      } catch (Exception ex) {
+          LOGGER.error("Error URL {}", text, ex);
+          JOptionPane.showMessageDialog(this, "Unsupported or wrong formatted URL: " + text.toString(), "Can't open URL", JOptionPane.ERROR_MESSAGE);
+          return;
+      }
 
-    this.executorService.submit(() -> {
-      final KodiAddress kodiAddress;
-      kodiAddress = new KodiAddress(
+      OpeningFileInfoPanel infoPanel = this.openingFileInfoPanel.get();
+      if (infoPanel == null) {
+          infoPanel = new OpeningFileInfoPanel();
+          this.openingFileInfoPanel.set(infoPanel);
+          this.setGlassPane(infoPanel);
+      }
+      infoPanel.setTextInfo("Opening URL '" + uri.toString() + "'");
+      infoPanel.setVisible(true);
+
+      this.executorService.submit(() -> {
+          final KodiAddress kodiAddress;
+          kodiAddress = new KodiAddress(
               this.preferences.getKodiAddress(),
               this.preferences.getKodiPort(),
               this.preferences.getKodiName(),
               this.preferences.getKodiPassword(),
               this.preferences.isKodiSsl()
-      );
+          );
 
-      final AtomicReference<Throwable> error = new AtomicReference<>();
-      try {
-        final String result = new KodiService(kodiAddress).doPlayerOpenFile(uri.toASCIIString());
-        LOGGER.info("Player open response is '{}' for '{}'", result, uri.toASCIIString());
-        if (!"ok".equalsIgnoreCase(result)) {
-          throw new IllegalStateException("Can't start play, status : " + result);
-        }
-        notifyAllPlayersToRefreshFullData();
-      } catch (Throwable ex) {
-        error.set(ex);
-        LOGGER.error("Can't open URL {}", uri, ex);
-      } finally {
-        SwingUtilities.invokeLater(() -> {
-          openingFileInfoPanel.get().setVisible(false);
-          if (error.get() != null) {
-            JOptionPane.showMessageDialog(MainFrame.this, "Can't open URI by KODI, '" + uri.toString() + "', error: " + error.get().getMessage(), "Can't open URL", JOptionPane.ERROR_MESSAGE);
+          final AtomicReference<Throwable> error = new AtomicReference<>();
+          try {
+              final String result = new KodiService(kodiAddress).doPlayerOpenFile(uri.toASCIIString());
+              LOGGER.info("Player open response is '{}' for '{}'", result, uri.toASCIIString());
+              if (!"ok".equalsIgnoreCase(result)) {
+                  throw new IllegalStateException("Can't start play, status : " + result);
+              }
+              notifyAllPlayersToRefreshFullData();
+          } catch (Throwable ex) {
+              error.set(ex);
+              LOGGER.error("Can't open URL {}", uri, ex);
+          } finally {
+              SwingUtilities.invokeLater(() -> {
+                  openingFileInfoPanel.get().setVisible(false);
+                  if (error.get() != null) {
+                      JOptionPane.showMessageDialog(MainFrame.this, "Can't open URI by KODI, '" + uri.toString() + "', error: " + error.get().getMessage(), "Can't open URL", JOptionPane.ERROR_MESSAGE);
+                  }
+              });
           }
-        });
-      }
-    });
+      });
   }//GEN-LAST:event_menuFileOpenURLActionPerformed
 
   private void buttonRefreshFolderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonRefreshFolderActionPerformed
-    this.setFileRoot(this.currentRootFolder.toString());
+      this.setFileRoot(this.currentRootFolder.toString());
   }//GEN-LAST:event_buttonRefreshFolderActionPerformed
 
   private void toggleButtonScreencastActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_toggleButtonScreencastActionPerformed
-    if (this.toggleButtonScreencast.isSelected()) {
-      this.toggleButtonScreencast.setEnabled(false);
-      if (JOptionPane.showConfirmDialog(this, "Do you want begin screencast?", "Confirmation", JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) {
-        this.toggleButtonScreencast.setEnabled(true);
-        this.toggleButtonScreencast.setSelected(false);
-        updateToolButtons();
-        return;
-      }
-
-      try {
-        final ScreenGrabber newScreenGrabber = new ScreenGrabber(this.preferences);
-        this.timeWhenEndScreencastFlowEnable.set(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30));
-
-        final FfmpegWrapper ffmpwrapper = new FfmpegWrapper(
-                this.preferences,
-                this.soundAdapter,
-                this.server.getScreencastDataBuffer()
-        );
-
-        this.lastFFmpegWrapper = new WeakReference<>(ffmpwrapper);
-
-        newScreenGrabber.addGrabbingListener(ffmpwrapper);
-
-        newScreenGrabber.addGrabbingListener(new ScreenGrabber.ScreenGrabberListener() {
-          private void endWork() {
-            stopScreenCast();
+      if (this.toggleButtonScreencast.isSelected()) {
+          this.toggleButtonScreencast.setEnabled(false);
+          if (JOptionPane.showConfirmDialog(this, "Do you want begin screencast?", "Confirmation", JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) {
+              this.toggleButtonScreencast.setEnabled(true);
+              this.toggleButtonScreencast.setSelected(false);
+              updateToolButtons();
+              return;
           }
 
-          @Override
-          public void onStarted(final ScreenGrabber source) {
-            sendScreencastAddressToKodi();
-          }
+          try {
+              final ScreenGrabber newScreenGrabber = new ScreenGrabber(this.preferences);
+              this.timeWhenEndScreencastFlowEnable.set(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30));
 
-          @Override
-          public void onDisposed(final ScreenGrabber source) {
-            endWork();
-          }
+              final FfmpegWrapper ffmpwrapper = new FfmpegWrapper(
+                  this.preferences,
+                  this.soundAdapter,
+                  this.server.getScreencastDataBuffer()
+              );
 
-          @Override
-          public void onError(final ScreenGrabber source, final Throwable error) {
-            timeWhenEndScreencastFlowEnable.set(0L);
-            final Runnable code = () -> {
-              JOptionPane.showMessageDialog(MainFrame.this, "Screencast error: " + error.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            };
-            if (SwingUtilities.isEventDispatchThread()) {
-              code.run();
-            } else {
-              SwingUtilities.invokeLater(code);
-            }
-            endWork();
-          }
-        });
+              this.lastFFmpegWrapper = new WeakReference<>(ffmpwrapper);
 
-        if (this.currentScreenGrabber.compareAndSet(null, newScreenGrabber)) {
-          newScreenGrabber.start();
+              newScreenGrabber.addGrabbingListener(ffmpwrapper);
 
-          this.executorService.schedule(()->{
-            if (this.server.isScreencastFlowActive()) {
-              LOGGER.info("Detected started screencast flow");
-            } else {
-              LOGGER.warn("Detected that there is no screencast flow, stopping grabber");
-              if (this.currentScreenGrabber.get() != null) {
-                this.stopScreenCast();
+              newScreenGrabber.addGrabbingListener(new ScreenGrabber.ScreenGrabberListener() {
+                  private void endWork() {
+                      stopScreenCast();
+                  }
+
+                  @Override
+                  public void onStarted(final ScreenGrabber source) {
+                      sendScreencastAddressToKodi();
+                  }
+
+                  @Override
+                  public void onDisposed(final ScreenGrabber source) {
+                      endWork();
+                  }
+
+                  @Override
+                  public void onError(final ScreenGrabber source, final Throwable error) {
+                      timeWhenEndScreencastFlowEnable.set(0L);
+                      final Runnable code = () -> {
+                          JOptionPane.showMessageDialog(MainFrame.this, "Screencast error: " + error.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                      };
+                      if (SwingUtilities.isEventDispatchThread()) {
+                          code.run();
+                      } else {
+                          SwingUtilities.invokeLater(code);
+                      }
+                      endWork();
+                  }
+              });
+
+              if (this.currentScreenGrabber.compareAndSet(null, newScreenGrabber)) {
+                  newScreenGrabber.start();
+
+                  this.executorService.schedule(() -> {
+                      if (this.server.isScreencastFlowActive()) {
+                          LOGGER.info("Detected started screencast flow");
+                      } else {
+                          LOGGER.warn("Detected that there is no screencast flow, stopping grabber");
+                          if (this.currentScreenGrabber.get() != null) {
+                              this.stopScreenCast();
+                          }
+                      }
+                  }, 30, TimeUnit.SECONDS);
+              } else {
+                  LOGGER.warn("Detected already active screen grabber!");
               }
-            }
-          }, 30, TimeUnit.SECONDS);
-        } else {
-          LOGGER.warn("Detected already active screen grabber!");
-        }
-      } catch (Exception ex) {
-        LOGGER.error("Can't create screen grabber");
-        JOptionPane.showMessageDialog(this, "Can't create screen grabber: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        stopScreenCast();
+          } catch (Exception ex) {
+              LOGGER.error("Can't create screen grabber");
+              JOptionPane.showMessageDialog(this, "Can't create screen grabber: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+              stopScreenCast();
+          }
       }
-    }
-    this.updateToolButtons();
+      this.updateToolButtons();
   }//GEN-LAST:event_toggleButtonScreencastActionPerformed
 
   private void menuHelpDonationActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuHelpDonationActionPerformed
-    this.donationController.openDonationUrl();
+      this.donationController.openDonationUrl();
   }//GEN-LAST:event_menuHelpDonationActionPerformed
 
     private void menuTimersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuTimersActionPerformed
-        final TimersTable timersTable = new TimersTable(this.preferences.getTimers());
+        final String filePath = this.preferences.getFileRoot();
+        final File root = filePath == null ? null : new File(filePath);
+        final TimersTable timersTable = new TimersTable(root, this.preferences.getTimers());
         if (JOptionPane.showConfirmDialog(this, timersTable, "Timers", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
             final List<Timer> newTimers = timersTable.getTimers();
             this.preferences.setTimers(newTimers);
+            this.timerScheduler.reloadTimers();
         }
     }//GEN-LAST:event_menuTimersActionPerformed
 
-  private void startPlaying(@NonNull final ContentFile contentFile, @Nullable final byte[] data) {
-    OpeningFileInfoPanel infoPanel = this.openingFileInfoPanel.get();
-    if (infoPanel == null) {
-      infoPanel = new OpeningFileInfoPanel();
-      this.openingFileInfoPanel.set(infoPanel);
-      this.setGlassPane(infoPanel);
-    }
-    infoPanel.setTextInfo("Opening file '" + contentFile.getFileNameAsString() + "'");
-    infoPanel.setVisible(true);
+    public void startPlaying(@NonNull final ContentFile contentFile, @Nullable final byte[] data) {
+        final Runnable run = () -> {
+            OpeningFileInfoPanel infoPanel = this.openingFileInfoPanel.get();
+            if (infoPanel == null) {
+                infoPanel = new OpeningFileInfoPanel();
+                this.openingFileInfoPanel.set(infoPanel);
+                this.setGlassPane(infoPanel);
+            }
+            infoPanel.setTextInfo("Opening file '" + contentFile.getFileNameAsString() + "'");
+            infoPanel.setVisible(true);
 
-    this.executorService.submit(() -> {
-      final KodiAddress kodiAddress;
-      kodiAddress = new KodiAddress(
-              this.preferences.getKodiAddress(),
-              this.preferences.getKodiPort(),
-              this.preferences.getKodiName(),
-              this.preferences.getKodiPassword(),
-              this.preferences.isKodiSsl()
-      );
+            this.executorService.submit(() -> {
+                final KodiAddress kodiAddress;
+                kodiAddress = new KodiAddress(
+                    this.preferences.getKodiAddress(),
+                    this.preferences.getKodiPort(),
+                    this.preferences.getKodiName(),
+                    this.preferences.getKodiPassword(),
+                    this.preferences.isKodiSsl()
+                );
 
-      final UUID uuid = UUID.randomUUID();
-      final FileRecord record = this.fileRegstry.registerFile(uuid, contentFile.getFilePath(), data);
-      final AtomicReference<Throwable> error = new AtomicReference<>();
-      try {
-        final String fileUrl = this.server.makeUrlFor(record);
-        final String result = new KodiService(kodiAddress).doPlayerOpenFile(fileUrl);
-        LOGGER.info("Player open response for '{}' is '{}'", fileUrl, result);
-        if (!"ok".equalsIgnoreCase(result)) {
-          throw new IllegalStateException("Can't start play, status : " + result);
+                final UUID uuid = UUID.randomUUID();
+                final FileRecord record = this.fileRegstry.registerFile(uuid, contentFile.getFilePath(), data);
+                final AtomicReference<Throwable> error = new AtomicReference<>();
+                try {
+                    final String fileUrl = this.server.makeUrlFor(record);
+                    final String result = new KodiService(kodiAddress).doPlayerOpenFile(fileUrl);
+                    LOGGER.info("Player open response for '{}' is '{}'", fileUrl, result);
+                    if (!"ok".equalsIgnoreCase(result)) {
+                        throw new IllegalStateException("Can't start play, status : " + result);
+                    }
+                    notifyAllPlayersToRefreshFullData();
+                } catch (Throwable ex) {
+                    error.set(ex);
+                    LOGGER.error("Can't start file play", ex);
+                    this.fileRegstry.removeFile(uuid);
+                } finally {
+                    SwingUtilities.invokeLater(() -> {
+                        openingFileInfoPanel.get().setVisible(false);
+                        if (error.get() != null) {
+                            JOptionPane.showMessageDialog(MainFrame.this, "Can't send to KODI, file '" + contentFile.getFileNameAsString() + "', error: " + error.get().getMessage(), "Can't open file", JOptionPane.ERROR_MESSAGE);
+                        }
+                        this.repaint();
+                    });
+                }
+            });
+        };
+
+        if (SwingUtilities.isEventDispatchThread()) {
+            run.run();
+        } else {
+            SwingUtilities.invokeLater(run);
         }
-        notifyAllPlayersToRefreshFullData();
-      } catch (Throwable ex) {
-        error.set(ex);
-        LOGGER.error("Can't start file play", ex);
-        this.fileRegstry.removeFile(uuid);
-      } finally {
-        SwingUtilities.invokeLater(() -> {
-          openingFileInfoPanel.get().setVisible(false);
-          if (error.get() != null) {
-            JOptionPane.showMessageDialog(MainFrame.this, "Can't send to KODI, file '" + contentFile.getFileNameAsString() + "', error: " + error.get().getMessage(), "Can't open file", JOptionPane.ERROR_MESSAGE);
-          }
-          this.repaint();
+    }
+
+    private void sendScreencastAddressToKodi() {
+        OpeningFileInfoPanel infoPanel = this.openingFileInfoPanel.get();
+        if (infoPanel == null) {
+            infoPanel = new OpeningFileInfoPanel();
+            this.openingFileInfoPanel.set(infoPanel);
+            this.setGlassPane(infoPanel);
+        }
+        infoPanel.setTextInfo("Starting screencast");
+        infoPanel.setVisible(true);
+
+        this.executorService.submit(() -> {
+            final KodiAddress kodiAddress;
+            kodiAddress = new KodiAddress(
+                this.preferences.getKodiAddress(),
+                this.preferences.getKodiPort(),
+                this.preferences.getKodiName(),
+                this.preferences.getKodiPassword(),
+                this.preferences.isKodiSsl()
+            );
+
+            final AtomicReference<Throwable> error = new AtomicReference<>();
+            try {
+                final String screenCastUrl = this.server.getScreenCastUrl();
+                final String result = new KodiService(kodiAddress).doPlayerOpenFile(screenCastUrl);
+                LOGGER.info("Player open response for '{}' is '{}'", screenCastUrl, result);
+                if (!"ok".equalsIgnoreCase(result)) {
+                    throw new IllegalStateException("Can't start play, status : " + result);
+                }
+                notifyAllPlayersToRefreshFullData();
+            } catch (Throwable ex) {
+                error.set(ex);
+                LOGGER.error("Can't start screen casting", ex);
+            } finally {
+                SwingUtilities.invokeLater(() -> {
+                    openingFileInfoPanel.get().setVisible(false);
+                    if (error.get() != null) {
+                        JOptionPane.showMessageDialog(MainFrame.this, "Can't open screen-cast on KODI, error: " + error.get().getMessage(), "Can't open file", JOptionPane.ERROR_MESSAGE);
+                        stopScreenCast();
+                    }
+                    this.repaint();
+                });
+            }
         });
-      }
-    });
-  }
-
-  private void sendScreencastAddressToKodi() {
-    OpeningFileInfoPanel infoPanel = this.openingFileInfoPanel.get();
-    if (infoPanel == null) {
-      infoPanel = new OpeningFileInfoPanel();
-      this.openingFileInfoPanel.set(infoPanel);
-      this.setGlassPane(infoPanel);
     }
-    infoPanel.setTextInfo("Starting screencast");
-    infoPanel.setVisible(true);
 
-    this.executorService.submit(() -> {
-      final KodiAddress kodiAddress;
-      kodiAddress = new KodiAddress(
-              this.preferences.getKodiAddress(),
-              this.preferences.getKodiPort(),
-              this.preferences.getKodiName(),
-              this.preferences.getKodiPassword(),
-              this.preferences.isKodiSsl()
-      );
-
-      final AtomicReference<Throwable> error = new AtomicReference<>();
-      try {
-        final String screenCastUrl = this.server.getScreenCastUrl();
-        final String result = new KodiService(kodiAddress).doPlayerOpenFile(screenCastUrl);
-        LOGGER.info("Player open response for '{}' is '{}'", screenCastUrl, result);
-        if (!"ok".equalsIgnoreCase(result)) {
-          throw new IllegalStateException("Can't start play, status : " + result);
+    private void notifyAllPlayersToRefreshFullData() {
+        final Runnable r = () -> {
+            for (final Component c : this.panelPlayers.getComponents()) {
+                if (c instanceof PlayerPanel) {
+                    ((PlayerPanel) c).notifyFullDataRefresh();
+                }
+            }
+        };
+        if (SwingUtilities.isEventDispatchThread()) {
+            r.run();
+        } else {
+            SwingUtilities.invokeLater(r);
         }
-        notifyAllPlayersToRefreshFullData();
-      } catch (Throwable ex) {
-        error.set(ex);
-        LOGGER.error("Can't start screen casting", ex);
-      } finally {
-        SwingUtilities.invokeLater(() -> {
-          openingFileInfoPanel.get().setVisible(false);
-          if (error.get() != null) {
-            JOptionPane.showMessageDialog(MainFrame.this, "Can't open screen-cast on KODI, error: " + error.get().getMessage(), "Can't open file", JOptionPane.ERROR_MESSAGE);
-            stopScreenCast();
-          }
-          this.repaint();
-        });
-      }
-    });
-  }
-
-  private void notifyAllPlayersToRefreshFullData() {
-    final Runnable r = () -> {
-      for (final Component c : this.panelPlayers.getComponents()) {
-        if (c instanceof PlayerPanel) {
-          ((PlayerPanel) c).notifyFullDataRefresh();
-        }
-      }
-    };
-    if (SwingUtilities.isEventDispatchThread()) {
-      r.run();
-    } else {
-      SwingUtilities.invokeLater(r);
     }
-  }
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -1224,89 +1126,89 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
     private javax.swing.JTree treeVideoFiles;
     // End of variables declaration//GEN-END:variables
 
-  @Override
-  @NonNull
-  public Object getRoot() {
-    return this;
-  }
-
-  @Override
-  @NonNull
-  public Object getChild(@NonNull final Object parent, final int index) {
-    if (parent == this) {
-      return this.videoFiles.get(index);
-    } else {
-      return parent instanceof ContentFolder ? ((ContentFolder) parent).files.get(index) : 0;
+    @Override
+    @NonNull
+    public Object getRoot() {
+        return this;
     }
-  }
 
-  @Override
-  public int getChildCount(@NonNull final Object parent) {
-    if (parent == this) {
-      return this.videoFiles.size();
-    } else {
-      return parent instanceof ContentFolder ? ((ContentFolder) parent).files.size() : 0;
-    }
-  }
-
-  @Override
-  public boolean isLeaf(@NonNull final Object node) {
-    return node instanceof ContentFile;
-  }
-
-  @Override
-  public void valueForPathChanged(@NonNull final TreePath path, @NonNull final Object newValue) {
-  }
-
-  @Override
-  public int getIndexOfChild(@NonNull final Object parent, @NonNull final Object child) {
-    if (parent == this) {
-      return this.videoFiles.indexOf(child);
-    } else {
-      return ((ContentFolder) parent).files.indexOf(child);
-    }
-  }
-
-  @Override
-  public void addTreeModelListener(@NonNull final TreeModelListener l) {
-    this.treeListeners.add(l);
-  }
-
-  @Override
-  public void removeTreeModelListener(@NonNull final TreeModelListener l) {
-    this.treeListeners.remove(l);
-  }
-
-  @Override
-  public String toString() {
-    return this.currentRootFolder == null ? "NOT SELECTED" : this.currentRootFolder.getFileName().toString();
-  }
-
-  private void openInSystem(@NonNull final ContentFile file) {
-    LOGGER.info("Opening '{}' in system viewer", file.getFilePathAsString());
-    if (Desktop.isDesktopSupported()) {
-      final Desktop desktop = Desktop.getDesktop();
-      if (desktop.isSupported(Desktop.Action.OPEN)) {
-        try {
-          desktop.open(file.file.toFile());
-        } catch (Exception x) {
-          LOGGER.error("Can't open file in Desktop", x); //NOI18N
+    @Override
+    @NonNull
+    public Object getChild(@NonNull final Object parent, final int index) {
+        if (parent == this) {
+            return this.videoFiles.get(index);
+        } else {
+            return parent instanceof ContentFolder ? ((ContentFolder) parent).getFiles().get(index) : 0;
         }
-      } else if (SystemUtils.IS_OS_LINUX) {
-        final Runtime runtime = Runtime.getRuntime();
-        try {
-          runtime.exec("xdg-open \"" + file.getFilePathAsString() + "\""); //NOI18N
-        } catch (IOException e) {
-          LOGGER.error("Can't open file under Linux", e); //NOI18N
-        }
-      } else if (SystemUtils.IS_OS_MAC) {
-        final Runtime runtime = Runtime.getRuntime();
-        try {
-          runtime.exec("open \"" + file.getFilePathAsString() + "\""); //NOI18N
-        } catch (IOException e) {
-          LOGGER.error("Can't open file on MAC", e); //NOI18N
-        }
-      }
     }
-  }
+
+    @Override
+    public int getChildCount(@NonNull final Object parent) {
+        if (parent == this) {
+            return this.videoFiles.size();
+        } else {
+            return parent instanceof ContentFolder ? ((ContentFolder) parent).getFiles().size() : 0;
+        }
+    }
+
+    @Override
+    public boolean isLeaf(@NonNull final Object node) {
+        return node instanceof ContentFile;
+    }
+
+    @Override
+    public void valueForPathChanged(@NonNull final TreePath path, @NonNull final Object newValue) {
+    }
+
+    @Override
+    public int getIndexOfChild(@NonNull final Object parent, @NonNull final Object child) {
+        if (parent == this) {
+            return this.videoFiles.indexOf(child);
+        } else {
+            return ((ContentFolder) parent).getFiles().indexOf(child);
+        }
+    }
+
+    @Override
+    public void addTreeModelListener(@NonNull final TreeModelListener l) {
+        this.treeListeners.add(l);
+    }
+
+    @Override
+    public void removeTreeModelListener(@NonNull final TreeModelListener l) {
+        this.treeListeners.remove(l);
+    }
+
+    @Override
+    public String toString() {
+        return this.currentRootFolder == null ? "NOT SELECTED" : this.currentRootFolder.getFileName().toString();
+    }
+
+    private void openInSystem(@NonNull final ContentFile file) {
+        LOGGER.info("Opening '{}' in system viewer", file.getFilePathAsString());
+        if (Desktop.isDesktopSupported()) {
+            final Desktop desktop = Desktop.getDesktop();
+            if (desktop.isSupported(Desktop.Action.OPEN)) {
+                try {
+                    desktop.open(file.getFilePath().toFile());
+                } catch (Exception x) {
+                    LOGGER.error("Can't open file in Desktop", x); //NOI18N
+                }
+            } else if (SystemUtils.IS_OS_LINUX) {
+                final Runtime runtime = Runtime.getRuntime();
+                try {
+                    runtime.exec("xdg-open \"" + file.getFilePathAsString() + "\""); //NOI18N
+                } catch (IOException e) {
+                    LOGGER.error("Can't open file under Linux", e); //NOI18N
+                }
+            } else if (SystemUtils.IS_OS_MAC) {
+                final Runtime runtime = Runtime.getRuntime();
+                try {
+                    runtime.exec("open \"" + file.getFilePathAsString() + "\""); //NOI18N
+                } catch (IOException e) {
+                    LOGGER.error("Can't open file on MAC", e); //NOI18N
+                }
+            }
+        }
+    }
 }

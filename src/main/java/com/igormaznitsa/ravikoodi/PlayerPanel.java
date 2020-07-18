@@ -38,7 +38,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
 
   public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-  private final KodiService kodiService;
+  private final KodiComm kodiComm;
   private final ActivePlayerInfo playerInfo;
   private final ScheduledExecutorService executors;
 
@@ -84,7 +84,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
     DIGIFONT = font;
   }
 
-  public PlayerPanel(final MainFrame parent, final ActivePlayerInfo playerInfo, final ScheduledExecutorService executors, final KodiService kodiService) {
+  public PlayerPanel(final MainFrame parent, final ActivePlayerInfo playerInfo, final ScheduledExecutorService executors, final KodiComm kodiComm) {
     super();
     initComponents();
 
@@ -104,7 +104,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
 
     this.parent = parent;
     this.executors = executors;
-    this.kodiService = kodiService;
+    this.kodiComm = kodiComm;
     this.playerInfo = playerInfo;
 
     final String playerType = playerInfo.getType();
@@ -179,7 +179,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
         final String title;
 
         if (this.fullPlayerDataRefresh.compareAndSet(true, false)) {
-          properties = this.kodiService.getPlayerProperties(this.playerInfo,
+          properties = this.kodiComm.getPlayerProperties(this.playerInfo,
                   "percentage",
                   "time",
                   "totaltime",
@@ -190,7 +190,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
                   "currentsubtitle",
                   "subtitleenabled");
 
-          final PlayerItem playerItem = this.kodiService.getPlayerItem(this.playerInfo);
+          final PlayerItem playerItem = this.kodiComm.getPlayerItem(this.playerInfo);
           title = playerItem.getItem().getLabel();
 
           SwingUtilities.invokeLater(() -> {
@@ -217,7 +217,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
           }
 
           title = null;
-          properties = this.kodiService.getPlayerProperties(this.playerInfo,
+          properties = this.kodiComm.getPlayerProperties(this.playerInfo,
                   "percentage",
                   "time",
                   "totaltime",
@@ -518,7 +518,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
     if (JOptionPane.showConfirmDialog(this.parent, "Do you really want to stop the player?", "Stop player", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
       executors.submit(() -> {
         try {
-          this.kodiService.doPlayerStop(this.playerInfo);
+          this.kodiComm.doPlayerStop(this.playerInfo);
         } catch (Throwable thr) {
           LOGGER.error("Error during player stop", thr);
         }
@@ -532,7 +532,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
         try {
           final long next = Utils.calculateNextKodiSpeedValue(this.speed.get(), false);
           LOGGER.info("Decreasing player {} speed to {}", this, next);
-          this.kodiService.setPlayerSpeed(this.playerInfo, next);
+          this.kodiComm.setPlayerSpeed(this.playerInfo, next);
         } catch (Throwable thr) {
           LOGGER.error("Error during player speed decrease", thr);
         }
@@ -546,7 +546,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
         try {
           final long next = Utils.calculateNextKodiSpeedValue(this.speed.get(), true);
           LOGGER.info("Increasing player {} speed to {}", this, next);
-          this.kodiService.setPlayerSpeed(this.playerInfo, next);
+          this.kodiComm.setPlayerSpeed(this.playerInfo, next);
         } catch (Throwable thr) {
           LOGGER.error("Error during player speed increase", thr);
         }
@@ -558,7 +558,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
     if (this.enableListeners) {
       executors.submit(() -> {
         try {
-          this.kodiService.doPlayerStartPause(this.playerInfo);
+          this.kodiComm.doPlayerStartPause(this.playerInfo);
         } catch (Throwable thr) {
           LOGGER.error("Error during player pause/play", thr);
         }
@@ -573,7 +573,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
         executors.submit(() -> {
           try {
             LOGGER.info("Trying to change audiostream of '{}' to '{}'", this.playerInfo, newAudioStream);
-            this.kodiService.setPlayerAudiostream(this.playerInfo, newAudioStream);
+            this.kodiComm.setPlayerAudiostream(this.playerInfo, newAudioStream);
           } catch (Throwable thr) {
             LOGGER.error("Error during set player audiostream", thr);
           }
@@ -595,7 +595,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
     executors.submit(() -> {
       try {
         LOGGER.info("Trying to change subtite of '{}' to '{}', enable={}", this.playerInfo, subtitle, enable);
-        this.kodiService.setPlayerSubtitle(this.playerInfo, subtitle, enable);
+        this.kodiComm.setPlayerSubtitle(this.playerInfo, subtitle, enable);
       } catch (Throwable thr) {
         LOGGER.error("Error during set player audiostream", thr);
       }
@@ -619,7 +619,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
       this.updateStatusCounter.incrementAndGet();
       try {
         LOGGER.info("Seek player '{}' position : {}%", this.playerInfo, position);
-        final PlayerSeekResult result = this.kodiService.doPlayerSeekPercentage(playerInfo, position * 100.0d);
+        final PlayerSeekResult result = this.kodiComm.doPlayerSeekPercentage(playerInfo, position * 100.0d);
         this.progressTime.setValue((int) Math.round(result.getPercentage() * 100));
       } catch (Throwable ex) {
         LOGGER.error("Error in player seek: {}", ex.getMessage());
