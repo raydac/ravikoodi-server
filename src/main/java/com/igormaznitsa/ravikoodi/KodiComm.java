@@ -23,14 +23,18 @@ import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerProperties;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerSeekResult;
 import com.igormaznitsa.ravikoodi.kodijsonapi.Subtitle;
 import java.net.MalformedURLException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -39,9 +43,17 @@ public class KodiComm {
     private static final Logger LOGGER = LoggerFactory.getLogger(KodiComm.class);
 
     private final ApplicationPreferences preferences;
+    private final InternalServer internalServer;
+    private final UploadingFileRegistry fileRegstry;
 
     @Autowired
-    public KodiComm(final ApplicationPreferences preferences) {
+    public KodiComm(
+        @NonNull final InternalServer internalServer,
+        @NonNull final ApplicationPreferences preferences,
+        @NonNull final UploadingFileRegistry fileRegistry
+    ) {
+        this.fileRegstry = fileRegistry;
+        this.internalServer = internalServer;
         this.preferences = preferences;
     }
 
@@ -139,10 +151,32 @@ public class KodiComm {
     }
 
     @NonNull
+    public Optional<UUID> openFileThroughRegistry(@NonNull final Path path, @Nullable final byte[] data) throws Throwable {
+        final UUID uuid = UUID.randomUUID();
+        final UploadingFileRegistry.FileRecord record = this.fileRegstry.registerFile(uuid, path, data);
+        final AtomicReference<Throwable> error = new AtomicReference<>();
+        final String fileUrl = this.internalServer.makeUrlFor(record);
+        LOGGER.info("Opening file {} as {}, uuid={}", path, fileUrl, uuid);
+        return Optional.ofNullable(this.doPlayerOpenFile(fileUrl) ? uuid : null);
+    }
+
+    @NonNull
     public PlayerSeekResult doPlayerSeekPercentage(@NonNull final ActivePlayerInfo playerInfo, final double percentage) throws Throwable {
         final Optional<KodiService> service = this.makeKodiService();
         if (service.isPresent()) {
             return service.get().doPlayerSeekPercentage(playerInfo, percentage);
+        } else {
+            throw new IllegalStateException("Can't get kodi service");
+        }
+    }
+
+    @NonNull
+    public boolean doPlayerOpenFile(@NonNull final String fileUrl) throws Throwable {
+        final Optional<KodiService> service = this.makeKodiService();
+        if (service.isPresent()) {
+            final String result = service.get().doPlayerOpenFile(fileUrl);
+            LOGGER.info("Player open response for '{}' is '{}'", fileUrl, result);
+            return "ok".equalsIgnoreCase(result);
         } else {
             throw new IllegalStateException("Can't get kodi service");
         }

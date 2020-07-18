@@ -79,7 +79,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 @org.springframework.stereotype.Component
-public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorListener, InternalServer.InternalServerListener {
+public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeModel, FlavorListener, InternalServer.InternalServerListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MainFrame.class);
 
@@ -992,24 +992,12 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
             infoPanel.setVisible(true);
 
             this.executorService.submit(() -> {
-                final KodiAddress kodiAddress;
-                kodiAddress = new KodiAddress(
-                    this.preferences.getKodiAddress(),
-                    this.preferences.getKodiPort(),
-                    this.preferences.getKodiName(),
-                    this.preferences.getKodiPassword(),
-                    this.preferences.isKodiSsl()
-                );
-
                 final UUID uuid = UUID.randomUUID();
                 final FileRecord record = this.fileRegstry.registerFile(uuid, contentFile.getFilePath(), data);
                 final AtomicReference<Throwable> error = new AtomicReference<>();
                 try {
-                    final String fileUrl = this.server.makeUrlFor(record);
-                    final String result = new KodiService(kodiAddress).doPlayerOpenFile(fileUrl);
-                    LOGGER.info("Player open response for '{}' is '{}'", fileUrl, result);
-                    if (!"ok".equalsIgnoreCase(result)) {
-                        throw new IllegalStateException("Can't start play, status : " + result);
+                    if (!this.kodiComm.openFileThroughRegistry(record.getFile(), data).isPresent()) {
+                        throw new IllegalStateException("Can't start play");
                     }
                     notifyAllPlayersToRefreshFullData();
                 } catch (Throwable ex) {
@@ -1210,5 +1198,19 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                 }
             }
         }
+    }
+
+    @Override
+    public void showErrorMessage(@NonNull final String title, @NonNull final String message) {
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
+        });
+    }
+
+    @Override
+    public void showWarningMessage(@NonNull final String title, @NonNull final String message) {
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(this, message, title, JOptionPane.WARNING_MESSAGE);
+        });
     }
 }
