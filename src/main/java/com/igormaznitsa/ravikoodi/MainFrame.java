@@ -1,8 +1,5 @@
 package com.igormaznitsa.ravikoodi;
 
-import com.igormaznitsa.ravikoodi.screencast.JavaSoundAdapter;
-import com.igormaznitsa.ravikoodi.screencast.ScreenGrabber;
-import com.igormaznitsa.ravikoodi.screencast.FfmpegWrapper;
 import com.igormaznitsa.ContentFolder;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences.Timer;
 import static com.igormaznitsa.ravikoodi.ContentTreeItem.CONTENT_ITEM_COMPARATOR;
@@ -11,6 +8,9 @@ import com.igormaznitsa.ravikoodi.UploadingFileRegistry.FileRecord;
 import static com.igormaznitsa.ravikoodi.Utils.isBlank;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ActivePlayerInfo;
 import com.igormaznitsa.ravikoodi.kodijsonapi.KodiService;
+import com.igormaznitsa.ravikoodi.screencast.FfmpegWrapper;
+import com.igormaznitsa.ravikoodi.screencast.JavaSoundAdapter;
+import com.igormaznitsa.ravikoodi.screencast.ScreenGrabber;
 import com.igormaznitsa.ravikoodi.timers.TimersTable;
 import java.awt.Component;
 import java.awt.Desktop;
@@ -29,14 +29,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -46,7 +44,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.imageio.ImageIO;
@@ -1211,6 +1208,13 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
     public void showWarningMessage(@NonNull final String title, @NonNull final String message) {
         SwingUtilities.invokeLater(() -> {
             JOptionPane.showMessageDialog(this, message, title, JOptionPane.WARNING_MESSAGE);
+        });
+    }
+
+    @Override
+    public void showInfoMessage(@NonNull final String title, @NonNull final String message) {
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
         });
     }
 }

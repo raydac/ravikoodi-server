@@ -102,7 +102,7 @@
             <id>publish</id>
             <properties>
                 <openjdk.bundled.type>java11</openjdk.bundled.type>
-                <openjdk.bundled>20.0.0</openjdk.bundled>
+                <openjdk.bundled>20.1.0</openjdk.bundled>
             </properties>
             <build>
                 <plugins>

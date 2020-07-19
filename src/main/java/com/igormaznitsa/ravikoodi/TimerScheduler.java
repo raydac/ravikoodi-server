@@ -73,7 +73,10 @@ public class TimerScheduler {
             timers.forEach(x -> x.cancel());
             timers.clear();
             final AtomicLong counter = new AtomicLong(1L);
-            this.timers.addAll(preferences.getTimers().stream()
+            
+            final List<ApplicationPreferences.Timer> prefereceTimers = preferences.getTimers();
+            
+            this.timers.addAll(prefereceTimers.stream()
                 .filter(x -> x.isEnabled() && x.getFrom() != null && x.getResourcePath() != null)
                 .map(
                     x -> new ScheduledTimer(
@@ -94,6 +97,11 @@ public class TimerScheduler {
                     LOGGER.error("Can't init timer {}: {}", timer, ex.getMessage());
                 }
             });
+            
+            final long numberOfTimersWithResource = prefereceTimers.stream().filter(x -> x.isEnabled() && x.getResourcePath()!=null).count();
+            if (numberOfTimersWithResource>0) {
+                this.guiMessager.showInfoMessage("Timers", String.format("Activated %d timers of %d", this.timers.size(), numberOfTimersWithResource));
+            }
         }
     }
 

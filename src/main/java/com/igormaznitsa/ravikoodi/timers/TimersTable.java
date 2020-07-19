@@ -26,21 +26,23 @@ import java.awt.Window;
 import java.awt.event.HierarchyEvent;
 import java.io.File;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.AbstractCellEditor;
 import javax.swing.Box;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFormattedTextField;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -48,15 +50,13 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
-import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
-import javax.swing.text.MaskFormatter;
+import javax.swing.text.DateFormatter;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
@@ -66,57 +66,121 @@ public final class TimersTable extends JPanel {
 
     private final JTable timersTable;
 
+    public TimersTable(@NonNull final File dir, @NonNull final List<Timer> timers) {
+        super(new BorderLayout());
+
+        this.timersTable = new JTable();
+        this.timersTable.setShowVerticalLines(true);
+        this.timersTable.setShowHorizontalLines(true);
+        this.timersTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
+
+        this.add(new JScrollPane(this.timersTable), BorderLayout.CENTER);
+
+        final TimersTableModel model = new TimersTableModel(timers);
+
+        this.timersTable.setModel(model);
+
+        this.timersTable.getTableHeader().setReorderingAllowed(false);
+        
+        this.timersTable.getColumnModel().getColumn(2).setCellRenderer(new LocalTimeCellRenderer());
+        this.timersTable.getColumnModel().getColumn(2).setCellEditor(new LocalTimeCellEditor());
+       
+        this.timersTable.getColumnModel().getColumn(3).setCellRenderer(new LocalTimeCellRenderer());
+        this.timersTable.getColumnModel().getColumn(3).setCellEditor(new LocalTimeCellEditor());
+        
+        this.timersTable.getColumnModel().getColumn(4).setCellRenderer(new FilePathCellRenderer());
+        this.timersTable.getColumnModel().getColumn(4).setCellEditor(new FilePathCellEditor(dir));
+
+        final JPanel buttonPanel = new JPanel(new GridBagLayout());
+
+        GridBagConstraints gbc = new GridBagConstraints(0, GridBagConstraints.RELATIVE, 1, 1, 1, 1, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(1, 1, 1, 1), 0, 0);
+
+        final JButton addTimer = new JButton("Add");
+        final JButton removeTimer = new JButton("Remove");
+        final JButton removeAll = new JButton("Remove All");
+        final JButton enableAll = new JButton("Enable All");
+        final JButton disableAll = new JButton("Disable All");
+
+        enableAll.addActionListener(e -> {
+            ((TimersTableModel) this.timersTable.getModel()).enableAll();
+        });
+
+        disableAll.addActionListener(e -> {
+            ((TimersTableModel) this.timersTable.getModel()).disableAll();
+        });
+
+        removeAll.addActionListener(e -> {
+            if (this.timersTable.getRowCount() > 0
+                && JOptionPane.showConfirmDialog(this, "Remove all timers?", "Remove timers", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                ((TimersTableModel) this.timersTable.getModel()).clear();
+            }
+        });
+
+        removeTimer.addActionListener(e -> {
+            final int[] indexes = this.timersTable.getSelectedRows();
+            if (indexes.length > 0
+                && JOptionPane.showConfirmDialog(this, String.format("Remove %d timer(s)?", indexes.length), "Remove timers", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                ((TimersTableModel) this.timersTable.getModel()).removeIndexes(indexes);
+            }
+        });
+
+        buttonPanel.add(addTimer, gbc);
+        buttonPanel.add(removeTimer, gbc);
+        buttonPanel.add(removeAll, gbc);
+        buttonPanel.add(Box.createVerticalStrut(16), gbc);
+        buttonPanel.add(enableAll, gbc);
+        buttonPanel.add(disableAll, gbc);
+
+        gbc.weighty = 10000;
+        buttonPanel.add(Box.createVerticalGlue(), gbc);
+
+        this.add(buttonPanel, BorderLayout.EAST);
+
+        removeTimer.setEnabled(false);
+        removeAll.setEnabled(!timers.isEmpty());
+
+        addTimer.addActionListener(e -> {
+            model.addTimer(new Timer("Unnamed"));
+        });
+
+        this.timersTable.getSelectionModel().addListSelectionListener(event -> {
+            if (this.timersTable.getSelectedRowCount() > 0) {
+                removeTimer.setEnabled(true);
+            }
+            removeAll.setEnabled(this.timersTable.getRowCount() > 0);
+            removeTimer.setEnabled(this.timersTable.getRowCount() != 0);
+        });
+
+        this.addHierarchyListener((HierarchyEvent e) -> {
+            final Window window = SwingUtilities.getWindowAncestor(TimersTable.this);
+            if (window instanceof JDialog) {
+                ((JDialog) window).setResizable(true);
+            }
+        });
+    }
+
+    @NonNull
+    public List<Timer> getTimers() {
+        return new ArrayList<>(((TimersTableModel) this.timersTable.getModel()).timers);
+    }
+
     static final class LocalTimeEditor extends JFormattedTextField {
 
-        private static final MaskFormatter FORMAT;
-
-        static {
-            try {
-                FORMAT = new MaskFormatter("##:##:##");
-            } catch (ParseException ex) {
-                throw new Error(ex);
-            }
-        }
-
         public LocalTimeEditor(final LocalTime value) {
-            super("00:00:00");
+            super(new DateFormatter(new SimpleDateFormat("HH:mm:ss")));
             this.setBorder(new EmptyBorder(0, 0, 0, 0));
-            this.setFormatter(FORMAT);
             this.setTime(value);
         }
 
         public void setTime(final LocalTime time) {
-            if (time == null) {
-                this.setText("");
-            } else {
-
-                final StringBuilder buffer = new StringBuilder();
-                if (time.getHour() < 10) {
-                    buffer.append('0');
-                }
-                buffer.append(time.getHour());
-                buffer.append(':');
-                if (time.getMinute() < 10) {
-                    buffer.append('0');
-                }
-                buffer.append(time.getMinute());
-                buffer.append(':');
-                if (time.getSecond() < 10) {
-                    buffer.append('0');
-                }
-                buffer.append(time.getSecond());
-
-                this.setText(buffer.toString());
-            }
+            final LocalTime value = time == null ? LocalTime.now() : time;
+            this.setValue(Date.from(value.atDate(LocalDate.now()).atZone(ZoneId.systemDefault()).toInstant()));
+            this.setCaretPosition(this.getText().length());
         }
 
         @Nullable
         public LocalTime getTime() {
-            final String text = this.getText();
-            if (isBlank(text) || text.equals("  :  :  ")) {
-                return null;
-            }
-            return LocalTime.parse(this.getText(), HHMMSS_FORMATTER);
+            return LocalTime.from(((Date) this.getValue()).toInstant().atZone(ZoneId.systemDefault()));
         }
     }
 
@@ -124,10 +188,10 @@ public final class TimersTable extends JPanel {
 
         private final JTextField text;
         private final JButton button;
-        
-        public FilePathEditor(@Nullable final AtomicReference<File> dir) {
+
+        public FilePathEditor(@NonNull final TableCellEditor editor, @Nullable final AtomicReference<File> dir) {
             super(new GridBagLayout());
-            
+
             final GridBagConstraints gbc = new GridBagConstraints(GridBagConstraints.RELATIVE, 0, 1, 1, 10000, 1, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0);
 
             this.text = new JTextField();
@@ -137,21 +201,22 @@ public final class TimersTable extends JPanel {
             gbc.weightx = 1;
             this.button = new JButton("...");
             this.button.setFocusable(false);
-            
+
             this.button.addActionListener(e -> {
                 final JFileChooser chooser = new JFileChooser(dir.get());
                 chooser.setAcceptAllFileFilterUsed(true);
                 chooser.setDialogTitle("Select media resource");
                 chooser.setMultiSelectionEnabled(false);
                 chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-                
-                if (chooser.showOpenDialog(SwingUtilities.getWindowAncestor(this)) == JFileChooser.APPROVE_OPTION){
+
+                if (chooser.showOpenDialog(SwingUtilities.getWindowAncestor(this)) == JFileChooser.APPROVE_OPTION) {
                     final File file = chooser.getSelectedFile();
                     dir.set(file.getParentFile());
                     this.text.setText(file.getAbsolutePath());
+                    editor.stopCellEditing();
                 }
             });
-            
+
             this.button.setBackground(UIManager.getColor("ComboBox.buttonBackground"));
             this.button.setBorder(UIManager.getBorder("ComboBox[button].border"));
             this.add(this.button, gbc);
@@ -170,12 +235,13 @@ public final class TimersTable extends JPanel {
 
     static final class FilePathCellEditor extends AbstractCellEditor implements TableCellEditor {
 
-        private final AtomicReference<File> dir = new AtomicReference<>();
-        private final FilePathEditor editor = new FilePathEditor(dir);
+        private final AtomicReference<File> dirRef = new AtomicReference<>();
+        private final FilePathEditor editor;
 
         public FilePathCellEditor(final File file) {
             super();
-            this.dir.set(file);
+            this.editor = new FilePathEditor(FilePathCellEditor.this, dirRef);
+            this.dirRef.set(file);
             editor.text.addActionListener(a -> {
                 this.stopCellEditing();
             });
@@ -224,101 +290,6 @@ public final class TimersTable extends JPanel {
             return edit;
         }
 
-    }
-
-    @NonNull
-    public List<Timer> getTimers() {
-        return new ArrayList<>(((TimersTableModel) this.timersTable.getModel()).timers);
-    }
-
-    public TimersTable(@NonNull final File dir, @NonNull final List<Timer> timers) {
-        super(new BorderLayout());
-
-        this.timersTable = new JTable();
-        this.timersTable.setShowVerticalLines(true);
-        this.timersTable.setShowHorizontalLines(true);
-        this.timersTable.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN);
-        
-        this.add(new JScrollPane(this.timersTable), BorderLayout.CENTER);
-
-        final TimersTableModel model = new TimersTableModel(timers);
-
-        this.timersTable.setModel(model);
-        this.timersTable.getColumnModel().getColumn(0).setCellRenderer(new BooleanCellRenderer());
-        this.timersTable.getColumnModel().getColumn(1).setCellRenderer(new DefaultTableCellRenderer());
-        this.timersTable.getColumnModel().getColumn(2).setCellRenderer(new LocalTimeCellRenderer());
-        this.timersTable.getColumnModel().getColumn(2).setCellEditor(new LocalTimeCellEditor());
-        this.timersTable.getColumnModel().getColumn(3).setCellRenderer(new LocalTimeCellRenderer());
-        this.timersTable.getColumnModel().getColumn(3).setCellEditor(new LocalTimeCellEditor());
-        this.timersTable.getColumnModel().getColumn(4).setCellRenderer(new FilePathCellRenderer());
-        this.timersTable.getColumnModel().getColumn(4).setCellEditor(new FilePathCellEditor(dir));
-
-        final JPanel buttonPanel = new JPanel(new GridBagLayout());
-
-        GridBagConstraints gbc = new GridBagConstraints(0, GridBagConstraints.RELATIVE, 1, 1, 1, 1, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(1, 1, 1, 1), 0, 0);
-
-        final JButton addTimer = new JButton("Add");
-        final JButton removeTimer = new JButton("Remove");
-        final JButton removeAll = new JButton("Remove All");
-        final JButton enableAll = new JButton("Enable All");
-        final JButton disableAll = new JButton("Disable All");
-
-        enableAll.addActionListener(e -> {
-            ((TimersTableModel) this.timersTable.getModel()).enableAll();
-        });
-
-        disableAll.addActionListener(e -> {
-            ((TimersTableModel) this.timersTable.getModel()).disableAll();
-        });
-        
-        removeAll.addActionListener(e -> {
-            if (this.timersTable.getRowCount()>0
-                && JOptionPane.showConfirmDialog(this, "Remove all timers?", "Remove timers", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-                ((TimersTableModel)this.timersTable.getModel()).clear();
-            }
-        });
-        
-        removeTimer.addActionListener(e -> {
-            final int[] indexes = this.timersTable.getSelectedRows();
-            if (indexes.length > 0 
-                && JOptionPane.showConfirmDialog(this, String.format("Remove %d timer(s)?", indexes.length), "Remove timers", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-                ((TimersTableModel)this.timersTable.getModel()).removeIndexes(indexes);
-            }
-        });
-
-        buttonPanel.add(addTimer, gbc);
-        buttonPanel.add(removeTimer, gbc);
-        buttonPanel.add(removeAll, gbc);
-        buttonPanel.add(Box.createVerticalStrut(16), gbc);
-        buttonPanel.add(enableAll, gbc);
-        buttonPanel.add(disableAll, gbc);
-
-        gbc.weighty = 10000;
-        buttonPanel.add(Box.createVerticalGlue(), gbc);
-
-        this.add(buttonPanel, BorderLayout.EAST);
-
-        removeTimer.setEnabled(false);
-        removeAll.setEnabled(!timers.isEmpty());
-
-        addTimer.addActionListener(e -> {
-            model.addTimer(new Timer("Nonamed"));
-        });
-
-        this.timersTable.getSelectionModel().addListSelectionListener(event -> {
-            if (this.timersTable.getSelectedRowCount() > 0) {
-                removeTimer.setEnabled(true);
-            }
-            removeAll.setEnabled(this.timersTable.getRowCount() > 0);
-            removeTimer.setEnabled(this.timersTable.getRowCount() != 0);
-        });
-        
-        this.addHierarchyListener((HierarchyEvent e) -> {
-            final Window window = SwingUtilities.getWindowAncestor(TimersTable.this);
-            if (window instanceof JDialog) {
-                ((JDialog)window).setResizable(true);
-            }
-        });
     }
 
     private static final class TimersTableModel implements TableModel {
@@ -444,8 +415,8 @@ public final class TimersTable extends JPanel {
         }
 
         private void removeIndexes(@NonNull final int[] indexes) {
-            for(int i=0;i<indexes.length;i++){
-                this.timers.set(indexes[i],null);
+            for (int i = 0; i < indexes.length; i++) {
+                this.timers.set(indexes[i], null);
             }
             this.timers.removeIf(x -> x == null);
             this.listeners.forEach(x -> {
@@ -458,7 +429,7 @@ public final class TimersTable extends JPanel {
             this.listeners.forEach(x -> {
                 x.tableChanged(new TableModelEvent(this));
             });
-            
+
         }
 
         private void disableAll() {
@@ -485,12 +456,17 @@ public final class TimersTable extends JPanel {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             final String text;
+            final boolean problem;
             if (value == null) {
                 text = "";
+                problem = true;
             } else {
-                text = ((File) value).getAbsolutePath();
+                final File theFile = (File) value;
+                text = theFile.getName();
+                problem = !theFile.isFile();
             }
-            return super.getTableCellRendererComponent(table, text, isSelected, hasFocus, row, column);
+            final Component result = super.getTableCellRendererComponent(table, text, isSelected, hasFocus, row, column);
+            return result;
         }
     }
 
@@ -517,41 +493,6 @@ public final class TimersTable extends JPanel {
                 text = ((LocalTime) value).format(HHMMSS_FORMATTER);
             }
             return super.getTableCellRendererComponent(table, text, isSelected, hasFocus, row, column);
-        }
-    }
-
-    private static final class BooleanCellRenderer extends JCheckBox implements TableCellRenderer {
-
-        private static final Border NO_FOCUS_BORDER = new EmptyBorder(1, 1, 1, 1);
-
-        public BooleanCellRenderer() {
-            super();
-            setHorizontalAlignment(JLabel.CENTER);
-            setBorderPainted(true);
-        }
-
-        @NonNull
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-            boolean selected, boolean hasFocus, int row, int column) {
-            if (selected) {
-                this.setOpaque(true);
-                this.setForeground(table.getSelectionForeground());
-                this.setBackground(table.getSelectionBackground());
-            } else {
-                this.setForeground(table.getForeground());
-                this.setBackground(table.getBackground());
-                this.setOpaque(false);
-            }
-            this.setSelected((value != null && ((Boolean) value)));
-
-            if (hasFocus) {
-                this.setBorder(UIManager.getBorder("Table.focusCellHighlightBorder"));
-            } else {
-                this.setBorder(NO_FOCUS_BORDER);
-            }
-
-            return this;
         }
     }
 

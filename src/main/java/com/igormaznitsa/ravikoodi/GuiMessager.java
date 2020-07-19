@@ -18,6 +18,10 @@ package com.igormaznitsa.ravikoodi;
 import org.springframework.lang.NonNull;
 
 public interface GuiMessager {
+
+    void showInfoMessage(@NonNull String title, @NonNull String message);
+
     void showErrorMessage(@NonNull String title, @NonNull String message);
+
     void showWarningMessage(@NonNull String title, @NonNull String message);
 }
