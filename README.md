@@ -7,6 +7,9 @@
 
 # Changelog
 
+- __1.1.3 (SNAPSHOT)__
+  - added support of timers [#1](https://github.com/raydac/ravikoodi-server/issues/1)
+
 - __1.1.2 (26-jun-2020)__
   - hidden mouse cursor during FFmpeg grabber work for streaming
   - updated Spring Boot version to 2.3.1.RELEASE
