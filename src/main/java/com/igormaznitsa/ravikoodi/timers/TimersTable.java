@@ -19,11 +19,16 @@ import com.igormaznitsa.ravikoodi.ApplicationPreferences.Timer;
 import static com.igormaznitsa.ravikoodi.Utils.isBlank;
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Window;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.HierarchyEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -81,13 +86,13 @@ public final class TimersTable extends JPanel {
         this.timersTable.setModel(model);
 
         this.timersTable.getTableHeader().setReorderingAllowed(false);
-        
+
         this.timersTable.getColumnModel().getColumn(2).setCellRenderer(new LocalTimeCellRenderer());
         this.timersTable.getColumnModel().getColumn(2).setCellEditor(new LocalTimeCellEditor());
-       
+
         this.timersTable.getColumnModel().getColumn(3).setCellRenderer(new LocalTimeCellRenderer());
         this.timersTable.getColumnModel().getColumn(3).setCellEditor(new LocalTimeCellEditor());
-        
+
         this.timersTable.getColumnModel().getColumn(4).setCellRenderer(new FilePathCellRenderer());
         this.timersTable.getColumnModel().getColumn(4).setCellEditor(new FilePathCellEditor(dir));
 
@@ -164,23 +169,80 @@ public final class TimersTable extends JPanel {
         return new ArrayList<>(((TimersTableModel) this.timersTable.getModel()).timers);
     }
 
-    static final class LocalTimeEditor extends JFormattedTextField {
+    private static final class LocalTimeEditor extends JPanel {
+
+        private final JFormattedTextField textField;
+        private final JButton button;
 
         public LocalTimeEditor(final LocalTime value) {
-            super(new DateFormatter(new SimpleDateFormat("HH:mm:ss")));
-            this.setBorder(new EmptyBorder(0, 0, 0, 0));
+            super(new BorderLayout(0, 0));
+            this.textField = new JFormattedTextField(new DateFormatter(new SimpleDateFormat("HH:mm:ss")));
+            this.textField.setBorder(new EmptyBorder(0, 0, 0, 0));
             this.setTime(value);
+
+            this.button = new JButton("X");
+            this.button.setFont(this.button.getFont().deriveFont(Font.BOLD));
+            this.button.setFocusable(false);
+
+            this.button.addActionListener(e -> {
+                this.textField.setText("");
+                for (final ActionListener l : textField.getActionListeners()) {
+                    l.actionPerformed(new ActionEvent(textField, 0, "ENTER"));
+                }
+            });
+
+            this.textField.addKeyListener(new KeyAdapter() {
+                private boolean onKey(final int keyCode) {
+                    if (keyCode == KeyEvent.VK_ENTER && isBlank(textField.getText())) {
+                        for (final ActionListener l : textField.getActionListeners()) {
+                            l.actionPerformed(new ActionEvent(textField, 0, "ENTER"));
+                        }
+                        return true;
+                    }
+                    return false;
+                }
+
+                @Override
+                public void keyReleased(KeyEvent e) {
+                    if (onKey(e.getKeyCode())) {
+                        e.consume();
+                    }
+                }
+
+                @Override
+                public void keyPressed(KeyEvent e) {
+                    if (onKey(e.getKeyCode())) {
+                        e.consume();
+                    }
+                }
+
+            });
+
+            this.button.setBackground(UIManager.getColor("ComboBox.buttonBackground"));
+            this.button.setBorder(UIManager.getBorder("ComboBox[button].border"));
+
+            this.add(this.textField, BorderLayout.CENTER);
+            this.add(this.button, BorderLayout.EAST);
+
         }
 
         public void setTime(final LocalTime time) {
-            final LocalTime value = time == null ? LocalTime.now() : time;
-            this.setValue(Date.from(value.atDate(LocalDate.now()).atZone(ZoneId.systemDefault()).toInstant()));
-            this.setCaretPosition(this.getText().length());
+            final LocalTime value = time == null ? LocalTime.of(0, 0, 0) : time;
+            this.textField.setValue(Date.from(value.atDate(LocalDate.now()).atZone(ZoneId.systemDefault()).toInstant()));
+            this.textField.setCaretPosition(this.textField.getText().length());
         }
 
         @Nullable
         public LocalTime getTime() {
-            return LocalTime.from(((Date) this.getValue()).toInstant().atZone(ZoneId.systemDefault()));
+            if (isBlank(this.textField.getText())) {
+                return null;
+            }
+            return LocalTime.from(((Date) this.textField.getValue()).toInstant().atZone(ZoneId.systemDefault()));
+        }
+
+        @NonNull
+        public JFormattedTextField getTextField() {
+            return this.textField;
         }
     }
 
@@ -262,16 +324,16 @@ public final class TimersTable extends JPanel {
 
     static final class LocalTimeCellEditor extends AbstractCellEditor implements TableCellEditor {
 
-        private final LocalTimeEditor edit = new LocalTimeEditor(LocalTime.now());
+        private final LocalTimeEditor edit = new LocalTimeEditor(LocalTime.of(0, 0, 0));
 
         public LocalTimeCellEditor() {
             super();
-            edit.addActionListener(x -> {
-                if (isBlank(this.edit.getText())) {
+            edit.getTextField().addActionListener(x -> {
+                if (isBlank(this.edit.getTextField().getText())) {
                     this.stopCellEditing();
                 }
                 try {
-                    this.edit.commitEdit();
+                    this.edit.getTextField().commitEdit();
                     this.stopCellEditing();
                 } catch (ParseException ex) {
                     // DO NOTHING
@@ -286,8 +348,11 @@ public final class TimersTable extends JPanel {
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            edit.setTime((LocalTime) value);
-            return edit;
+            this.edit.setBackground(table.getBackground());
+            this.edit.setForeground(table.getForeground());
+            this.edit.setFont(table.getFont());
+            this.edit.setTime((LocalTime) value);
+            return this.edit;
         }
 
     }

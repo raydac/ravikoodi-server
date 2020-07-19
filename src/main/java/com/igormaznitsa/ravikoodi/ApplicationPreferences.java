@@ -103,8 +103,8 @@ public class ApplicationPreferences {
         public Timer(@NonNull final String id) {
             this.name = Objects.requireNonNull(id);
             this.enabled = false;
-            this.from = LocalTime.of(0, 0, 0);
-            this.to = LocalTime.of(0, 0, 0);
+            this.from = null;
+            this.to = null;
             this.resourcePath = null;
         }
 
