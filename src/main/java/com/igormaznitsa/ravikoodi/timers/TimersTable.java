@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.AbstractCellEditor;
@@ -169,10 +170,22 @@ public final class TimersTable extends JPanel {
         return new ArrayList<>(((TimersTableModel) this.timersTable.getModel()).timers);
     }
 
+    private static final class TableLookupButton extends JButton {
+
+        public TableLookupButton(@NonNull final String text) {
+            super(Objects.requireNonNull(text));
+            this.setFont(UIManager.getFont("Button.font").deriveFont(Font.BOLD));
+            this.setFocusable(false);
+            this.setBackground(UIManager.getColor("ComboBox.buttonBackground"));
+            this.setBorder(UIManager.getBorder("ComboBox[button].border"));
+        }
+
+    }
+
     private static final class LocalTimeEditor extends JPanel {
 
         private final JFormattedTextField textField;
-        private final JButton button;
+        private final TableLookupButton button;
 
         public LocalTimeEditor(final LocalTime value) {
             super(new BorderLayout(0, 0));
@@ -180,9 +193,7 @@ public final class TimersTable extends JPanel {
             this.textField.setBorder(new EmptyBorder(0, 0, 0, 0));
             this.setTime(value);
 
-            this.button = new JButton("X");
-            this.button.setFont(this.button.getFont().deriveFont(Font.BOLD));
-            this.button.setFocusable(false);
+            this.button = new TableLookupButton("X");
 
             this.button.addActionListener(e -> {
                 this.textField.setText("");
@@ -218,9 +229,6 @@ public final class TimersTable extends JPanel {
 
             });
 
-            this.button.setBackground(UIManager.getColor("ComboBox.buttonBackground"));
-            this.button.setBorder(UIManager.getBorder("ComboBox[button].border"));
-
             this.add(this.textField, BorderLayout.CENTER);
             this.add(this.button, BorderLayout.EAST);
 
@@ -249,20 +257,16 @@ public final class TimersTable extends JPanel {
     static final class FilePathEditor extends JPanel {
 
         private final JTextField text;
-        private final JButton button;
+        private final TableLookupButton button;
 
         public FilePathEditor(@NonNull final TableCellEditor editor, @Nullable final AtomicReference<File> dir) {
-            super(new GridBagLayout());
-
-            final GridBagConstraints gbc = new GridBagConstraints(GridBagConstraints.RELATIVE, 0, 1, 1, 10000, 1, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0);
+            super(new BorderLayout(0, 0));
 
             this.text = new JTextField();
             this.text.setBorder(new EmptyBorder(0, 0, 0, 0));
             this.text.setColumns(1);
-            this.add(this.text, gbc);
-            gbc.weightx = 1;
-            this.button = new JButton("...");
-            this.button.setFocusable(false);
+            this.add(this.text, BorderLayout.CENTER);
+            this.button = new TableLookupButton("...");
 
             this.button.addActionListener(e -> {
                 final JFileChooser chooser = new JFileChooser(dir.get());
@@ -279,9 +283,7 @@ public final class TimersTable extends JPanel {
                 }
             });
 
-            this.button.setBackground(UIManager.getColor("ComboBox.buttonBackground"));
-            this.button.setBorder(UIManager.getBorder("ComboBox[button].border"));
-            this.add(this.button, gbc);
+            this.add(this.button, BorderLayout.EAST);
             this.setBorder(new EmptyBorder(0, 0, 0, 0));
         }
 

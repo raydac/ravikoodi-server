@@ -73,9 +73,9 @@ public class TimerScheduler {
             timers.forEach(x -> x.cancel());
             timers.clear();
             final AtomicLong counter = new AtomicLong(1L);
-            
+
             final List<ApplicationPreferences.Timer> prefereceTimers = preferences.getTimers();
-            
+
             this.timers.addAll(prefereceTimers.stream()
                 .filter(x -> x.isEnabled() && x.getFrom() != null && x.getResourcePath() != null)
                 .map(
@@ -97,7 +97,7 @@ public class TimerScheduler {
                     LOGGER.error("Can't init timer {}: {}", timer, ex.getMessage());
                 }
             });
-            
+
             final long numberOfTimersWithResource = prefereceTimers.stream().filter(x -> x.isEnabled() && x.getResourcePath()!=null).count();
             if (numberOfTimersWithResource>0) {
                 this.guiMessager.showInfoMessage("Timers", String.format("Activated %d timers of %d", this.timers.size(), numberOfTimersWithResource));
@@ -115,6 +115,20 @@ public class TimerScheduler {
         private final ApplicationPreferences.Timer timer;
         private final AtomicReference<ScheduledFuture<?>> scheduledFutureRef = new AtomicReference<>();
         private final AtomicReference<UUID> lastUuid = new AtomicReference<>();
+        public ScheduledTimer(
+            @NonNull final GuiMessager guiMessager,
+            @NonNull final KodiComm kodiComm,
+            @NonNull final String id,
+            @NonNull final ApplicationPreferences.Timer timer,
+            @NonNull final ScheduledExecutorService executorService
+        ) {
+            this.guiMessager = guiMessager;
+            this.kodiComm = kodiComm;
+            this.id = id;
+            this.timer = timer;
+            this.executorService = executorService;
+            this.resource = timer.getResourcePath();
+        }
 
         private ScheduledFuture<?> scheduleStart() {
             return this.scheduleForTime(Objects.requireNonNull(this.timer.getFrom()), time -> {
@@ -163,6 +177,12 @@ public class TimerScheduler {
         private void onStart() {
             LOGGER.info("Starting {} timer", this.id);
 
+            if (!this.resource.isFile()) {
+                LOGGER.error("Can't find resource file for timer {}: {}", this.timer, this.resource);
+                this.guiMessager.showWarningMessage("Error", "Can't find resource file: "+this.resource);
+                return;
+            }
+
             try {
                 this.kodiComm.openFileThroughRegistry(this.resource.toPath(), null).ifPresent(uuid -> {
                     this.lastUuid.set(uuid);
@@ -173,7 +193,7 @@ public class TimerScheduler {
                     }
                 });
             } catch (Throwable ex) {
-                this.guiMessager.showErrorMessage("Error", "Can't start timer " + this.id + ": " + ex.getMessage());
+                this.guiMessager.showErrorMessage("Error", "Can't start timer " + this.timer + ": " + ex.getMessage());
             }
         }
 
@@ -212,20 +232,6 @@ public class TimerScheduler {
             this.scheduledFutureRef.set(scheduleStart());
         }
 
-        public ScheduledTimer(
-            @NonNull final GuiMessager guiMessager,
-            @NonNull final KodiComm kodiComm,
-            @NonNull final String id,
-            @NonNull final ApplicationPreferences.Timer timer,
-            @NonNull final ScheduledExecutorService executorService
-        ) {
-            this.guiMessager = guiMessager;
-            this.kodiComm = kodiComm;
-            this.id = id;
-            this.timer = timer;
-            this.executorService = executorService;
-            this.resource = timer.getResourcePath();
-        }
 
         public void init() {
             if (!this.resource.isFile()) {
