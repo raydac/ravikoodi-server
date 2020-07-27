@@ -199,8 +199,40 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
         if (lastServerError != null) {
             LOGGER.error("Detected error during server start", lastServerError);
             SwingUtilities.invokeLater(() -> {
-                JOptionPane.showMessageDialog(this, "Can't start embedded server: " + lastServerError.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                SpringApplication.exit(this.context, () -> 1);
+                final String[] options = new String[]{"Options", "Continue", "Exit"};
+
+                final int result = JOptionPane.showOptionDialog(
+                    this,
+                    "Can't start embedded server: " + lastServerError.getMessage(),
+                    "Error",
+                    JOptionPane.YES_NO_CANCEL_OPTION,
+                    JOptionPane.ERROR_MESSAGE,
+                    null,
+                    options,
+                    options[0]
+                );
+
+                switch (result) {
+                    case JOptionPane.NO_OPTION: {
+                        // Do nothing, just continue
+                    }
+                    break;
+                    case JOptionPane.YES_OPTION: {
+                        final OptionsPanel.Data container = new OptionsPanel.Data(this.preferences);
+                        if (JOptionPane.showConfirmDialog(this, new OptionsPanel(container, this.soundAdapter), "Options", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+                            container.save(this.preferences);
+                            this.server.restartServer();
+                        } else {
+                            LOGGER.warn("Preferences not changed, closing");
+                            SpringApplication.exit(this.context, () -> 11);
+                        }
+                    }
+                    break;
+                    default: {
+                        SpringApplication.exit(this.context, () -> 1);
+                    }
+                    break;
+                }
             });
         } else {
             this.server.addListener(this);

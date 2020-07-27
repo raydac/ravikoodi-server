@@ -328,24 +328,30 @@ public final class TimersTable extends JPanel {
 
         private final LocalTimeEditor edit = new LocalTimeEditor(LocalTime.of(0, 0, 0));
 
+        @Override
+        public boolean stopCellEditing() {
+            if (isBlank(this.edit.getTextField().getText())) {
+                return super.stopCellEditing();
+            }
+            try {
+                this.edit.getTextField().commitEdit();
+                return super.stopCellEditing();
+            } catch (ParseException ex) {
+                // DO NOTHING
+                return false;
+            }
+        }
+        
         public LocalTimeCellEditor() {
             super();
-            edit.getTextField().addActionListener(x -> {
-                if (isBlank(this.edit.getTextField().getText())) {
-                    this.stopCellEditing();
-                }
-                try {
-                    this.edit.getTextField().commitEdit();
-                    this.stopCellEditing();
-                } catch (ParseException ex) {
-                    // DO NOTHING
-                }
+            this.edit.getTextField().addActionListener(x -> {
+                this.stopCellEditing();
             });
         }
 
         @Override
         public Object getCellEditorValue() {
-            return edit.getTime();
+            return this.edit.getTime();
         }
 
         @Override
@@ -398,9 +404,9 @@ public final class TimersTable extends JPanel {
                 case 1:
                     return "Name";
                 case 2:
-                    return "From";
+                    return "Start time";
                 case 3:
-                    return "To";
+                    return "Stop time";
                 case 4:
                     return "Resource";
                 default:
