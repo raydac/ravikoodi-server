@@ -394,7 +394,7 @@ public final class TimersTable extends JPanel {
         public String getColumnName(final int column) {
             switch (column) {
                 case 0:
-                    return "Active";
+                    return "Enabled";
                 case 1:
                     return "Name";
                 case 2:

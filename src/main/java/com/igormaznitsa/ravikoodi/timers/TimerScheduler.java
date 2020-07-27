@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.igormaznitsa.ravikoodi;
+package com.igormaznitsa.ravikoodi.timers;
 
+import com.igormaznitsa.ravikoodi.ApplicationPreferences;
+import com.igormaznitsa.ravikoodi.GuiMessager;
+import com.igormaznitsa.ravikoodi.KodiComm;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ActivePlayerInfo;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerItem;
 import java.io.File;

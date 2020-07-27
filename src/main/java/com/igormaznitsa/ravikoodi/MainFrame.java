@@ -1,5 +1,6 @@
 package com.igormaznitsa.ravikoodi;
 
+import com.igormaznitsa.ravikoodi.timers.TimerScheduler;
 import com.igormaznitsa.ContentFolder;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences.Timer;
 import static com.igormaznitsa.ravikoodi.ContentTreeItem.CONTENT_ITEM_COMPARATOR;
