@@ -8,6 +8,7 @@
 # Changelog
 
 - __1.1.3 (SNAPSHOT)__
+  - fixed compatibility with KODI 18.xx
   - added support of timers [#1](https://github.com/raydac/ravikoodi-server/issues/1)
 
 - __1.1.2 (26-jun-2020)__
