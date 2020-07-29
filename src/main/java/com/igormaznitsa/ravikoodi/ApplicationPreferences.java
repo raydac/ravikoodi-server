@@ -82,6 +82,7 @@ public class ApplicationPreferences {
             }
             final Timer result = new Timer(properties.getProperty("name"));
             result.setEnabled(Boolean.parseBoolean(properties.getProperty("enabled")));
+            result.setReplay(Boolean.parseBoolean(properties.getProperty("replay", "false")));
             if (properties.containsKey("resource")) {
                 result.setResourcePath(new File(properties.getProperty("resource")));
             }
@@ -96,6 +97,7 @@ public class ApplicationPreferences {
 
         private String name;
         private boolean enabled;
+        private boolean replay;
         private LocalTime from;
         private LocalTime to;
         private File resourcePath;
@@ -103,9 +105,18 @@ public class ApplicationPreferences {
         public Timer(@NonNull final String id) {
             this.name = Objects.requireNonNull(id);
             this.enabled = false;
+            this.replay = false;
             this.from = null;
             this.to = null;
             this.resourcePath = null;
+        }
+
+        public boolean isReplay() {
+            return this.replay;
+        }
+
+        public void setReplay(final boolean value) {
+            this.replay = value;
         }
 
         @NonNull
@@ -153,6 +164,7 @@ public class ApplicationPreferences {
             final Properties properties = new Properties();
             properties.setProperty("name", this.name);
             properties.setProperty("enabled", Boolean.toString(this.enabled));
+            properties.setProperty("replay", Boolean.toString(this.replay));
             if (this.from != null) {
                 properties.setProperty("from", this.from.toString());
             }

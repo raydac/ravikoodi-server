@@ -393,7 +393,7 @@ public final class TimersTable extends JPanel {
 
         @Override
         public int getColumnCount() {
-            return 5;
+            return 6;
         }
 
         @Override
@@ -409,6 +409,8 @@ public final class TimersTable extends JPanel {
                     return "Stop time";
                 case 4:
                     return "Resource";
+                case 5:
+                    return "Replay";
                 default:
                     throw new Error("Unexpected column: " + column);
             }
@@ -427,6 +429,8 @@ public final class TimersTable extends JPanel {
                     return LocalTime.class;
                 case 4:
                     return File.class;
+                case 5:
+                    return Boolean.class;
                 default:
                     throw new Error("Unexpected column: " + column);
             }
@@ -451,6 +455,8 @@ public final class TimersTable extends JPanel {
                     return timer.getTo();
                 case 4:
                     return timer.getResourcePath();
+                case 5:
+                    return timer.isReplay();
                 default:
                     throw new Error("Unexpected column: " + col);
             }
@@ -474,6 +480,9 @@ public final class TimersTable extends JPanel {
                     break;
                 case 4:
                     timer.setResourcePath((File) value);
+                    break;
+                case 5:
+                    timer.setReplay((Boolean)value);
                     break;
                 default:
                     throw new Error("Unexpected column: " + col);
