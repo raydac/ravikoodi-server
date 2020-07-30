@@ -17,3 +17,4 @@ buildNumber.properties
 /kodi-video.iml
 /nb-configuration.xml
 /nbactions.xml
+*.iml

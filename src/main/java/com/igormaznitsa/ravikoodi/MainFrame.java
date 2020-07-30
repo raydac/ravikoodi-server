@@ -1026,7 +1026,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
                 final FileRecord record = this.fileRegstry.registerFile(uuid, contentFile.getFilePath(), data);
                 final AtomicReference<Throwable> error = new AtomicReference<>();
                 try {
-                    if (!this.kodiComm.openFileThroughRegistry(record.getFile(), data).isPresent()) {
+                    if (!this.kodiComm.openFileThroughRegistry(record.getFile(), data, Collections.singletonMap("repeat", "off")).isPresent()) {
                         throw new IllegalStateException("Can't start play");
                     }
                     notifyAllPlayersToRefreshFullData();

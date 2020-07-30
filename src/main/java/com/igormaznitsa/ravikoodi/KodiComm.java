@@ -20,6 +20,7 @@ import com.igormaznitsa.ravikoodi.kodijsonapi.AudioStream;
 import com.igormaznitsa.ravikoodi.kodijsonapi.KodiService;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerItem;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerProperties;
+import com.igormaznitsa.ravikoodi.kodijsonapi.RepeatValue;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerSeekResult;
 import com.igormaznitsa.ravikoodi.kodijsonapi.Subtitle;
 import java.net.MalformedURLException;
@@ -27,6 +28,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -132,6 +135,15 @@ public class KodiComm {
         }
     }
 
+    public void doPlayerRepeat(@NonNull final ActivePlayerInfo playerInfo, @NonNull final RepeatValue repeat) throws Throwable {
+        final Optional<KodiService> service = this.makeKodiService();
+        if (service.isPresent()) {
+            service.get().doPlayerRepeat(playerInfo, repeat.name().toLowerCase(Locale.ENGLISH));
+        } else {
+            throw new IllegalStateException("Can't get kodi service");
+        }
+    }
+
     public void setPlayerAudiostream(@NonNull final ActivePlayerInfo playerInfo, @NonNull final AudioStream newAudioStream) throws Throwable {
         final Optional<KodiService> service = this.makeKodiService();
         if (service.isPresent()) {
@@ -151,13 +163,13 @@ public class KodiComm {
     }
 
     @NonNull
-    public Optional<UUID> openFileThroughRegistry(@NonNull final Path path, @Nullable final byte[] data) throws Throwable {
+    public Optional<UUID> openFileThroughRegistry(@NonNull final Path path, @Nullable final byte[] data, @NonNull final Map<String,String>... options) throws Throwable {
         final UUID uuid = UUID.randomUUID();
         final UploadingFileRegistry.FileRecord record = this.fileRegstry.registerFile(uuid, path, data);
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final String fileUrl = this.internalServer.makeUrlFor(record);
         LOGGER.info("Opening file {} as {}, uuid={}", path, fileUrl, uuid);
-        return Optional.ofNullable(this.doPlayerOpenFile(fileUrl) ? uuid : null);
+        return Optional.ofNullable(this.doPlayerOpenFile(fileUrl, options) ? uuid : null);
     }
 
     @NonNull
@@ -171,10 +183,10 @@ public class KodiComm {
     }
 
     @NonNull
-    public boolean doPlayerOpenFile(@NonNull final String fileUrl) throws Throwable {
+    public boolean doPlayerOpenFile(@NonNull final String fileUrl, @NonNull final Map<String,String> ... options) throws Throwable {
         final Optional<KodiService> service = this.makeKodiService();
         if (service.isPresent()) {
-            final String result = service.get().doPlayerOpenFile(fileUrl);
+            final String result = service.get().doPlayerOpenFile(fileUrl, options);
             LOGGER.info("Player open response for '{}' is '{}'", fileUrl, result);
             return "ok".equalsIgnoreCase(result);
         } else {

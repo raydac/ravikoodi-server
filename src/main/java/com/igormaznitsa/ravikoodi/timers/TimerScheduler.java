@@ -101,8 +101,8 @@ public class TimerScheduler {
                 }
             });
 
-            final long numberOfTimersWithResource = prefereceTimers.stream().filter(x -> x.isEnabled() && x.getResourcePath()!=null).count();
-            if (numberOfTimersWithResource>0) {
+            final long numberOfTimersWithResource = prefereceTimers.stream().filter(x -> x.isEnabled() && x.getResourcePath() != null).count();
+            if (numberOfTimersWithResource > 0) {
                 this.guiMessager.showInfoMessage("Timers", String.format("Activated %d timers of %d", this.timers.size(), numberOfTimersWithResource));
             }
         }
@@ -118,6 +118,7 @@ public class TimerScheduler {
         private final ApplicationPreferences.Timer timer;
         private final AtomicReference<ScheduledFuture<?>> scheduledFutureRef = new AtomicReference<>();
         private final AtomicReference<UUID> lastUuid = new AtomicReference<>();
+
         public ScheduledTimer(
             @NonNull final GuiMessager guiMessager,
             @NonNull final KodiComm kodiComm,
@@ -182,7 +183,7 @@ public class TimerScheduler {
 
             if (!this.resource.isFile()) {
                 LOGGER.error("Can't find resource file for timer {}: {}", this.timer, this.resource);
-                this.guiMessager.showWarningMessage("Error", "Can't find resource file: "+this.resource);
+                this.guiMessager.showWarningMessage("Error", "Can't find resource file: " + this.resource);
                 return;
             }
 
@@ -194,9 +195,31 @@ public class TimerScheduler {
                     } else {
                         this.scheduledFutureRef.set(scheduleEnd());
                     }
+
+                    if (this.timer.isReplay()) {
+                        //TODO
+                    }
                 });
             } catch (Throwable ex) {
                 this.guiMessager.showErrorMessage("Error", "Can't start timer " + this.timer + ": " + ex.getMessage());
+            }
+        }
+
+        private Optional<ActivePlayerInfo> findCurrentPlayer() throws Throwable {
+            final UUID uuid = this.lastUuid.getAndSet(null);
+            if (uuid != null) {
+                final List<ActivePlayerInfo> players = this.kodiComm.findActivePlayers();
+                return players.stream()
+                    .filter(player -> {
+                        try {
+                            final PlayerItem item = this.kodiComm.getPlayerItem(player);
+                            return item.getItem().getFile().contains(uuid.toString());
+                        } catch (Throwable th) {
+                            return false;
+                        }
+                    }).findFirst();
+            } else {
+                return Optional.empty();
             }
         }
 
@@ -205,16 +228,7 @@ public class TimerScheduler {
             try {
                 final UUID uuid = this.lastUuid.getAndSet(null);
                 if (uuid != null) {
-                    final List<ActivePlayerInfo> players = this.kodiComm.findActivePlayers();
-                    final Optional<ActivePlayerInfo> foundPlayer = players.stream()
-                        .filter(player -> {
-                            try {
-                                final PlayerItem item = this.kodiComm.getPlayerItem(player);
-                                return item.getItem().getFile().contains(uuid.toString());
-                            } catch (Throwable th) {
-                                return false;
-                            }
-                        }).findFirst();
+                    final Optional<ActivePlayerInfo> foundPlayer = this.findCurrentPlayer();
 
                     if (!foundPlayer.isPresent()) {
                         LOGGER.warn("Can't find active player for timer {}", this);
@@ -234,7 +248,6 @@ public class TimerScheduler {
             }
             this.scheduledFutureRef.set(scheduleStart());
         }
-
 
         public void init() {
             if (!this.resource.isFile()) {

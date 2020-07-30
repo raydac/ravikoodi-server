@@ -6,9 +6,11 @@ import com.igormaznitsa.ravikoodi.KodiAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,9 +152,15 @@ public class KodiService {
     return makeJsonRpcClient().invoke("Player.Stop", new PlayerIdReq(player), String.class);
   }
 
-  public String doPlayerOpenFile(final String filePath) throws Throwable {
+  public String doPlayerRepeat(final ActivePlayerInfo player, final String state) throws Throwable {
+    return makeJsonRpcClient().invoke("Player.SetRepeat", new PlayerRepeatReq(player, state), String.class);
+  }
+  
+  public String doPlayerOpenFile(final String filePath, final Map<String,String> ... options) throws Throwable {
     try {
-      return makeJsonRpcClient().invoke("Player.Open", new PlayerOpenFilePathReq(filePath), String.class);
+      final Map<String,String> collectedOptions = Arrays.stream(options).flatMap(x -> x.entrySet().stream()).collect(Collectors.toMap(
+          Map.Entry::getKey, Map.Entry::getValue));
+      return makeJsonRpcClient().invoke("Player.Open", new PlayerOpenFilePathReq(filePath, collectedOptions), String.class);
     } catch (Exception e) {
       if (e.getMessage().contains("no response body")) {
         LOGGER.warn("Can't get response body");
