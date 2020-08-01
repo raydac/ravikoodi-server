@@ -21,6 +21,7 @@ import com.igormaznitsa.ravikoodi.KodiComm;
 import com.igormaznitsa.ravikoodi.UploadingFileRegistry;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ActivePlayerInfo;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerItem;
+import com.igormaznitsa.ravikoodi.kodijsonapi.Playlist;
 import java.io.File;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -124,6 +125,7 @@ public class TimerScheduler {
         private final AtomicReference<ScheduledFuture<?>> scheduledFutureRef = new AtomicReference<>();
         private final AtomicReference<UUID> lastUuid = new AtomicReference<>();
         private final UploadingFileRegistry fileRegistry;
+        private final AtomicReference<Playlist> playlist = new AtomicReference<>();
         
         public ScheduledTimer(
             @NonNull final UploadingFileRegistry fileRegistry,
@@ -197,8 +199,9 @@ public class TimerScheduler {
 
             try {
                 if (this.timer.isReplay()){
-                    this.kodiComm.openFileAsPlaylistThroughRegistry(this.resource.toPath(), null).ifPresent(uuid -> {
-                        this.lastUuid.set(uuid);
+                    this.kodiComm.openFileAsPlaylistThroughRegistry(this.resource.toPath(), null).ifPresent(pair -> {
+                        this.lastUuid.set(pair.getRight());
+                        this.playlist.set(pair.getLeft());
                         if (this.timer.getTo() == null) {
                             this.scheduledFutureRef.set(scheduleStart());
                         } else {
@@ -208,6 +211,7 @@ public class TimerScheduler {
                 } else {
                 this.kodiComm.openFileThroughRegistry(this.resource.toPath(), null).ifPresent(uuid -> {
                     this.lastUuid.set(uuid);
+                    this.playlist.set(null);
                     if (this.timer.getTo() == null) {
                         this.scheduledFutureRef.set(scheduleStart());
                     } else {
@@ -242,11 +246,23 @@ public class TimerScheduler {
             LOGGER.info("Ending {} timer", this.id);
             try {
                 final UUID uuid = this.lastUuid.getAndSet(null);
+                final Playlist savedPlaylist = this.playlist.getAndSet(null);
                 if (uuid != null) {
                     this.fileRegistry.unregisterFile(uuid, true);
                     
                     final Optional<ActivePlayerInfo> foundPlayer = this.findCurrentPlayer();
 
+                    if (savedPlaylist!=null) {
+                        this.kodiComm.makeKodiService().ifPresent(service -> {
+                            try{
+                                LOGGER.info("Cleaning playlist: {}", savedPlaylist);
+                                service.clearPlaylist(savedPlaylist);
+                            }catch(Throwable thr) {
+                                LOGGER.error("Can't clean playlist", thr);
+                            }
+                        });
+                    }
+                    
                     if (!foundPlayer.isPresent()) {
                         LOGGER.warn("Can't find active player for timer {}", this);
                     } else {
