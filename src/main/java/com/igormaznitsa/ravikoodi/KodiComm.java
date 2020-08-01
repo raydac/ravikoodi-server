@@ -22,7 +22,10 @@ import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerItem;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerProperties;
 import com.igormaznitsa.ravikoodi.kodijsonapi.RepeatValue;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerSeekResult;
+import com.igormaznitsa.ravikoodi.kodijsonapi.Playlist;
+import com.igormaznitsa.ravikoodi.kodijsonapi.PlaylistFileItem;
 import com.igormaznitsa.ravikoodi.kodijsonapi.Subtitle;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -33,6 +36,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,13 +53,16 @@ public class KodiComm {
     private final ApplicationPreferences preferences;
     private final InternalServer internalServer;
     private final UploadingFileRegistry fileRegstry;
-
+    private final MimeTypes mimeTypes;
+    
     @Autowired
     public KodiComm(
         @NonNull final InternalServer internalServer,
         @NonNull final ApplicationPreferences preferences,
-        @NonNull final UploadingFileRegistry fileRegistry
+        @NonNull final UploadingFileRegistry fileRegistry,
+        @NonNull final MimeTypes mimeTypes
     ) {
+        this.mimeTypes = mimeTypes;
         this.fileRegstry = fileRegistry;
         this.internalServer = internalServer;
         this.preferences = preferences;
@@ -173,6 +181,61 @@ public class KodiComm {
     }
 
     @NonNull
+    public Optional<UUID> openFileAsPlaylistThroughRegistry(@NonNull final Path path, @Nullable final byte[] data, @NonNull final Map<String,String>... options) throws Throwable {
+        final UUID uuid = UUID.randomUUID();
+        final UploadingFileRegistry.FileRecord record = this.fileRegstry.registerFile(uuid, path, data);
+        final AtomicReference<Throwable> error = new AtomicReference<>();
+        final String fileUrl = this.internalServer.makeUrlFor(record);
+        LOGGER.info("Opening file {} as {} through playlist, uuid={}", path, fileUrl, uuid);
+
+        final MimeTypes.MimeRecord foundMimeRecord = this.mimeTypes.getMimeRecord(path);
+
+        final String playListType;
+        if (foundMimeRecord == null) {
+            playListType = "unknown";
+        } else if (foundMimeRecord.getContentType() == MimeTypes.ContentType.AUDIO) {
+            playListType = "audio";
+        } else if (foundMimeRecord.getContentType() == MimeTypes.ContentType.VIDEO) {
+            playListType = "video";
+        } else if (foundMimeRecord.getContentType() == MimeTypes.ContentType.PICTURE) {
+            playListType = "picture";
+        } else {
+            playListType = "mixed";
+        }
+        
+        final KodiService service = this.makeKodiService().orElseThrow(()->new IllegalStateException("Can't get kodi service"));
+        
+        final Playlist [] foundLists = service.getPlaylists();
+        LOGGER.info("Found play lists: {}", Arrays.toString(foundLists));
+
+        Optional<Playlist> foundTargetList = Stream.of(foundLists).filter(x -> playListType.equalsIgnoreCase(x.getType()))
+            .findFirst();
+        if (!foundTargetList.isPresent()){
+            foundTargetList = Stream.of(foundLists).filter(x -> playListType.equalsIgnoreCase("unknown")).findFirst();
+        }
+        
+        if (foundTargetList.isPresent()) {
+            final Playlist targetList = foundTargetList.get();
+            LOGGER.info("Selected target list is {}", targetList);
+            if (!isOk(service.clearPlaylist(targetList))){
+                LOGGER.error("Can't clear play list");
+                throw new IllegalStateException("Can't clear play list");
+            }
+            final PlaylistFileItem item = new PlaylistFileItem();
+            item.setFile(fileUrl);
+            final String resultForAddPlayerItem = service.addPlaylistItem(targetList, item);
+            if (isOk(resultForAddPlayerItem)) {
+                return Optional.ofNullable(isOk(service.doPlayerOpenPlaylist(targetList, Collections.singletonMap("repeat","one"))) ? uuid : null);
+            } else {
+                LOGGER.error("Can't add player list item");
+                throw new IOException("Can't add player list item: " + resultForAddPlayerItem);
+            }
+        } else {
+            throw new IOException("Can't find any player list for type: "+playListType);
+        }
+    }
+
+    @NonNull
     public PlayerSeekResult doPlayerSeekPercentage(@NonNull final ActivePlayerInfo playerInfo, final double percentage) throws Throwable {
         final Optional<KodiService> service = this.makeKodiService();
         if (service.isPresent()) {
@@ -182,16 +245,20 @@ public class KodiComm {
         }
     }
 
+    private boolean isOk(final String result) {
+        final boolean ok = "ok".equalsIgnoreCase(result);
+        if (!ok) {
+            LOGGER.warn("Error response: {}", result);
+        }
+        return ok;
+    }
+    
     @NonNull
     public boolean doPlayerOpenFile(@NonNull final String fileUrl, @NonNull final Map<String,String> ... options) throws Throwable {
-        final Optional<KodiService> service = this.makeKodiService();
-        if (service.isPresent()) {
-            final String result = service.get().doPlayerOpenFile(fileUrl, options);
+        final KodiService service = this.makeKodiService().orElseThrow(() -> new IllegalStateException("Can't get kodi service"));
+            final String result = service.doPlayerOpenFile(fileUrl, options);
             LOGGER.info("Player open response for '{}' is '{}'", fileUrl, result);
-            return "ok".equalsIgnoreCase(result);
-        } else {
-            throw new IllegalStateException("Can't get kodi service");
-        }
+            return isOk(result);
     }
 
 }

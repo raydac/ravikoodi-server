@@ -18,6 +18,7 @@ package com.igormaznitsa.ravikoodi.timers;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences;
 import com.igormaznitsa.ravikoodi.GuiMessager;
 import com.igormaznitsa.ravikoodi.KodiComm;
+import com.igormaznitsa.ravikoodi.UploadingFileRegistry;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ActivePlayerInfo;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerItem;
 import java.io.File;
@@ -56,14 +57,17 @@ public class TimerScheduler {
     private final List<ScheduledTimer> timers = new ArrayList<>();
     private final KodiComm kodiComm;
     private final GuiMessager guiMessager;
-
+    private final UploadingFileRegistry fileRegistry;
+    
     @Autowired
     public TimerScheduler(
+        @NonNull final UploadingFileRegistry fileRegistry,
         @NonNull final GuiMessager guiMessager,
         @NonNull final KodiComm kodiComm,
         @NonNull final ScheduledExecutorService executor,
         @NonNull final ApplicationPreferences preferences
     ) {
+        this.fileRegistry = fileRegistry;
         this.guiMessager = guiMessager;
         this.executor = executor;
         this.preferences = preferences;
@@ -83,6 +87,7 @@ public class TimerScheduler {
                 .filter(x -> x.isEnabled() && x.getFrom() != null && x.getResourcePath() != null)
                 .map(
                     x -> new ScheduledTimer(
+                        this.fileRegistry,
                         this.guiMessager,
                         this.kodiComm,
                         String.format("Timer#%d[%s]", counter.getAndIncrement(), x.getName()),
@@ -118,14 +123,17 @@ public class TimerScheduler {
         private final ApplicationPreferences.Timer timer;
         private final AtomicReference<ScheduledFuture<?>> scheduledFutureRef = new AtomicReference<>();
         private final AtomicReference<UUID> lastUuid = new AtomicReference<>();
-
+        private final UploadingFileRegistry fileRegistry;
+        
         public ScheduledTimer(
+            @NonNull final UploadingFileRegistry fileRegistry,
             @NonNull final GuiMessager guiMessager,
             @NonNull final KodiComm kodiComm,
             @NonNull final String id,
             @NonNull final ApplicationPreferences.Timer timer,
             @NonNull final ScheduledExecutorService executorService
         ) {
+            this.fileRegistry = fileRegistry;
             this.guiMessager = guiMessager;
             this.kodiComm = kodiComm;
             this.id = id;
@@ -188,6 +196,16 @@ public class TimerScheduler {
             }
 
             try {
+                if (this.timer.isReplay()){
+                    this.kodiComm.openFileAsPlaylistThroughRegistry(this.resource.toPath(), null).ifPresent(uuid -> {
+                        this.lastUuid.set(uuid);
+                        if (this.timer.getTo() == null) {
+                            this.scheduledFutureRef.set(scheduleStart());
+                        } else {
+                            this.scheduledFutureRef.set(scheduleEnd());
+                        }
+                    });
+                } else {
                 this.kodiComm.openFileThroughRegistry(this.resource.toPath(), null).ifPresent(uuid -> {
                     this.lastUuid.set(uuid);
                     if (this.timer.getTo() == null) {
@@ -195,11 +213,8 @@ public class TimerScheduler {
                     } else {
                         this.scheduledFutureRef.set(scheduleEnd());
                     }
-
-                    if (this.timer.isReplay()) {
-                        //TODO
-                    }
                 });
+                }
             } catch (Throwable ex) {
                 this.guiMessager.showErrorMessage("Error", "Can't start timer " + this.timer + ": " + ex.getMessage());
             }
@@ -228,6 +243,8 @@ public class TimerScheduler {
             try {
                 final UUID uuid = this.lastUuid.getAndSet(null);
                 if (uuid != null) {
+                    this.fileRegistry.unregisterFile(uuid, true);
+                    
                     final Optional<ActivePlayerInfo> foundPlayer = this.findCurrentPlayer();
 
                     if (!foundPlayer.isPresent()) {

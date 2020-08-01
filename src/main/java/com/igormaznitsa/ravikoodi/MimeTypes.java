@@ -165,10 +165,15 @@ public class MimeTypes {
     return EXTENSIONS.get(extension.toLowerCase(Locale.ENGLISH));
   }
 
+  @Nullable
+  public MimeRecord getMimeRecord(@NonNull final Path file) {
+      final String extension = Utils.getFileExtension(file).toLowerCase(Locale.ENGLISH);
+      return getMimeRecord(extension);
+  }
+  
   @NonNull
   public String findMimeTypeForFile(@NonNull final Path file) {
-    final String extension = Utils.getFileExtension(file).toLowerCase(Locale.ENGLISH);
-    final MimeRecord record = getMimeRecord(extension);
-    return record == null ? "application/x-binary" : record.getMime();
+      final MimeRecord record = getMimeRecord(file);
+      return record == null ? "application/x-binary" : record.getMime();
   }
 }

@@ -1033,7 +1033,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
                 } catch (Throwable ex) {
                     error.set(ex);
                     LOGGER.error("Can't start file play", ex);
-                    this.fileRegstry.removeFile(uuid);
+                    this.fileRegstry.unregisterFile(uuid, false);
                 } finally {
                     SwingUtilities.invokeLater(() -> {
                         openingFileInfoPanel.get().setVisible(false);

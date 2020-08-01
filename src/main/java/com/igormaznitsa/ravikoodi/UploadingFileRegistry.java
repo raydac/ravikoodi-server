@@ -186,8 +186,15 @@ public class UploadingFileRegistry {
     return this.records.values().stream().anyMatch((record) -> (record.file.equals(path)));
   }
 
-  public void removeFile(final UUID uuid) {
-    this.records.remove(uuid);
+  public void unregisterFile(final UUID uuid, final boolean totally) {
+      LOGGER.info("Unregistering file {}, totally={}", uuid, totally);
+      this.records.remove(uuid);
+      if (totally) {
+          final Map<UUID, FileRecord> fileRecordStore = this.removedFileRecordStore.get();
+          if (fileRecordStore!=null){
+            fileRecordStore.remove(uuid);
+          }
+      }
   }
 
   public void clear() {

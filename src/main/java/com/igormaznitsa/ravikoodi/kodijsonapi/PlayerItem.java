@@ -12,5 +12,5 @@ public class PlayerItem {
     "file",
   };
 
-  private final PlaylistItem item;
+  private final PlaylistFileItem item;
 }

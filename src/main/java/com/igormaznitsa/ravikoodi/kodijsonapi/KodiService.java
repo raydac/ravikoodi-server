@@ -83,6 +83,10 @@ public class KodiService {
     return makeJsonRpcClient().invoke("Playlist.Clear", new PlaylistReq(playlist), String.class);
   }
 
+  public String addPlaylistItem(final Playlist playlist, final PlaylistFileItem item) throws Throwable {
+    return makeJsonRpcClient().invoke("Playlist.Add", new PlaylistAddFileReq(playlist, item), String.class);
+  }
+
   public long setApplicationVolume(final long volume) throws Throwable {
     final Volume volumeObj = new Volume();
     volumeObj.setVolume(volume);
@@ -166,11 +170,28 @@ public class KodiService {
         LOGGER.warn("Can't get response body");
         return "OK";
       } else {
+        LOGGER.error("Error during Player.Open", e);
         throw e;
       }
     }
   }
 
+  public String doPlayerOpenPlaylist(final Playlist playlist, final Map<String, String>... options) throws Throwable {
+      try {
+          final Map<String, String> collectedOptions = Arrays.stream(options).flatMap(x -> x.entrySet().stream()).collect(Collectors.toMap(
+              Map.Entry::getKey, Map.Entry::getValue));
+          return makeJsonRpcClient().invoke("Player.Open", new PlayerOpenPlaylistReq(playlist, collectedOptions), String.class);
+      } catch (Exception e) {
+          if (e.getMessage().contains("no response body")) {
+              LOGGER.warn("Can't get response body");
+              return "OK";
+          } else {
+              LOGGER.error("Error during Player.Open", e);
+              throw e;
+          }
+      }
+  }
+  
   public PlayerSpeed doPlayerStartPause(final ActivePlayerInfo player) throws Throwable {
     return makeJsonRpcClient().invoke("Player.PlayPause", new PlayerIdReq(player), PlayerSpeed.class);
   }

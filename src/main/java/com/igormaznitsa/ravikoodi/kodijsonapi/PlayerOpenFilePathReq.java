@@ -7,13 +7,13 @@ public class PlayerOpenFilePathReq {
   
   
   @JsonProperty(value="item") 
-  protected final FileItem item;
+  protected final PlayerOpenFileItem item;
   
   @JsonProperty(value = "options")
   protected final Map<String,String> options;
   
   public PlayerOpenFilePathReq(final String filePath, final Map<String,String> options) {
-    this.item = new FileItem(filePath);
+    this.item = new PlayerOpenFileItem(filePath);
     this.options = options;
   }
 }
