@@ -408,7 +408,7 @@ public final class TimersTable extends JPanel {
                 case 3:
                     return "Stop time";
                 case 4:
-                    return "Resource";
+                    return "File";
                 case 5:
                     return "Replay";
                 default:
