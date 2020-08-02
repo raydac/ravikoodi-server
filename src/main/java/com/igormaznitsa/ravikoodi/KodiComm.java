@@ -38,6 +38,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -181,7 +182,7 @@ public class KodiComm {
     }
 
     @NonNull
-    public Optional<UUID> openFileAsPlaylistThroughRegistry(@NonNull final Path path, @Nullable final byte[] data, @NonNull final Map<String,String>... options) throws Throwable {
+    public Optional<Pair<Playlist,UUID>> openFileAsPlaylistThroughRegistry(@NonNull final Path path, @Nullable final byte[] data, @NonNull final Map<String,String>... options) throws Throwable {
         final UUID uuid = UUID.randomUUID();
         final UploadingFileRegistry.FileRecord record = this.fileRegstry.registerFile(uuid, path, data);
         final AtomicReference<Throwable> error = new AtomicReference<>();
@@ -225,7 +226,7 @@ public class KodiComm {
             item.setFile(fileUrl);
             final String resultForAddPlayerItem = service.addPlaylistItem(targetList, item);
             if (isOk(resultForAddPlayerItem)) {
-                return Optional.ofNullable(isOk(service.doPlayerOpenPlaylist(targetList, Collections.singletonMap("repeat","one"))) ? uuid : null);
+                return Optional.ofNullable(isOk(service.doPlayerOpenPlaylist(targetList, Collections.singletonMap("repeat","one"))) ? Pair.of(targetList, uuid) : null);
             } else {
                 LOGGER.error("Can't add player list item");
                 throw new IOException("Can't add player list item: " + resultForAddPlayerItem);

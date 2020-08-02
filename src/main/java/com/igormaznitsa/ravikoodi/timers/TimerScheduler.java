@@ -200,6 +200,7 @@ public class TimerScheduler {
             try {
                 if (this.timer.isReplay()){
                     this.kodiComm.openFileAsPlaylistThroughRegistry(this.resource.toPath(), null).ifPresent(pair -> {
+                        LOGGER.info("Opened file {} in playlist {}", pair.getRight(), pair.getLeft());
                         this.lastUuid.set(pair.getRight());
                         this.playlist.set(pair.getLeft());
                         if (this.timer.getTo() == null) {
@@ -224,14 +225,15 @@ public class TimerScheduler {
             }
         }
 
-        private Optional<ActivePlayerInfo> findCurrentPlayer() throws Throwable {
-            final UUID uuid = this.lastUuid.getAndSet(null);
+        private Optional<ActivePlayerInfo> findPlayerForUuid(final UUID uuid) throws Throwable {
             if (uuid != null) {
                 final List<ActivePlayerInfo> players = this.kodiComm.findActivePlayers();
+                LOGGER.info("Found active players: {}", players);
                 return players.stream()
                     .filter(player -> {
                         try {
                             final PlayerItem item = this.kodiComm.getPlayerItem(player);
+                            LOGGER.info("Player {} is player item {}", player, item);
                             return item.getItem().getFile().contains(uuid.toString());
                         } catch (Throwable th) {
                             return false;
@@ -248,9 +250,10 @@ public class TimerScheduler {
                 final UUID uuid = this.lastUuid.getAndSet(null);
                 final Playlist savedPlaylist = this.playlist.getAndSet(null);
                 if (uuid != null) {
+                    LOGGER.info("Ending processing of file {}", uuid);
                     this.fileRegistry.unregisterFile(uuid, true);
                     
-                    final Optional<ActivePlayerInfo> foundPlayer = this.findCurrentPlayer();
+                    final Optional<ActivePlayerInfo> foundPlayer = this.findPlayerForUuid(uuid);
 
                     if (savedPlaylist!=null) {
                         this.kodiComm.makeKodiService().ifPresent(service -> {
