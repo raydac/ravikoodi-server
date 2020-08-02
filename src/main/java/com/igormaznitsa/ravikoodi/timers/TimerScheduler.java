@@ -29,6 +29,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -59,7 +60,7 @@ public class TimerScheduler {
     private final KodiComm kodiComm;
     private final GuiMessager guiMessager;
     private final UploadingFileRegistry fileRegistry;
-    
+
     @Autowired
     public TimerScheduler(
         @NonNull final UploadingFileRegistry fileRegistry,
@@ -126,7 +127,7 @@ public class TimerScheduler {
         private final AtomicReference<UUID> lastUuid = new AtomicReference<>();
         private final UploadingFileRegistry fileRegistry;
         private final AtomicReference<Playlist> playlist = new AtomicReference<>();
-        
+
         public ScheduledTimer(
             @NonNull final UploadingFileRegistry fileRegistry,
             @NonNull final GuiMessager guiMessager,
@@ -198,7 +199,7 @@ public class TimerScheduler {
             }
 
             try {
-                if (this.timer.isReplay()){
+                if (this.timer.isReplay()) {
                     this.kodiComm.openFileAsPlaylistThroughRegistry(this.resource.toPath(), null).ifPresent(pair -> {
                         LOGGER.info("Opened file {} in playlist {}", pair.getRight(), pair.getLeft());
                         this.lastUuid.set(pair.getRight());
@@ -210,15 +211,15 @@ public class TimerScheduler {
                         }
                     });
                 } else {
-                this.kodiComm.openFileThroughRegistry(this.resource.toPath(), null).ifPresent(uuid -> {
-                    this.lastUuid.set(uuid);
-                    this.playlist.set(null);
-                    if (this.timer.getTo() == null) {
-                        this.scheduledFutureRef.set(scheduleStart());
-                    } else {
-                        this.scheduledFutureRef.set(scheduleEnd());
-                    }
-                });
+                    this.kodiComm.openFileThroughRegistry(this.resource.toPath(), null).ifPresent(uuid -> {
+                        this.lastUuid.set(uuid);
+                        this.playlist.set(null);
+                        if (this.timer.getTo() == null) {
+                            this.scheduledFutureRef.set(scheduleStart());
+                        } else {
+                            this.scheduledFutureRef.set(scheduleEnd());
+                        }
+                    });
                 }
             } catch (Throwable ex) {
                 this.guiMessager.showErrorMessage("Error", "Can't start timer " + this.timer + ": " + ex.getMessage());
@@ -252,20 +253,20 @@ public class TimerScheduler {
                 if (uuid != null) {
                     LOGGER.info("Ending processing of file {}", uuid);
                     this.fileRegistry.unregisterFile(uuid, true);
-                    
+
                     final Optional<ActivePlayerInfo> foundPlayer = this.findPlayerForUuid(uuid);
 
-                    if (savedPlaylist!=null) {
+                    if (savedPlaylist != null) {
                         this.kodiComm.makeKodiService().ifPresent(service -> {
-                            try{
+                            try {
                                 LOGGER.info("Cleaning playlist: {}", savedPlaylist);
                                 service.clearPlaylist(savedPlaylist);
-                            }catch(Throwable thr) {
+                            } catch (Throwable thr) {
                                 LOGGER.error("Can't clean playlist", thr);
                             }
                         });
                     }
-                    
+
                     if (!foundPlayer.isPresent()) {
                         LOGGER.warn("Can't find active player for timer {}", this);
                     } else {
@@ -275,6 +276,18 @@ public class TimerScheduler {
                                 this.kodiComm.doPlayerStop(info);
                             } catch (Throwable ex) {
                                 this.guiMessager.showErrorMessage("Error", "Error during timer stop " + ex.getMessage() + ": " + ex.getMessage());
+                            }
+                        });
+                    }
+
+                    if (savedPlaylist != null) {
+                        LOGGER.info("Opening empty playlist {} to set repeat off", savedPlaylist);
+                        this.kodiComm.makeKodiService().ifPresent(service -> {
+                            try {
+                                final String result = service.doPlayerOpenPlaylist(savedPlaylist, Collections.singletonMap("repeat", "off"));
+                                LOGGER.info("Result for open empty playlist: {}", result);
+                            } catch (Throwable ex) {
+                                LOGGER.error("Can't open empty playlist {} for error", savedPlaylist, ex);
                             }
                         });
                     }
