@@ -43,9 +43,9 @@ You can just load needed archive, unpack in a folder and start its executable fi
 ## If you have installed Java and need less size distributives
 
 If you have pre-installed Java 1.8+, you can load files without embedded JDK:
- - [version for Linux](https://github.com/raydac/ravikoodi-server/releases/download/1.1.3/ravikoodi-1.1.4.sh)
- - [version for Windows](https://github.com/raydac/ravikoodi-server/releases/download/1.1.3/ravikoodi-1.1.4.exe)
- - [version for MacOS](https://github.com/raydac/ravikoodi-server/releases/download/1.1.3/ravikoodi-1.1.4_OSX.dmg)
+ - [version for Linux](https://github.com/raydac/ravikoodi-server/releases/download/1.1.4/ravikoodi-1.1.4.sh)
+ - [version for Windows](https://github.com/raydac/ravikoodi-server/releases/download/1.1.4/ravikoodi-1.1.4.exe)
+ - [version for MacOS](https://github.com/raydac/ravikoodi-server/releases/download/1.1.4/ravikoodi-1.1.4_OSX.dmg)
 
 ## Requirements
 
