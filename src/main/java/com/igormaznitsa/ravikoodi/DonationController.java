@@ -30,7 +30,7 @@ public class DonationController {
   
   public enum Provider {
     PAYPAL("https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=AHWJHJFBAWGL2"),
-    YANDEX_MONEY("http://yasobe.ru/na/iamoss");
+    YOO_MONEY("https://img.shields.io/badge/donation-Yoo.money-blue.svg)](https://yoomoney.ru/to/41001158080699");
 
     private final URL url;
 
@@ -54,7 +54,7 @@ public class DonationController {
   public void openDonationUrl() {
     final Provider provider;
     if ("RU".equalsIgnoreCase(Locale.getDefault().getCountry()) && "RU".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-      provider = Provider.YANDEX_MONEY;
+      provider = Provider.YOO_MONEY;
     } else {
       provider = Provider.PAYPAL;
     }

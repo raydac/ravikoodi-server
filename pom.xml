@@ -6,13 +6,13 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.3.2.RELEASE</version>
+        <version>2.4.1</version>
         <relativePath/>
     </parent>
 
     <groupId>com.igormaznitsa</groupId>
     <artifactId>ravikoodi</artifactId>
-    <version>1.1.3</version>
+    <version>1.1.4</version>
     <packaging>jar</packaging>
 
     <description>Server to broadcast media content to KODI compatible media players</description>
@@ -22,6 +22,9 @@
     <inceptionYear>2018</inceptionYear>
 
     <properties>
+        <embedded.jdk.provider>BELLSOFT</embedded.jdk.provider>
+        <embedded.jdk.type>jdk</embedded.jdk.type>
+        <embedded.jdk.version>11.0.9.1+1</embedded.jdk.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
@@ -100,10 +103,6 @@
         </profile>
         <profile>
             <id>publish</id>
-            <properties>
-                <openjdk.bundled.type>java11</openjdk.bundled.type>
-                <openjdk.bundled>20.1.0</openjdk.bundled>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -118,10 +117,10 @@
                                 </goals>
                                 <configuration>
                                     <jdkPathProperty>mvnjlink.jdk.work.path</jdkPathProperty>
-                                    <provider>GRAALVMCE</provider>
+                                    <provider>${embedded.jdk.provider}</provider>
                                     <providerConfig>
-                                        <type>${openjdk.bundled.type}</type>
-                                        <version>${openjdk.bundled}</version>
+                                        <type>${embedded.jdk.type}</type>
+                                        <version>${embedded.jdk.version}</version>
                                         <arch>amd64</arch>
                                     </providerConfig>
                                 </configuration>
@@ -133,10 +132,10 @@
                                 </goals>
                                 <configuration>
                                     <jdkPathProperty>mvnjlink.jdk.linux.path</jdkPathProperty>
-                                    <provider>GRAALVMCE</provider>
+                                    <provider>${embedded.jdk.provider}</provider>
                                     <providerConfig>
-                                        <type>${openjdk.bundled.type}</type>
-                                        <version>${openjdk.bundled}</version>
+                                        <type>${embedded.jdk.type}</type>
+                                        <version>${embedded.jdk.version}</version>
                                         <os>linux</os>
                                         <arch>amd64</arch>
                                     </providerConfig>
@@ -149,11 +148,10 @@
                                 </goals>
                                 <configuration>
                                     <jdkPathProperty>mvnjlink.jdk.macos.path</jdkPathProperty>
-                                    <provider>GRAALVMCE</provider>
+                                    <provider>${embedded.jdk.provider}</provider>
                                     <providerConfig>
-                                        <type>${openjdk.bundled.type}</type>
-                                        <os>darwin</os>
-                                        <version>${openjdk.bundled}</version>
+                                        <type>${embedded.jdk.type}</type>
+                                        <version>${embedded.jdk.version}</version>
                                         <arch>amd64</arch>
                                     </providerConfig>
                                 </configuration>
@@ -165,11 +163,11 @@
                                 </goals>
                                 <configuration>
                                     <jdkPathProperty>mvnjlink.jdk.windows.path</jdkPathProperty>
-                                    <provider>GRAALVMCE</provider>
+                                    <provider>${embedded.jdk.provider}</provider>
                                     <providerConfig>
-                                        <type>${openjdk.bundled.type}</type>
+                                        <type>${embedded.jdk.type}</type>
                                         <os>windows</os>
-                                        <version>${openjdk.bundled}</version>
+                                        <version>${embedded.jdk.version}</version>
                                         <arch>amd64</arch>
                                     </providerConfig>
                                 </configuration>
@@ -288,11 +286,11 @@
                                 <opt>-Xverify:none</opt>
                             </opts>
                             <versionInfo>
-                                <fileVersion>1.1.2.0</fileVersion>
+                                <fileVersion>1.1.4.0</fileVersion>
                                 <txtFileVersion>${project.version}</txtFileVersion>
                                 <fileDescription>Server to broadcast content to KODI compatible players</fileDescription>
                                 <copyright>2018-2020 Igor Maznitsa</copyright>
-                                <productVersion>1.1.2.0</productVersion>
+                                <productVersion>1.1.4.0</productVersion>
                                 <txtProductVersion>${project.version}</txtProductVersion>
                                 <productName>${project.name}</productName>
                                 <companyName>igormaznitsa.com</companyName>

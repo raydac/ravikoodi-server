@@ -7,6 +7,11 @@
 
 # Changelog
 
+- __1.1.4 (13-dec-2020)__
+  - updated dependencies
+  - embedded JDK changed to BellSoft Liberica JDK 11.0.9.1+1
+  - updated links
+
 - __1.1.3 (03-aug-2020)__
   - fixed compatibility with KODI 18.xx
   - added support of timers [#1](https://github.com/raydac/ravikoodi-server/issues/1)
