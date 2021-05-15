@@ -1,0 +1,22 @@
+# __1.1.5 (SNAPSHOT)
+  - embedded JDK changed to BellSoft Liberica JDK 11.0.11+9
+  - updated Spring Boot to 2.4.5
+  - updated Launch4j starter for Windows
+
+# __1.1.4 (13-dec-2020)__
+  - updated dependencies
+  - embedded JDK changed to BellSoft Liberica JDK 11.0.9.1+1
+  - updated links
+
+# __1.1.3 (03-aug-2020)__
+  - fixed compatibility with KODI 18.xx
+  - added support of timers [#1](https://github.com/raydac/ravikoodi-server/issues/1)
+
+# __1.1.2 (26-jun-2020)__
+  - hidden mouse cursor during FFmpeg grabber work for streaming
+  - updated Spring Boot version to 2.3.1.RELEASE
+  - added streaming FFmpeg parameter CRF (Constant Rate Factor, 0 - lossless...51 - worst quality) into Options
+
+# __1.1.1 (18-may-2020)__
+  - rebranding to RaviKoodi
+  - added support of streaming through FFmpeg
