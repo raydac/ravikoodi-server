@@ -12,7 +12,7 @@
 
     <groupId>com.igormaznitsa</groupId>
     <artifactId>ravikoodi</artifactId>
-    <version>1.1.5-SNAPSHOT</version>
+    <version>1.1.5</version>
     <packaging>jar</packaging>
 
     <description>Server to broadcast media content to KODI compatible media players</description>
@@ -157,6 +157,21 @@
                                 </configuration>
                             </execution>
                             <execution>
+                                <id>cache-macos-arm64-jdk</id>
+                                <goals>
+                                    <goal>cache-jdk</goal>
+                                </goals>
+                                <configuration>
+                                    <jdkPathProperty>mvnjlink.jdk.macos.arm64.path</jdkPathProperty>
+                                    <provider>${embedded.jdk.provider}</provider>
+                                    <providerConfig>
+                                        <type>${embedded.jdk.type}</type>
+                                        <version>${embedded.jdk.version}</version>
+                                        <arch>aarch64</arch>
+                                    </providerConfig>
+                                </configuration>
+                            </execution>
+                            <execution>
                                 <id>cache-windows-jdk</id>
                                 <goals>
                                     <goal>cache-jdk</goal>
@@ -263,6 +278,31 @@
                                     </addModules>
                                 </configuration>
                             </execution>
+                            <execution>
+                                <id>make-jre-arm64-macos</id>
+                                <goals>
+                                    <goal>jlink</goal>
+                                </goals>
+                                <configuration>
+                                    <toolJdk>${mvnjlink.jdk.work.path}</toolJdk>
+                                    <jdepsReportPath>${project.build.directory}${file.separator}jdeps.out
+                                    </jdepsReportPath>
+                                    <output>${project.build.directory}${file.separator}jre_macos_arm64</output>
+                                    <modulePaths>
+                                        <path>${mvnjlink.jdk.macos.arm64.path}${file.separator}jmods</path>
+                                    </modulePaths>
+                                    <options>
+                                        <option>--compress=2</option>
+                                        <option>--no-header-files</option>
+                                        <option>--no-man-pages</option>
+                                    </options>
+                                    <addModules>
+                                        <module>jdk.management.agent</module>
+                                        <module>jdk.crypto.ec</module>
+                                        <module>jdk.localedata</module>
+                                    </addModules>
+                                </configuration>
+                            </execution>
                         </executions>
                     </plugin>
                     <plugin>
@@ -286,11 +326,11 @@
                                 <opt>-Xverify:none</opt>
                             </opts>
                             <versionInfo>
-                                <fileVersion>1.1.4.0</fileVersion>
+                                <fileVersion>1.1.5.0</fileVersion>
                                 <txtFileVersion>${project.version}</txtFileVersion>
                                 <fileDescription>Server to broadcast content to KODI compatible players</fileDescription>
-                                <copyright>2018-2020 Igor Maznitsa</copyright>
-                                <productVersion>1.1.4.0</productVersion>
+                                <copyright>2018-2021 Igor Maznitsa</copyright>
+                                <productVersion>1.1.5.0</productVersion>
                                 <txtProductVersion>${project.version}</txtProductVersion>
                                 <productName>${project.name}</productName>
                                 <companyName>igormaznitsa.com</companyName>
@@ -370,7 +410,7 @@
                                 </goals>
                                 <configuration>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <finalName>${project.build.finalName}-linux-withjdk</finalName>
+                                    <finalName>${project.build.finalName}-linux-jdk</finalName>
                                     <descriptors>
                                         <descriptor>src${file.separator}assembly${file.separator}linux.xml</descriptor>
                                     </descriptors>
@@ -384,7 +424,7 @@
                                 </goals>
                                 <configuration>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <finalName>${project.build.finalName}-windows-withjdk</finalName>
+                                    <finalName>${project.build.finalName}-windows-jdk</finalName>
                                     <descriptors>
                                         <descriptor>src${file.separator}assembly${file.separator}windows.xml
                                         </descriptor>
@@ -399,9 +439,23 @@
                                 </goals>
                                 <configuration>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <finalName>${project.build.finalName}-macos-withjdk</finalName>
+                                    <finalName>${project.build.finalName}-macos-jdk</finalName>
                                     <descriptors>
                                         <descriptor>src${file.separator}assembly${file.separator}mac.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>make-mac-arm64</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                    <finalName>${project.build.finalName}-macos-arm64-jdk</finalName>
+                                    <descriptors>
+                                        <descriptor>src${file.separator}assembly${file.separator}mac-arm64.xml</descriptor>
                                     </descriptors>
                                 </configuration>
                             </execution>
@@ -421,7 +475,21 @@
                                 <configuration>
                                     <fileset>
                                         <directory>
-                                            ${project.build.directory}${file.separator}${project.build.finalName}-macos-withjdk.jar${file.separator}META-INF
+                                            ${project.build.directory}${file.separator}${project.build.finalName}-macos-jdk.jar${file.separator}META-INF
+                                        </directory>
+                                    </fileset>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>remove-manifest-from-mac-arm64-jar</id>
+                                <goals>
+                                    <goal>remove</goal>
+                                </goals>
+                                <phase>install</phase>
+                                <configuration>
+                                    <fileset>
+                                        <directory>
+                                            ${project.build.directory}${file.separator}${project.build.finalName}-macos-arm64-jdk.jar${file.separator}META-INF
                                         </directory>
                                     </fileset>
                                 </configuration>
@@ -441,10 +509,25 @@
                                 </goals>
                                 <configuration>
                                     <sourceFile>
-                                        ${project.build.directory}${file.separator}${project.build.finalName}-macos-withjdk.jar
+                                        ${project.build.directory}${file.separator}${project.build.finalName}-macos-jdk.jar
                                     </sourceFile>
                                     <destinationFile>
-                                        ${project.build.directory}${file.separator}${project.build.finalName}-macos-withjdk.zip
+                                        ${project.build.directory}${file.separator}${project.build.finalName}-macos-jdk.zip
+                                    </destinationFile>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>rename-mac-arm64-jar-to-zip</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>rename</goal>
+                                </goals>
+                                <configuration>
+                                    <sourceFile>
+                                        ${project.build.directory}${file.separator}${project.build.finalName}-macos-arm64-jdk.jar
+                                    </sourceFile>
+                                    <destinationFile>
+                                        ${project.build.directory}${file.separator}${project.build.finalName}-macos-arm64-jdk.zip
                                     </destinationFile>
                                 </configuration>
                             </execution>
@@ -466,6 +549,7 @@
                                         <fileset>
                                             <directory>${project.build.directory}</directory>
                                             <includes>
+                                                <include>*.jar.original</include>
                                                 <include>original-ravikoodi-*.jar</include>
                                                 <include>ravikoodi.exe</include>
                                                 <include>jdeps.out</include>

@@ -7,7 +7,8 @@
 
 # Changelog
 
-- __1.1.5 (SNAPSHOT)
+- __1.1.5 (15-may-2021)__
+  - added version for MacOS ARM64
   - embedded JDK changed to BellSoft Liberica JDK 11.0.11+9
   - updated Spring Boot to 2.4.5
   - updated Launch4j starter for Windows
