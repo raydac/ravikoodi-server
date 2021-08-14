@@ -6,13 +6,13 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.4.5</version>
+        <version>2.5.3</version>
         <relativePath/>
     </parent>
 
     <groupId>com.igormaznitsa</groupId>
     <artifactId>ravikoodi</artifactId>
-    <version>1.1.5</version>
+    <version>1.1.6-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <description>Server to broadcast media content to KODI compatible media players</description>
@@ -308,7 +308,7 @@
                     <plugin>
                         <groupId>com.akathist.maven.plugins.launch4j</groupId>
                         <artifactId>launch4j-maven-plugin</artifactId>
-                        <version>2.1.0</version>
+                        <version>2.1.1</version>
                         <configuration>
                             <downloadUrl>http://www.oracle.com/technetwork/java/javase/downloads</downloadUrl>
                             <classPath>
@@ -326,11 +326,11 @@
                                 <opt>-Xverify:none</opt>
                             </opts>
                             <versionInfo>
-                                <fileVersion>1.1.5.0</fileVersion>
+                                <fileVersion>1.1.6.0</fileVersion>
                                 <txtFileVersion>${project.version}</txtFileVersion>
                                 <fileDescription>Server to broadcast content to KODI compatible players</fileDescription>
                                 <copyright>2018-2021 Igor Maznitsa</copyright>
-                                <productVersion>1.1.5.0</productVersion>
+                                <productVersion>1.1.6.0</productVersion>
                                 <txtProductVersion>${project.version}</txtProductVersion>
                                 <productName>${project.name}</productName>
                                 <companyName>igormaznitsa.com</companyName>
@@ -593,7 +593,7 @@
         <dependency>
             <groupId>com.github.briandilley.jsonrpc4j</groupId>
             <artifactId>jsonrpc4j</artifactId>
-            <version>1.5.3</version>
+            <version>1.6</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
