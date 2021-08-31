@@ -7,6 +7,11 @@
 
 # Changelog
 
+- __1.1.6 (31-aug-2021)__
+  - fixed embedded JRE version for MacOS
+  - updated Spring Boot to 2.5.4
+  - updated Launch4j starter for Windows
+
 - __1.1.5 (15-may-2021)__
   - added version for MacOS ARM64
   - embedded JDK changed to BellSoft Liberica JDK 11.0.11+9
