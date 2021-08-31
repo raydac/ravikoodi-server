@@ -152,6 +152,7 @@
                                     <providerConfig>
                                         <type>${embedded.jdk.type}</type>
                                         <version>${embedded.jdk.version}</version>
+                                        <os>macos</os>
                                         <arch>amd64</arch>
                                     </providerConfig>
                                 </configuration>
@@ -167,6 +168,7 @@
                                     <providerConfig>
                                         <type>${embedded.jdk.type}</type>
                                         <version>${embedded.jdk.version}</version>
+                                        <os>macos</os>
                                         <arch>aarch64</arch>
                                     </providerConfig>
                                 </configuration>
