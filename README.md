@@ -34,19 +34,19 @@ At home I use [Raspberry PI 3](https://www.raspberrypi.org/products/raspberry-pi
 ## If you don't have installed Java or don't care about that
 
 It is a Java application so that in ideal it needs pre-installed Java 1.8+, but since 1.1.0 release Iprovide also pre-built versions with embedded JDK images, they can be started without installed Java:
- - [version for Linux with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.5/ravikoodi-1.1.5-linux-jdk.tar.gz)
- - [version for Windows with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.5/ravikoodi-1.1.5-windows-jdk.zip)
- - [version for MacOS with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.5/ravikoodi-1.1.5-macos-jdk.zip)
- - [version for MacOS (ARM64) with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.5/ravikoodi-1.1.5-macos-arm64-jdk.zip)
+ - [version for Linux with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.6/ravikoodi-1.1.6-linux-jdk.tar.gz)
+ - [version for Windows with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.6/ravikoodi-1.1.6-windows-jdk.zip)
+ - [version for MacOS with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.6/ravikoodi-1.1.6-macos-jdk.zip)
+ - [version for MacOS (ARM64) with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.6/ravikoodi-1.1.6-macos-arm64-jdk.zip)
 
 You can just load needed archive, unpack in a folder and start its executable file.
 
 ## If you have installed Java and need less size distributives
 
 If you have pre-installed Java 1.8+, you can load files without embedded JDK:
- - [version for Linux](https://github.com/raydac/ravikoodi-server/releases/download/1.1.5/ravikoodi-1.1.5.sh)
- - [version for Windows](https://github.com/raydac/ravikoodi-server/releases/download/1.1.5/ravikoodi-1.1.5.exe)
- - [version for MacOS](https://github.com/raydac/ravikoodi-server/releases/download/1.1.5/ravikoodi-1.1.5_OSX.dmg)
+ - [version for Linux](https://github.com/raydac/ravikoodi-server/releases/download/1.1.6/ravikoodi-1.1.6.sh)
+ - [version for Windows](https://github.com/raydac/ravikoodi-server/releases/download/1.1.6/ravikoodi-1.1.6.exe)
+ - [version for MacOS](https://github.com/raydac/ravikoodi-server/releases/download/1.1.6/ravikoodi-1.1.6_OSX.dmg)
 
 ## Requirements
 
