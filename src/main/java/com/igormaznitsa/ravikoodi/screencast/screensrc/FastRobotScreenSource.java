@@ -26,6 +26,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.PixelGrabber;
 import java.awt.peer.RobotPeer;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -113,7 +114,8 @@ public final class FastRobotScreenSource extends AbstractScreenSource {
   protected void onDispose() {
     this.grabLock.lock();
     try {
-      this.robotPeer.dispose();
+      final Method dispose = this.robotPeer.getClass().getMethod("dispose");
+      dispose.invoke(this.robotPeer);
     } catch (Exception ex) {
       // DO NOTHING
     } finally {

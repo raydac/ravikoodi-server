@@ -12,7 +12,7 @@
 
     <groupId>com.igormaznitsa</groupId>
     <artifactId>ravikoodi</artifactId>
-    <version>1.1.6</version>
+    <version>1.1.7-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <description>Server to broadcast media content to KODI compatible media players</description>
@@ -24,7 +24,7 @@
     <properties>
         <embedded.jdk.provider>BELLSOFT</embedded.jdk.provider>
         <embedded.jdk.type>jdk</embedded.jdk.type>
-        <embedded.jdk.version>11.0.11+9</embedded.jdk.version>
+        <embedded.jdk.version>17+35</embedded.jdk.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
@@ -312,7 +312,7 @@
                         <artifactId>launch4j-maven-plugin</artifactId>
                         <version>2.1.2</version>
                         <configuration>
-                            <downloadUrl>http://www.oracle.com/technetwork/java/javase/downloads</downloadUrl>
+                            <downloadUrl>https://bell-sw.com/pages/downloads/#/java-11-lts</downloadUrl>
                             <classPath>
                                 <mainClass>org.springframework.boot.loader.JarLauncher</mainClass>
                                 <preCp>anything</preCp>
@@ -328,11 +328,11 @@
                                 <opt>-Xverify:none</opt>
                             </opts>
                             <versionInfo>
-                                <fileVersion>1.1.6.0</fileVersion>
+                                <fileVersion>1.1.7.0</fileVersion>
                                 <txtFileVersion>${project.version}</txtFileVersion>
                                 <fileDescription>Server to broadcast content to KODI compatible players</fileDescription>
                                 <copyright>2018-2021 Igor Maznitsa</copyright>
-                                <productVersion>1.1.6.0</productVersion>
+                                <productVersion>1.1.7.0</productVersion>
                                 <txtProductVersion>${project.version}</txtProductVersion>
                                 <productName>${project.name}</productName>
                                 <companyName>igormaznitsa.com</companyName>
@@ -369,34 +369,6 @@
                                         <path>%EXEDIR%\jre</path>
                                     </jre>
                                 </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>sh.tak.appbundler</groupId>
-                        <artifactId>appbundle-maven-plugin</artifactId>
-                        <version>1.2.0</version>
-                        <configuration>
-                            <bundleName>${app.name}</bundleName>
-                            <diskImageFile>${project.build.directory}/${project.build.finalName}_OSX.dmg</diskImageFile>
-                            <mainClass>org.springframework.boot.loader.JarLauncher</mainClass>
-                            <iconFile>appico.icns</iconFile>
-                            <bundleName>RavikoodiServer</bundleName>
-                            <generateDiskImageFile>true</generateDiskImageFile>
-                            <includeApplicationsSymlink>true</includeApplicationsSymlink>
-                            <diskImageInternetEnable>true</diskImageInternetEnable>
-                            <jvmVersion>1.8+</jvmVersion>
-                            <jvmOptions>
-                                <option>-XX:+IgnoreUnrecognizedVMOptions</option>
-                                <option>-XaddExports:java.desktop/com.apple.eawt=ALL-UNNAMED</option>
-                            </jvmOptions>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>bundle</goal>
-                                </goals>
                             </execution>
                         </executions>
                     </plugin>
