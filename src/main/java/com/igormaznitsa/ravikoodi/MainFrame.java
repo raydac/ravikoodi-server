@@ -278,7 +278,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
     public MainFrame() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             initComponents();
-            this.setTitle(RaviKoodiServer.TITLE);
+            this.setTitle("Ravikoodi content server");
             this.setIconImage(Utils.loadImage("ravikoodi-logo-256.png"));
 
             this.treeVideoFiles.setCellRenderer(new FileTreeRenderer());

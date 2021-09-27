@@ -1,5 +1,3 @@
-package com.igormaznitsa.ravikoodi;
-
 import java.io.PrintStream;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,8 +8,6 @@ import org.springframework.lang.NonNull;
 @SpringBootApplication
 public class RaviKoodiServer {
 
-    public static final String TITLE = "Ravikoodi content server";
-  
 	public static void main(@NonNull String[] args) {
       new SpringApplicationBuilder(RaviKoodiServer.class)
               .web(WebApplicationType.NONE)

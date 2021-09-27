@@ -15,7 +15,7 @@ public class AboutPanel extends javax.swing.JPanel {
     initComponents();
     this.labelText.setText(this.labelText.getText()
             .replace("${version}", buildProperties.getVersion())
-            .replace("${title}", RaviKoodiServer.TITLE)
+            .replace("${title}", "Ravikoodi content server")
     );
     this.labelText.addLinkListener((@NonNull final JHtmlLabel source, @NonNull final String link) -> {
       if ("open_donation".equalsIgnoreCase(link)) {

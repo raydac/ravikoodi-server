@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.5.4</version>
+        <version>2.5.5</version>
         <relativePath/>
     </parent>
 
@@ -27,7 +27,7 @@
         <embedded.jdk.version>17+35</embedded.jdk.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>1.8</java.version>
+        <java.version>11</java.version>
         <app.name>${project.build.finalName}</app.name>
         <executable.jar>false</executable.jar>
         <final.ext></final.ext>
@@ -158,12 +158,12 @@
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>cache-macos-arm64-jdk</id>
+                                <id>cache-macos-aarch64-jdk</id>
                                 <goals>
                                     <goal>cache-jdk</goal>
                                 </goals>
                                 <configuration>
-                                    <jdkPathProperty>mvnjlink.jdk.macos.arm64.path</jdkPathProperty>
+                                    <jdkPathProperty>mvnjlink.jdk.macos.aarch64.path</jdkPathProperty>
                                     <provider>${embedded.jdk.provider}</provider>
                                     <providerConfig>
                                         <type>${embedded.jdk.type}</type>
@@ -206,7 +206,7 @@
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>make-jre-linux</id>
+                                <id>make-jre-linux-amd64</id>
                                 <goals>
                                     <goal>jlink</goal>
                                 </goals>
@@ -214,7 +214,7 @@
                                     <toolJdk>${mvnjlink.jdk.work.path}</toolJdk>
                                     <jdepsReportPath>${project.build.directory}${file.separator}jdeps.out
                                     </jdepsReportPath>
-                                    <output>${project.build.directory}${file.separator}jre_linux</output>
+                                    <output>${project.build.directory}${file.separator}jre_linux_amd64</output>
                                     <modulePaths>
                                         <path>${mvnjlink.jdk.linux.path}${file.separator}jmods</path>
                                     </modulePaths>
@@ -231,7 +231,7 @@
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>make-jre-windows</id>
+                                <id>make-jre-windows-amd64</id>
                                 <goals>
                                     <goal>jlink</goal>
                                 </goals>
@@ -239,7 +239,7 @@
                                     <toolJdk>${mvnjlink.jdk.work.path}</toolJdk>
                                     <jdepsReportPath>${project.build.directory}${file.separator}jdeps.out
                                     </jdepsReportPath>
-                                    <output>${project.build.directory}${file.separator}jre_windows</output>
+                                    <output>${project.build.directory}${file.separator}jre_windows_amd64</output>
                                     <modulePaths>
                                         <path>${mvnjlink.jdk.windows.path}${file.separator}jmods</path>
                                     </modulePaths>
@@ -256,7 +256,7 @@
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>make-jre-macos</id>
+                                <id>make-jre-macos-amd64</id>
                                 <goals>
                                     <goal>jlink</goal>
                                 </goals>
@@ -264,7 +264,7 @@
                                     <toolJdk>${mvnjlink.jdk.work.path}</toolJdk>
                                     <jdepsReportPath>${project.build.directory}${file.separator}jdeps.out
                                     </jdepsReportPath>
-                                    <output>${project.build.directory}${file.separator}jre_macos</output>
+                                    <output>${project.build.directory}${file.separator}jre_macos_amd64</output>
                                     <modulePaths>
                                         <path>${mvnjlink.jdk.macos.path}${file.separator}jmods</path>
                                     </modulePaths>
@@ -281,7 +281,7 @@
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>make-jre-arm64-macos</id>
+                                <id>make-jre-aarch64-macos</id>
                                 <goals>
                                     <goal>jlink</goal>
                                 </goals>
@@ -289,9 +289,9 @@
                                     <toolJdk>${mvnjlink.jdk.work.path}</toolJdk>
                                     <jdepsReportPath>${project.build.directory}${file.separator}jdeps.out
                                     </jdepsReportPath>
-                                    <output>${project.build.directory}${file.separator}jre_macos_arm64</output>
+                                    <output>${project.build.directory}${file.separator}jre_macos_aarch64</output>
                                     <modulePaths>
-                                        <path>${mvnjlink.jdk.macos.arm64.path}${file.separator}jmods</path>
+                                        <path>${mvnjlink.jdk.macos.aarch64.path}${file.separator}jmods</path>
                                     </modulePaths>
                                     <options>
                                         <option>--compress=2</option>
@@ -384,9 +384,9 @@
                                 </goals>
                                 <configuration>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <finalName>${project.build.finalName}-linux-jdk</finalName>
+                                    <finalName>${project.build.finalName}-linux-jdk-amd64</finalName>
                                     <descriptors>
-                                        <descriptor>src${file.separator}assembly${file.separator}linux.xml</descriptor>
+                                        <descriptor>src/assembly/linux-amd64.xml</descriptor>
                                     </descriptors>
                                 </configuration>
                             </execution>
@@ -398,9 +398,9 @@
                                 </goals>
                                 <configuration>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <finalName>${project.build.finalName}-windows-jdk</finalName>
+                                    <finalName>${project.build.finalName}-windows-jdk-amd64</finalName>
                                     <descriptors>
-                                        <descriptor>src${file.separator}assembly${file.separator}windows.xml
+                                        <descriptor>src/assembly/windows-amd64.xml
                                         </descriptor>
                                     </descriptors>
                                 </configuration>
@@ -413,23 +413,23 @@
                                 </goals>
                                 <configuration>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <finalName>${project.build.finalName}-macos-jdk</finalName>
+                                    <finalName>${project.build.finalName}-macos-jdk-amd64</finalName>
                                     <descriptors>
-                                        <descriptor>src${file.separator}assembly${file.separator}mac.xml</descriptor>
+                                        <descriptor>src/assembly/mac-amd64.xml</descriptor>
                                     </descriptors>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>make-mac-arm64</id>
+                                <id>make-mac-aarch64</id>
                                 <phase>install</phase>
                                 <goals>
                                     <goal>single</goal>
                                 </goals>
                                 <configuration>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <finalName>${project.build.finalName}-macos-arm64-jdk</finalName>
+                                    <finalName>${project.build.finalName}-macos-jdk-aarch64</finalName>
                                     <descriptors>
-                                        <descriptor>src${file.separator}assembly${file.separator}mac-arm64.xml</descriptor>
+                                        <descriptor>src/assembly/mac-aarch64.xml</descriptor>
                                     </descriptors>
                                 </configuration>
                             </execution>
@@ -441,7 +441,7 @@
                         <version>1.2</version>
                         <executions>
                             <execution>
-                                <id>remove-manifest-from-mac-jar</id>
+                                <id>remove-manifest-from-mac-amd64-jar</id>
                                 <goals>
                                     <goal>remove</goal>
                                 </goals>
@@ -449,13 +449,13 @@
                                 <configuration>
                                     <fileset>
                                         <directory>
-                                            ${project.build.directory}${file.separator}${project.build.finalName}-macos-jdk.jar${file.separator}META-INF
+                                            ${project.build.directory}${file.separator}${project.build.finalName}-macos-jdk-amd64.jar${file.separator}META-INF
                                         </directory>
                                     </fileset>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>remove-manifest-from-mac-arm64-jar</id>
+                                <id>remove-manifest-from-mac-aarch64-jar</id>
                                 <goals>
                                     <goal>remove</goal>
                                 </goals>
@@ -463,7 +463,7 @@
                                 <configuration>
                                     <fileset>
                                         <directory>
-                                            ${project.build.directory}${file.separator}${project.build.finalName}-macos-arm64-jdk.jar${file.separator}META-INF
+                                            ${project.build.directory}${file.separator}${project.build.finalName}-macos-jdk-aarch64.jar${file.separator}META-INF
                                         </directory>
                                     </fileset>
                                 </configuration>
@@ -483,25 +483,25 @@
                                 </goals>
                                 <configuration>
                                     <sourceFile>
-                                        ${project.build.directory}${file.separator}${project.build.finalName}-macos-jdk.jar
+                                        ${project.build.directory}${file.separator}${project.build.finalName}-macos-jdk-amd64.jar
                                     </sourceFile>
                                     <destinationFile>
-                                        ${project.build.directory}${file.separator}${project.build.finalName}-macos-jdk.zip
+                                        ${project.build.directory}${file.separator}${project.build.finalName}-macos-jdk-amd64.zip
                                     </destinationFile>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>rename-mac-arm64-jar-to-zip</id>
+                                <id>rename-mac-aarch64-jar-to-zip</id>
                                 <phase>install</phase>
                                 <goals>
                                     <goal>rename</goal>
                                 </goals>
                                 <configuration>
                                     <sourceFile>
-                                        ${project.build.directory}${file.separator}${project.build.finalName}-macos-arm64-jdk.jar
+                                        ${project.build.directory}${file.separator}${project.build.finalName}-macos-jdk-aarch64.jar
                                     </sourceFile>
                                     <destinationFile>
-                                        ${project.build.directory}${file.separator}${project.build.finalName}-macos-arm64-jdk.zip
+                                        ${project.build.directory}${file.separator}${project.build.finalName}-macos-jdk-aarch64.zip
                                     </destinationFile>
                                 </configuration>
                             </execution>
@@ -600,32 +600,16 @@
                     <configuration>
                         <fork>true</fork>
                         <compilerArgument>-XDignore.symbol.file</compilerArgument>
+                        <compilerArgs>
+                            <arg>--add-exports</arg><arg>java.base/sun.security.x509=ALL-UNNAMED</arg>
+                            <arg>--add-exports</arg><arg>java.base/sun.security.tools.keytool=ALL-UNNAMED</arg>
+                            <arg>--add-exports</arg><arg>java.desktop/java.awt.peer=ALL-UNNAMED</arg>
+                        </compilerArgs>
                     </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>animal-sniffer-maven-plugin</artifactId>
-                <version>1.19</version>
-                <executions>
-                    <execution>
-                        <id>ensure-java-1.8-class-library</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                        <configuration>
-                            <signature>
-                                <groupId>org.codehaus.mojo.signature</groupId>
-                                <artifactId>java18</artifactId>
-                                <version>1.0</version>
-                            </signature>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

@@ -55,7 +55,7 @@ public class SelfSignedCertificateGeneratorFactory {
       return result;
     } catch (Exception ex) {
       LOGGER.debug("Detected exception", ex);
-      LOGGER.warn("Can't nstantiate self-certificate generator : {}", ex.getMessage());
+      LOGGER.warn("Can't instantiate self-certificate generator : {}", ex.getMessage());
     }
     return null;
   }
