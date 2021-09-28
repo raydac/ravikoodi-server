@@ -8,7 +8,7 @@
 # Changelog
 
 - __1.1.7 (SNAPSHOT)__
-  - embedded JDK changed to BellSoft Liberica JDK 17+35
+  - updated Spring Boot to 2.5.5
   - removed application bundle for MacOS
 
 - __1.1.6 (31-aug-2021)__
