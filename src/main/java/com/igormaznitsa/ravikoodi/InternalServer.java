@@ -2,8 +2,6 @@ package com.igormaznitsa.ravikoodi;
 
 import com.igormaznitsa.ravikoodi.screencast.PreemptiveBuffer;
 import com.igormaznitsa.ravikoodi.UploadingFileRegistry.FileRecord;
-import com.igormaznitsa.ravikoodi.certificategen.SelfSignedCertificateGenerator;
-import com.igormaznitsa.ravikoodi.certificategen.SelfSignedCertificateGeneratorFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -13,6 +11,7 @@ import java.nio.file.Files;
 import java.security.KeyStore;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
@@ -49,7 +49,6 @@ public class InternalServer {
   private final UploadingFileRegistry fileRegistry;
   private final Map<UUID, FileRecord> removedFileRecords = new ConcurrentHashMap<>();
   private final ApplicationPreferences options;
-  private final SelfSignedCertificateGeneratorFactory certificateFactory;
   private final PreemptiveBuffer screencastBuffer = new PreemptiveBuffer(4);
   private final List<InternalServerListener> listeners = new CopyOnWriteArrayList<>();
   private final AtomicBoolean screencastActive = new AtomicBoolean();
@@ -73,11 +72,9 @@ public class InternalServer {
 
   @Autowired
   public InternalServer(
-          final SelfSignedCertificateGeneratorFactory certificateFactory,
           final UploadingFileRegistry fileRegistry,
           final ApplicationPreferences options
   ) {
-    this.certificateFactory = certificateFactory;
     this.fileRegistry = fileRegistry;
     this.options = options;
     this.fileRegistry.setRemovedRecordsStore(this.removedFileRecords);
@@ -188,24 +185,23 @@ public class InternalServer {
       final SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
       sslContextFactory.setExcludeCipherSuites("");
 
-      final SelfSignedCertificateGenerator certificateGen = this.certificateFactory.find();
-      if (certificateGen == null) {
-        LOGGER.warn("Can't find self-signed certificate generator");
-      } else {
-        try {
-          LOGGER.info("Generating self-signed certificate store");
-          final KeyStore keyStore = certificateGen.createSelfSigned("CN=ravikoodi-content-server, OU=Igor Maznitsa, O=IgorMaznitsa.com, L=Tallinn, S=Harjumaa, C=EE", "jetty", "jetty", "someSecretPassword");
+      try (final InputStream keyStoreStream = Objects.requireNonNull(new ClassPathResource("jks/selfsigned.jks").getInputStream())) {
+          LOGGER.info("Loading certificate store");
+          final String key = "someSecretKey";
+
+          final KeyStore keyStore = KeyStore.getInstance("JKS");
+          keyStore.load(keyStoreStream, key.toCharArray());
 
           sslContextFactory.setKeyStore(keyStore);
           sslContextFactory.setTrustStore(keyStore);
-          sslContextFactory.setKeyManagerPassword("someSecretPassword");
-          sslContextFactory.setKeyStorePassword("someSecretPassword");
-          sslContextFactory.setTrustStorePassword("someSecretPassword");
+          sslContextFactory.setKeyManagerPassword(key);
+          sslContextFactory.setKeyStorePassword(key);
+          sslContextFactory.setTrustStorePassword(key);
           sslContextFactory.setCertAlias("jetty");
 
-        } catch (Exception ex) {
+          LOGGER.info("Certificate store has been loaded from internal JKS store");
+      } catch (Exception ex) {
           LOGGER.error("Can't generate self-signed certificate, see log!", ex);
-        }
       }
 
       connector = new ServerConnector(theServer, sslContextFactory, new HttpConnectionFactory());
