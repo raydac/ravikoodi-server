@@ -16,6 +16,7 @@
         <embedded.jdk.provider>BELLSOFT</embedded.jdk.provider>
         <embedded.jdk.type>jdk</embedded.jdk.type>
         <embedded.jdk.version>17.0.1+12</embedded.jdk.version>
+        <spring.boot.version>2.5.6</spring.boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <app.name>${project.build.finalName}</app.name>
@@ -450,7 +451,7 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-parent</artifactId>
-                <version>2.5.5</version>
+                <version>${spring.boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>    
