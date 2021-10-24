@@ -17,7 +17,7 @@
       <outputDirectory>${project.build.finalName}${file.separator}</outputDirectory>
     </file>
     <file>
-      <source>${project.build.directory}${file.separator}ravikoodi.exe</source>
+      <source>${project.basedir}${file.separator}..${file.separator}ravikoodi-win-launcher${file.separator}bin${file.separator}ravikoodi.exe</source>
       <destName>ravikoodi.exe</destName>
       <outputDirectory>${project.build.finalName}${file.separator}</outputDirectory>
     </file>

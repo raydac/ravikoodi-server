@@ -18,3 +18,4 @@ buildNumber.properties
 /nb-configuration.xml
 /nbactions.xml
 *.iml
+/ravikoodi-win-launcher/bin/
