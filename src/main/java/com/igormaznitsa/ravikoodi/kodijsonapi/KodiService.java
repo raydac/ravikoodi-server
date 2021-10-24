@@ -152,6 +152,10 @@ public class KodiService {
     return makeJsonRpcClient().invoke("Player.SetSpeed", new PlayerSpeedReq(player, speed), PlayerSpeed.class);
   }
 
+  public PlayerSpeed setPlayerSpeed(final ActivePlayerInfo player, final PlayerSpeedIncDecReq.Direction direction) throws Throwable {
+    return makeJsonRpcClient().invoke("Player.SetSpeed", new PlayerSpeedIncDecReq(player, direction), PlayerSpeed.class);
+  }
+
   public String doPlayerStop(final ActivePlayerInfo player) throws Throwable {
     return makeJsonRpcClient().invoke("Player.Stop", new PlayerIdReq(player), String.class);
   }

@@ -530,9 +530,8 @@ public final class PlayerPanel extends javax.swing.JPanel {
     if (this.enableListeners) {
       executors.submit(() -> {
         try {
-          final long next = Utils.calculateNextKodiSpeedValue(this.speed.get(), false);
-          LOGGER.info("Decreasing player {} speed to {}", this, next);
-          this.kodiComm.setPlayerSpeed(this.playerInfo, next);
+          LOGGER.info("Decreasing player {} speed", this);
+          this.kodiComm.decPlayerSpeed(playerInfo);
         } catch (Throwable thr) {
           LOGGER.error("Error during player speed decrease", thr);
         }
@@ -544,9 +543,8 @@ public final class PlayerPanel extends javax.swing.JPanel {
     if (this.enableListeners) {
       executors.submit(() -> {
         try {
-          final long next = Utils.calculateNextKodiSpeedValue(this.speed.get(), true);
-          LOGGER.info("Increasing player {} speed to {}", this, next);
-          this.kodiComm.setPlayerSpeed(this.playerInfo, next);
+          LOGGER.info("Increasing player {} speed", this);
+          this.kodiComm.incPlayerSpeed(this.playerInfo);
         } catch (Throwable thr) {
           LOGGER.error("Error during player speed increase", thr);
         }

@@ -22,6 +22,7 @@ import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerItem;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerProperties;
 import com.igormaznitsa.ravikoodi.kodijsonapi.RepeatValue;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerSeekResult;
+import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerSpeedIncDecReq;
 import com.igormaznitsa.ravikoodi.kodijsonapi.Playlist;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlaylistFileItem;
 import com.igormaznitsa.ravikoodi.kodijsonapi.Subtitle;
@@ -130,6 +131,24 @@ public class KodiComm {
         final Optional<KodiService> service = this.makeKodiService();
         if (service.isPresent()) {
             service.get().setPlayerSpeed(playerInfo, next);
+        } else {
+            throw new IllegalStateException("Can't get kodi service");
+        }
+    }
+
+    public void incPlayerSpeed(@NonNull final ActivePlayerInfo playerInfo) throws Throwable {
+        final Optional<KodiService> service = this.makeKodiService();
+        if (service.isPresent()) {
+            service.get().setPlayerSpeed(playerInfo, PlayerSpeedIncDecReq.Direction.INCREMENT);
+        } else {
+            throw new IllegalStateException("Can't get kodi service");
+        }
+    }
+
+    public void decPlayerSpeed(@NonNull final ActivePlayerInfo playerInfo) throws Throwable {
+        final Optional<KodiService> service = this.makeKodiService();
+        if (service.isPresent()) {
+            service.get().setPlayerSpeed(playerInfo, PlayerSpeedIncDecReq.Direction.DECREMENT);
         } else {
             throw new IllegalStateException("Can't get kodi service");
         }
