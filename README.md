@@ -8,7 +8,10 @@
 # Changelog
 
 - __1.1.7 (SNAPSHOT)__
-  - updated Spring Boot to 2.5.5
+  - embedded JDK changed to BellSoft Liberica JDK 17.0.1+12
+  - SSL certificate generator replaced by pre-generated certificate 
+  - Launch4j starter replaced by self-written one
+  - updated Spring Boot to 2.5.6
   - removed application bundle for MacOS
 
 - __1.1.6 (31-aug-2021)__
