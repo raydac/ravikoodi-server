@@ -1036,6 +1036,48 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
         if (text == null) {
             return;
         }
+
+        final String youtubeLink = "plugin://plugin.video.youtube/play/?video_id=sGGtMNscQgs";
+
+        OpeningFileInfoPanel infoPanel = this.openingFileInfoPanel.get();
+        if (infoPanel == null) {
+            infoPanel = new OpeningFileInfoPanel();
+            this.openingFileInfoPanel.set(infoPanel);
+            this.setGlassPane(infoPanel);
+        }
+        infoPanel.setTextInfo("Opening Youtube link '" + text + "'");
+        infoPanel.setVisible(true);
+
+        this.executorService.submit(() -> {
+            final KodiAddress kodiAddress;
+            kodiAddress = new KodiAddress(
+                    this.preferences.getKodiAddress(),
+                    this.preferences.getKodiPort(),
+                    this.preferences.getKodiName(),
+                    this.preferences.getKodiPassword(),
+                    this.preferences.isKodiSsl()
+            );
+
+            final AtomicReference<Throwable> error = new AtomicReference<>();
+            try {
+                final String result = new KodiService(kodiAddress).doPlayerOpenFile(youtubeLink);
+                LOGGER.info("Player open response for Youtube link is '{}' for '{}'", result, youtubeLink);
+                if (!"ok".equalsIgnoreCase(result)) {
+                    throw new IllegalStateException("Can't start play youtube link, status : " + result);
+                }
+                notifyAllPlayersToRefreshFullData();
+            } catch (Throwable ex) {
+                error.set(ex);
+                LOGGER.error("Can't open Youtube link {}", youtubeLink, ex);
+            } finally {
+                SwingUtilities.invokeLater(() -> {
+                    openingFileInfoPanel.get().setVisible(false);
+                    if (error.get() != null) {
+                        JOptionPane.showMessageDialog(MainFrame.this, "Can't open Youtuble link by KODI, '" + youtubeLink + "', error: " + error.get().getMessage(), "Can't open URL", JOptionPane.ERROR_MESSAGE);
+                    }
+                });
+            }
+        });
     }//GEN-LAST:event_menuOpenYoutubeLinkActionPerformed
 
     public void startPlaying(@NonNull final ContentFile contentFile, @Nullable final byte[] data) {
