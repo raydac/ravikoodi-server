@@ -34,6 +34,21 @@ public final class Utils {
         }
     }
 
+    public static String cutStrLength(final String text, final int maxAllowedSize) {
+        if (text == null) return null;
+        
+        final int lengthDiff = text.length() - maxAllowedSize;
+        
+        if (lengthDiff <= 0) {
+            return text;
+        } else if (lengthDiff > 8) {
+            final int partLength = (text.length() - maxAllowedSize) / 2;
+            return text.substring(0, partLength) + "..." + text.substring(text.length() - partLength);
+        } else {
+           return text.substring(0, maxAllowedSize) + "...";
+        }
+    }
+
     public static long calculateNextKodiSpeedValue(final long currentSpeed, final boolean increase) {
         final long nextValue;
 
