@@ -872,6 +872,48 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
       JOptionPane.showMessageDialog(this, new AboutPanel(this.donationController, this.buildProperties), "About", JOptionPane.PLAIN_MESSAGE);
   }//GEN-LAST:event_menuAboutActionPerformed
 
+  private final void openUrlLink(final String url) {
+      OpeningFileInfoPanel infoPanel = this.openingFileInfoPanel.get();
+      if (infoPanel == null) {
+          infoPanel = new OpeningFileInfoPanel();
+          this.openingFileInfoPanel.set(infoPanel);
+          this.setGlassPane(infoPanel);
+      }
+      infoPanel.setTextInfo(String.format("Opening link '%s'", url));
+      infoPanel.setVisible(true);
+
+      this.executorService.submit(() -> {
+          final KodiAddress kodiAddress;
+          kodiAddress = new KodiAddress(
+                  this.preferences.getKodiAddress(),
+                  this.preferences.getKodiPort(),
+                  this.preferences.getKodiName(),
+                  this.preferences.getKodiPassword(),
+                  this.preferences.isKodiSsl()
+          );
+
+          final AtomicReference<Throwable> error = new AtomicReference<>();
+          try {
+              final String result = new KodiService(kodiAddress).doPlayerOpenFile(url);
+              LOGGER.info("Player open link response is '{}' for '{}'", result, url);
+              if (!"ok".equalsIgnoreCase(result)) {
+                  throw new IllegalStateException("Can't start play link, status : " + result);
+              }
+              notifyAllPlayersToRefreshFullData();
+          } catch (Throwable ex) {
+              error.set(ex);
+              LOGGER.error("Can't open link {}", url, ex);
+          } finally {
+              SwingUtilities.invokeLater(() -> {
+                  openingFileInfoPanel.get().setVisible(false);
+                  if (error.get() != null) {
+                      JOptionPane.showMessageDialog(MainFrame.this, "Can't open link by KODI, '" + url + "', error: " + error.get().getMessage(), "Can't open URL", JOptionPane.ERROR_MESSAGE);
+                  }
+              });
+          }
+      });
+  }
+  
   private void menuFileOpenURLActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuFileOpenURLActionPerformed
       final Icon icon = new ImageIcon(Utils.loadImage("32_url_link.png"));
       final Object text = JOptionPane.showInputDialog(this, "Entered URL will be opened with KODI player", "Open URL", JOptionPane.PLAIN_MESSAGE, icon, null, null);
@@ -891,45 +933,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
           return;
       }
 
-      OpeningFileInfoPanel infoPanel = this.openingFileInfoPanel.get();
-      if (infoPanel == null) {
-          infoPanel = new OpeningFileInfoPanel();
-          this.openingFileInfoPanel.set(infoPanel);
-          this.setGlassPane(infoPanel);
-      }
-      infoPanel.setTextInfo("Opening URL '" + uri.toString() + "'");
-      infoPanel.setVisible(true);
-
-      this.executorService.submit(() -> {
-          final KodiAddress kodiAddress;
-          kodiAddress = new KodiAddress(
-                  this.preferences.getKodiAddress(),
-                  this.preferences.getKodiPort(),
-                  this.preferences.getKodiName(),
-                  this.preferences.getKodiPassword(),
-                  this.preferences.isKodiSsl()
-          );
-
-          final AtomicReference<Throwable> error = new AtomicReference<>();
-          try {
-              final String result = new KodiService(kodiAddress).doPlayerOpenFile(uri.toASCIIString());
-              LOGGER.info("Player open response is '{}' for '{}'", result, uri.toASCIIString());
-              if (!"ok".equalsIgnoreCase(result)) {
-                  throw new IllegalStateException("Can't start play, status : " + result);
-              }
-              notifyAllPlayersToRefreshFullData();
-          } catch (Throwable ex) {
-              error.set(ex);
-              LOGGER.error("Can't open URL {}", uri, ex);
-          } finally {
-              SwingUtilities.invokeLater(() -> {
-                  openingFileInfoPanel.get().setVisible(false);
-                  if (error.get() != null) {
-                      JOptionPane.showMessageDialog(MainFrame.this, "Can't open URI by KODI, '" + uri.toString() + "', error: " + error.get().getMessage(), "Can't open URL", JOptionPane.ERROR_MESSAGE);
-                  }
-              });
-          }
-      });
+      this.openUrlLink(uri.toASCIIString());
   }//GEN-LAST:event_menuFileOpenURLActionPerformed
 
   private void buttonRefreshFolderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonRefreshFolderActionPerformed
@@ -1038,46 +1042,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
         }
 
         final String youtubeLink = "plugin://plugin.video.youtube/play/?video_id=sGGtMNscQgs";
-
-        OpeningFileInfoPanel infoPanel = this.openingFileInfoPanel.get();
-        if (infoPanel == null) {
-            infoPanel = new OpeningFileInfoPanel();
-            this.openingFileInfoPanel.set(infoPanel);
-            this.setGlassPane(infoPanel);
-        }
-        infoPanel.setTextInfo("Opening Youtube link '" + text + "'");
-        infoPanel.setVisible(true);
-
-        this.executorService.submit(() -> {
-            final KodiAddress kodiAddress;
-            kodiAddress = new KodiAddress(
-                    this.preferences.getKodiAddress(),
-                    this.preferences.getKodiPort(),
-                    this.preferences.getKodiName(),
-                    this.preferences.getKodiPassword(),
-                    this.preferences.isKodiSsl()
-            );
-
-            final AtomicReference<Throwable> error = new AtomicReference<>();
-            try {
-                final String result = new KodiService(kodiAddress).doPlayerOpenFile(youtubeLink);
-                LOGGER.info("Player open response for Youtube link is '{}' for '{}'", result, youtubeLink);
-                if (!"ok".equalsIgnoreCase(result)) {
-                    throw new IllegalStateException("Can't start play youtube link, status : " + result);
-                }
-                notifyAllPlayersToRefreshFullData();
-            } catch (Throwable ex) {
-                error.set(ex);
-                LOGGER.error("Can't open Youtube link {}", youtubeLink, ex);
-            } finally {
-                SwingUtilities.invokeLater(() -> {
-                    openingFileInfoPanel.get().setVisible(false);
-                    if (error.get() != null) {
-                        JOptionPane.showMessageDialog(MainFrame.this, "Can't open Youtuble link by KODI, '" + youtubeLink + "', error: " + error.get().getMessage(), "Can't open URL", JOptionPane.ERROR_MESSAGE);
-                    }
-                });
-            }
-        });
+        this.openUrlLink(youtubeLink);
     }//GEN-LAST:event_menuOpenYoutubeLinkActionPerformed
 
     public void startPlaying(@NonNull final ContentFile contentFile, @Nullable final byte[] data) {
