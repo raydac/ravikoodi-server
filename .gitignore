@@ -14,8 +14,7 @@ buildNumber.properties
 !/.mvn/wrapper/maven-wrapper.jar
 /nbproject/
 /.idea/
-/kodi-video.iml
-/nb-configuration.xml
-/nbactions.xml
+nb-configuration.xml
+nbactions.xml
 *.iml
 /ravikoodi-win-launcher/bin/
