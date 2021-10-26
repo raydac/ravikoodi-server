@@ -108,6 +108,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
     @Autowired
     private KodiComm kodiComm;
 
+    private File lastSelectedFileFolder = null;
     private final AtomicReference<OpeningFileInfoPanel> openingFileInfoPanel = new AtomicReference<>();
 
     private final AtomicReference<ApplicationStatusPanel> applicationStatusPanel = new AtomicReference<>();
@@ -133,13 +134,13 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
 
         @Override
         public Component getTreeCellRendererComponent(
-            final JTree tree,
-            final Object value,
-            final boolean selected,
-            final boolean expanded,
-            final boolean leaf,
-            final int row,
-            final boolean hasFocus
+                final JTree tree,
+                final Object value,
+                final boolean selected,
+                final boolean expanded,
+                final boolean leaf,
+                final int row,
+                final boolean hasFocus
         ) {
             DefaultTreeCellRenderer result = (DefaultTreeCellRenderer) super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
             if (leaf) {
@@ -202,14 +203,14 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
                 final String[] options = new String[]{"Options", "Continue", "Exit"};
 
                 final int result = JOptionPane.showOptionDialog(
-                    this,
-                    "Can't start embedded server: " + lastServerError.getMessage(),
-                    "Error",
-                    JOptionPane.YES_NO_CANCEL_OPTION,
-                    JOptionPane.ERROR_MESSAGE,
-                    null,
-                    options,
-                    options[0]
+                        this,
+                        "Can't start embedded server: " + lastServerError.getMessage(),
+                        "Error",
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.ERROR_MESSAGE,
+                        null,
+                        options,
+                        options[0]
                 );
 
                 switch (result) {
@@ -313,7 +314,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
                         LOGGER.info("Activate exit");
                         stopScreenCast();
                         SwingUtilities.invokeLater(()
-                            -> SpringApplication.exit(context, () -> 0));
+                                -> SpringApplication.exit(context, () -> 0));
                     }
                 }
             });
@@ -472,7 +473,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
 
                 Files.list(this.currentRootFolder).filter(f -> {
                     return Files.isReadable(f)
-                        && (Files.isDirectory(f) || ContentType.findType(f) != ContentType.UNKNOWN);
+                            && (Files.isDirectory(f) || ContentType.findType(f) != ContentType.UNKNOWN);
                 }).forEach(f -> {
                     if (Files.isDirectory(f)) {
                         try {
@@ -523,6 +524,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
         menuSelectFolder = new javax.swing.JMenuItem();
         menuFileOpenURL = new javax.swing.JMenuItem();
         menuOpenFile = new javax.swing.JMenuItem();
+        menuOpenYoutubeLink = new javax.swing.JMenuItem();
         jSeparator1 = new javax.swing.JPopupMenu.Separator();
         menuExit = new javax.swing.JMenuItem();
         menuTools = new javax.swing.JMenu();
@@ -667,6 +669,15 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
             }
         });
         menuFile.add(menuOpenFile);
+
+        menuOpenYoutubeLink.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_youtube.png"))); // NOI18N
+        menuOpenYoutubeLink.setText("Open Youtube");
+        menuOpenYoutubeLink.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                menuOpenYoutubeLinkActionPerformed(evt);
+            }
+        });
+        menuFile.add(menuOpenYoutubeLink);
         menuFile.add(jSeparator1);
 
         menuExit.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_door_in.png"))); // NOI18N
@@ -825,7 +836,15 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
   }//GEN-LAST:event_buttonImageFromClipboardActionPerformed
 
   private void menuOpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuOpenFileActionPerformed
-      final JFileChooser fileChooser = new JFileChooser(this.currentRootFolder == null ? null : this.currentRootFolder.toFile());
+      final File folder;
+
+      if (this.lastSelectedFileFolder == null) {
+          folder = this.currentRootFolder == null ? null : this.currentRootFolder.toFile();
+      } else {
+          folder = this.lastSelectedFileFolder;
+      }
+
+      final JFileChooser fileChooser = new JFileChooser(folder);
       fileChooser.setDialogTitle("Open file on KODI");
       fileChooser.setMultiSelectionEnabled(false);
       fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
@@ -839,6 +858,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
 
       if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
           final File fileToOpen = fileChooser.getSelectedFile();
+          this.lastSelectedFileFolder = fileToOpen.getParentFile();
           if (fileToOpen.isFile()) {
               LOGGER.info("Opening file {}", fileToOpen);
               startPlaying(new ContentFile(fileToOpen.toPath(), ContentType.findType(fileToOpen)), null);
@@ -883,11 +903,11 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
       this.executorService.submit(() -> {
           final KodiAddress kodiAddress;
           kodiAddress = new KodiAddress(
-              this.preferences.getKodiAddress(),
-              this.preferences.getKodiPort(),
-              this.preferences.getKodiName(),
-              this.preferences.getKodiPassword(),
-              this.preferences.isKodiSsl()
+                  this.preferences.getKodiAddress(),
+                  this.preferences.getKodiPort(),
+                  this.preferences.getKodiName(),
+                  this.preferences.getKodiPassword(),
+                  this.preferences.isKodiSsl()
           );
 
           final AtomicReference<Throwable> error = new AtomicReference<>();
@@ -931,9 +951,9 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
               this.timeWhenEndScreencastFlowEnable.set(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30));
 
               final FfmpegWrapper ffmpwrapper = new FfmpegWrapper(
-                  this.preferences,
-                  this.soundAdapter,
-                  this.server.getScreencastDataBuffer()
+                      this.preferences,
+                      this.soundAdapter,
+                      this.server.getScreencastDataBuffer()
               );
 
               this.lastFFmpegWrapper = new WeakReference<>(ffmpwrapper);
@@ -1010,6 +1030,14 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
         }
     }//GEN-LAST:event_menuTimersActionPerformed
 
+    private void menuOpenYoutubeLinkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuOpenYoutubeLinkActionPerformed
+        final Icon icon = new ImageIcon(Utils.loadImage("32_youtube.png"));
+        final Object text = JOptionPane.showInputDialog(this, "Entered Youtube URL will be opened with KODI player", "Open Youtube link", JOptionPane.PLAIN_MESSAGE, icon, null, null);
+        if (text == null) {
+            return;
+        }
+    }//GEN-LAST:event_menuOpenYoutubeLinkActionPerformed
+
     public void startPlaying(@NonNull final ContentFile contentFile, @Nullable final byte[] data) {
         final Runnable run = () -> {
             OpeningFileInfoPanel infoPanel = this.openingFileInfoPanel.get();
@@ -1066,11 +1094,11 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
         this.executorService.submit(() -> {
             final KodiAddress kodiAddress;
             kodiAddress = new KodiAddress(
-                this.preferences.getKodiAddress(),
-                this.preferences.getKodiPort(),
-                this.preferences.getKodiName(),
-                this.preferences.getKodiPassword(),
-                this.preferences.isKodiSsl()
+                    this.preferences.getKodiAddress(),
+                    this.preferences.getKodiPort(),
+                    this.preferences.getKodiName(),
+                    this.preferences.getKodiPassword(),
+                    this.preferences.isKodiSsl()
             );
 
             final AtomicReference<Throwable> error = new AtomicReference<>();
@@ -1133,6 +1161,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
     private javax.swing.JMenu menuLookAndFeel;
     private javax.swing.JMenuBar menuMain;
     private javax.swing.JMenuItem menuOpenFile;
+    private javax.swing.JMenuItem menuOpenYoutubeLink;
     private javax.swing.JMenuItem menuSelectFolder;
     private javax.swing.JMenuItem menuTimers;
     private javax.swing.JMenu menuTools;
