@@ -18,3 +18,4 @@ nb-configuration.xml
 nbactions.xml
 *.iml
 /ravikoodi-win-launcher/bin/
+/ravikoodi-app/nbproject/

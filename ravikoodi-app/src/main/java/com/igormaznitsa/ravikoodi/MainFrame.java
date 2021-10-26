@@ -1036,13 +1036,28 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
 
     private void menuOpenYoutubeLinkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuOpenYoutubeLinkActionPerformed
         final Icon icon = new ImageIcon(Utils.loadImage("32_youtube.png"));
-        final Object text = JOptionPane.showInputDialog(this, "Entered Youtube URL will be opened with KODI player", "Open Youtube link", JOptionPane.PLAIN_MESSAGE, icon, null, null);
+        final String text = (String)JOptionPane.showInputDialog(this, "Entered Youtube URL will be opened with KODI player", "Open Youtube link", JOptionPane.PLAIN_MESSAGE, icon, null, null);
         if (text == null) {
             return;
         }
 
-        final String youtubeLink = "plugin://plugin.video.youtube/play/?video_id=sGGtMNscQgs";
-        this.openUrlLink(youtubeLink);
+        final String patternVideo = "plugin://plugin.video.youtube/play/?video_id=%s";
+        final String patternPlayList = "plugin://plugin.video.youtube/play/?playlist_id=%s";
+        
+        String id = YoutubeUtils.extractYoutubeVideoId(text).orElse(null);
+        if (id == null) {
+            id = YoutubeUtils.extractYoutubePlaylistId(text).orElse(null);
+            if (id == null) {
+                LOGGER.info("Opening Youtube video for id: {}", text);
+                this.openUrlLink(String.format(patternVideo, text.trim()));
+            } else {
+                LOGGER.info("Opening Youtube playlist for id: {}", id);
+                this.openUrlLink(String.format(patternPlayList, id));
+            }
+        } else {
+            LOGGER.info("Opening Youtube video for id: {}", id);
+            this.openUrlLink(String.format(patternVideo, id));
+        }
     }//GEN-LAST:event_menuOpenYoutubeLinkActionPerformed
 
     public void startPlaying(@NonNull final ContentFile contentFile, @Nullable final byte[] data) {
