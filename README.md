@@ -8,6 +8,8 @@
 # Changelog
 
 - __1.1.7 (SNAPSHOT)__
+  - removed Fast-Robot screen grabber
+  - added Youtube links processing (through Kodi Youtube plugin)
   - embedded JDK changed to BellSoft Liberica JDK 17.0.1+12
   - SSL certificate generator replaced by pre-generated certificate 
   - Launch4j starter replaced by self-written one
