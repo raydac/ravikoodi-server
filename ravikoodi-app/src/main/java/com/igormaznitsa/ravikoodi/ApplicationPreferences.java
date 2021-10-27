@@ -202,7 +202,6 @@ public class ApplicationPreferences {
     public enum GrabberType {
         AUTO,
         ROBOT,
-        ROBOT_FAST,
         FFMPEG;
 
         @NonNull

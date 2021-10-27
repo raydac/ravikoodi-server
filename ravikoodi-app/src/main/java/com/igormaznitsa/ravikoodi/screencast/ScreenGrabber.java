@@ -54,16 +54,10 @@ public final class ScreenGrabber implements Closeable {
     AbstractScreenSource srcSource = null;
     switch(grabberType) {
       case AUTO : {
-        srcSource = makeFastRobotGrabber(this.showCursor);
-        if (srcSource == null) {
-          srcSource = makeRobotGrabber(this.showCursor);
-        }
+        srcSource = makeRobotGrabber(this.showCursor);
       }break;
       case ROBOT : {
         srcSource = makeRobotGrabber(this.showCursor);
-      }break;
-      case ROBOT_FAST : {
-        srcSource = makeFastRobotGrabber(this.showCursor);
       }break;
       case FFMPEG : {
         srcSource = makeFfmpegGrabber(preferences, this.showCursor);
@@ -100,19 +94,6 @@ public final class ScreenGrabber implements Closeable {
       result = new RobotScreenSource(showPointer);
     } catch (Throwable ex) {
       LOGGER.warn("Can't create robot grabber", ex);
-      result = null;
-    }
-    return result;
-  }
-  
-  @Nullable
-  private AbstractScreenSource makeFastRobotGrabber(final boolean showPointer) {
-    AbstractScreenSource result;
-    try {
-      final Class<?> fastRobot = Class.forName("com.igormaznitsa.ravikoodi.screencast.screensrc.FastRobotScreenSource");
-      result = (AbstractScreenSource) fastRobot.getConstructor(boolean.class).newInstance(this.showCursor);
-    } catch (Throwable ex) {
-      LOGGER.warn("Can't create fast robot grabber", ex);
       result = null;
     }
     return result;
