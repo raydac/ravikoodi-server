@@ -1,13 +1,13 @@
 ![BANNER](assets/github-social-preview.png)
 
 [![License Apache 2.0](https://img.shields.io/badge/license-Apache%20License%202.0-green.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-[![Java 8.0+](https://img.shields.io/badge/java-8.0%2b-green.svg)](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+[![Java 11+](https://img.shields.io/badge/java-11%2b-green.svg)](https://bell-sw.com/pages/downloads/#/java-11-lts)
 [![PayPal donation](https://img.shields.io/badge/donation-PayPal-cyan.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=AHWJHJFBAWGL2)
 [![YooMoney donation](https://img.shields.io/badge/donation-Yoo.money-blue.svg)](https://yoomoney.ru/to/41001158080699)
 
 # Changelog
 
-- __1.1.7 (SNAPSHOT)__
+- __1.1.7 (30-oct-2021)__
   - removed Fast-Robot screen grabber
   - added Youtube links processing (through Kodi Youtube plugin)
   - embedded JDK changed to BellSoft Liberica JDK 17.0.1+12
@@ -21,17 +21,6 @@
   - updated Spring Boot to 2.5.4
   - updated Launch4j starter for Windows
 
-- __1.1.5 (15-may-2021)__
-  - added version for MacOS ARM64
-  - embedded JDK changed to BellSoft Liberica JDK 11.0.11+9
-  - updated Spring Boot to 2.4.5
-  - updated Launch4j starter for Windows
-
-- __1.1.4 (13-dec-2020)__
-  - updated dependencies
-  - embedded JDK changed to BellSoft Liberica JDK 11.0.9.1+1
-  - updated links
-
 [Full changelog](changelog.txt)
 
 # Introduction
@@ -43,26 +32,19 @@ At home I use [Raspberry PI 3](https://www.raspberrypi.org/products/raspberry-pi
 ## If you don't have installed Java or don't care about that
 
 It is a Java application so that in ideal it needs pre-installed Java 1.8+, but since 1.1.0 release Iprovide also pre-built versions with embedded JDK images, they can be started without installed Java:
- - [version for Linux with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.6/ravikoodi-1.1.6-linux-jdk.tar.gz)
- - [version for Windows with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.6/ravikoodi-1.1.6-windows-jdk.zip)
- - [version for MacOS with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.6/ravikoodi-1.1.6-macos-jdk.zip)
- - [version for MacOS (ARM64) with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.6/ravikoodi-1.1.6-macos-arm64-jdk.zip)
+ - [version for Linux with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.7/ravikoodi-app-1.1.7-linux-jdk.tar.gz)
+ - [version for Windows with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.7/ravikoodi-app-1.1.7-windows-jdk.zip)
+ - [version for MacOS with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.7/ravikoodi-app-1.1.7-macos-jdk.zip)
+ - [version for MacOS (ARM64) with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.7/ravikoodi-1.1.7-macos-arm64-jdk.zip)
 
 You can just load needed archive, unpack in a folder and start its executable file.
-
-## If you have installed Java and need less size distributives
-
-If you have pre-installed Java 1.8+, you can load files without embedded JDK:
- - [version for Linux](https://github.com/raydac/ravikoodi-server/releases/download/1.1.6/ravikoodi-1.1.6.sh)
- - [version for Windows](https://github.com/raydac/ravikoodi-server/releases/download/1.1.6/ravikoodi-1.1.6.exe)
- - [version for MacOS](https://github.com/raydac/ravikoodi-server/releases/download/1.1.6/ravikoodi-1.1.6_OSX.dmg)
 
 ## Requirements
 
 To be working well, the application requires:
  - max 100 Mb on hard-disk
  - more or less powerful computer (especially for high bitrate screencasting)
- - pre-installed [Java 1.8+](https://bell-sw.com/) for versions without embedded JDK image
+ - pre-installed [Java 11+](https://bell-sw.com/) for versions without embedded JDK image
  - pre-installed [FFmpeg](https://www.ffmpeg.org/) for screencasting
 
 ![screenshot with NIMBUS L&F](assets/screenshot.png)   
@@ -75,11 +57,10 @@ It is a Spring Boot based application with embedded Jetty web server. For screen
 
 ## How to build?
 It is absolutely free and open-source application (under Apache 2.0 license), I don't ask for any fee for use of it (but you could make some donation and I would be very appreciate for that).
-1. For build distributived you need JDK 1.8 (you can use JDK 9+ but some release plug-ins of Maven can work only with JDK 1.8)
-2. You need Maven to build project
-3. Go to into project folder and call `mvn clean install` to get compiled JAR, it can be started separately through `java -jar <JAR_FILE>`
-4. To get release versions, you should use `mvn clean install -Ppublish`, in the `target` folder you will find all prepared archives
-5. To get SH version for Linux, you should use `mvn clean install -Ppublishsh`, in the `target` folder you will find SH version of the application
+1. You need Maven to build project
+2. Go to into project folder and call `mvn clean install` to get compiled JAR, it can be started separately through `java -jar <JAR_FILE>`
+3. To get release versions, you should use `mvn clean install -Ppublish`, in the `target` folder you will find all prepared archives
+4. To get SH version for Linux, you should use `mvn clean install -Ppublishsh`, in the `target` folder you will find SH version of the application
 
 ## Tune KODI
 Select network settings ofyour KODI player (its appearance depends on version)   
