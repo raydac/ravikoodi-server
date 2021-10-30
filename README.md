@@ -79,13 +79,13 @@ Open options panel `Tools -> Options`.
 After listed steps, your local video server is prepared for broadcasting to KODI.
 
 # Play content
-1. Press __File tree__ icon in the button tool bar and select folder contains media-contend through File dialog.
+1. Press __File tree__ icon in the button tool bar and select folder contains media-contend through File dialog.   
 ![file tree button](assets/tool_folders.png)
 2. Select needed content in the file tree   
 ![select media file](assets/tree_selected_content.png)
-3. If you want open the selected media file in the default system player, then click twice the media file or press button
+3. If you want open the selected media file in the default system player, then click twice the media file or press button   
 ![start in system](assets/tool_system_play.png)
-4. Press button `Play selected item on KODI` to send the media file to internal server and start broadcasting to KODI.
+4. Press button `Play selected item on KODI` to send the media file to internal server and start broadcasting to KODI.   
 ![start on KODI](assets/tool_play_on_kodi.png)
-5. If you have tuned screencast options (and you have provided FFmpeg) then you can start screencast
+5. If you have tuned screencast options (and you have provided FFmpeg) then you can start screencast   
 ![start screencast](assets/tool_play_screencast.png)  
