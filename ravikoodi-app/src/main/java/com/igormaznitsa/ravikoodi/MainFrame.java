@@ -268,7 +268,11 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
             @Override
             protected void paintChildren(final Graphics g) {
                 final Rectangle rect = this.getBounds();
-                g.drawImage(logo, (rect.width - logo.getWidth(null)) / 2, (rect.height - logo.getHeight(null)) / 2, null);
+                final int imageWidth = logo.getWidth(null);
+                final int imageHeight = logo.getHeight(null);
+                if (rect.width >= imageWidth && rect.height >= imageHeight) {
+                    g.drawImage(logo, (rect.width - imageWidth) / 2, (rect.height - imageHeight) / 2, null);
+                }
                 super.paintChildren(g);
             }
         };
