@@ -5,7 +5,7 @@
 
     <groupId>com.igormaznitsa</groupId>
     <artifactId>ravikoodi</artifactId>
-    <version>1.1.7-SNAPSHOT</version>
+    <version>1.1.7</version>
     <packaging>pom</packaging>
 
     <description>Server to broadcast media content to KODI compatible media players</description>
@@ -30,10 +30,6 @@
         <connection>scm:git:git://github.com/raydac/ravikoodi-server.git</connection>
         <developerConnection>scm:git:git@github.com:raydac/ravikoodi-server.git</developerConnection>
     </scm>
-
-    <prerequisites>
-        <maven>3.0</maven>
-    </prerequisites>
 
     <organization>
         <name>Igor Maznitsa</name>
