@@ -17,6 +17,7 @@ import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Graphics;
 import java.awt.Image;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.FlavorEvent;
@@ -60,6 +61,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JTree;
 import javax.swing.LookAndFeel;
@@ -260,6 +262,18 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
         }
     }
 
+    private JPanel makeMainPanel() {
+        final Image logo = Utils.loadImage("back-logo.png");
+        return new JPanel() {
+            @Override
+            protected void paintChildren(final Graphics g) {
+                final Rectangle rect = this.getBounds();
+                g.drawImage(logo, (rect.width - logo.getWidth(null)) / 2, (rect.height - logo.getHeight(null)) / 2, null);
+                super.paintChildren(g);
+            }
+        };
+    }
+    
     private void stopScreenCast() {
         Utils.closeQuietly(this.currentScreenGrabber.getAndSet(null));
         SwingUtilities.invokeLater(() -> {
@@ -575,7 +589,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
         buttonImageFromClipboard = new javax.swing.JButton();
         buttonPlaySelected = new javax.swing.JButton();
         toggleButtonScreencast = new javax.swing.JToggleButton();
-        panelMain = new javax.swing.JPanel();
+        panelMain = this.makeMainPanel();
         panelPlayers = new javax.swing.JPanel();
         menuMain = new javax.swing.JMenuBar();
         menuFile = new javax.swing.JMenu();
