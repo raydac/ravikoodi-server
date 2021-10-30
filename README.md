@@ -35,7 +35,7 @@ It is a Java application so that in ideal it needs pre-installed Java 1.8+, but 
  - [version for Linux with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.7/ravikoodi-app-1.1.7-linux-jdk-amd64.tar.gz)
  - [version for Windows with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.7/ravikoodi-app-1.1.7-windows-jdk-amd64.zip)
  - [version for MacOS with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.7/ravikoodi-app-1.1.7-macos-jdk-amd64.zip)
- - [version for MacOS (ARM64) with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.7/ravikoodi-1.1.7-macos-jdk-aarch64.zip)
+ - [version for MacOS (ARM64) with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.7/ravikoodi-app-1.1.7-macos-jdk-aarch64.zip)
 
 You can just load needed archive, unpack in a folder and start its executable file.
 
