@@ -276,7 +276,8 @@ public class ApplicationPreferences {
         KODI_PORT("kodi.port"),
         KODI_NAME("kodi.name"),
         KODI_SSL("kodi.ssl"),
-        KODI_PASSWORD("kodi.password");
+        KODI_PASSWORD("kodi.password"),
+        GENERAL_SCALE_UI("ui.scale");
 
         private final String propertyName;
 
@@ -293,9 +294,13 @@ public class ApplicationPreferences {
     private final Preferences preferences;
 
     public ApplicationPreferences() {
-        this.preferences = Preferences.userNodeForPackage(ApplicationPreferences.class);
+        this.preferences = findPreferences();
     }
 
+    public static Preferences findPreferences() {
+        return Preferences.userNodeForPackage(ApplicationPreferences.class);
+    }
+    
     @NonNull
     public List<Timer> getTimers() {
         synchronized (this.preferences) {
@@ -476,6 +481,22 @@ public class ApplicationPreferences {
     public void setKodiPort(final int port) {
         synchronized (this.preferences) {
             this.preferences.putInt(Option.KODI_PORT.getPropertyName(), port < 0 || port > 65535 ? 80 : port);
+        }
+    }
+
+    public static int getScaleUi(final Preferences preferences) {
+        synchronized (preferences) {
+            return preferences.getInt(Option.GENERAL_SCALE_UI.getPropertyName(), 1);
+        }
+    }
+    
+    public int getScaleUi() {
+        return getScaleUi(this.preferences);
+    }
+
+    public void setScaleUi(final int scale) {
+        synchronized (this.preferences) {
+            this.preferences.putInt(Option.GENERAL_SCALE_UI.getPropertyName(), scale < 1 || scale > 5 ? 1 : scale);
         }
     }
 

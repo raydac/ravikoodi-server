@@ -45,6 +45,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     private boolean grabCursor;
     private int snapsPerSecond;
     private int kodiPort;
+    private int scaleUi;
     private String soundInput;
     private int bandwidth;
     private int crf;
@@ -56,6 +57,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
     public Data(@NonNull final ApplicationPreferences preferences) {
       this.threads = preferences.getThreads();
+      this.scaleUi = preferences.getScaleUi();
       this.host = preferences.getServerHost();
       this.port = preferences.getServerPort();
       this.kodiAddress = preferences.getKodiAddress();
@@ -77,6 +79,8 @@ public class OptionsPanel extends javax.swing.JPanel {
     }
 
     public void save(@NonNull final ApplicationPreferences preferences) {
+      preferences.setScaleUi(this.scaleUi);
+
       preferences.setServerInterface(this.host);
       preferences.setServerPort(this.port);
       preferences.setServerSsl(this.serverSsl);
@@ -134,6 +138,14 @@ public class OptionsPanel extends javax.swing.JPanel {
     
     public void setBandwidth(final int value) {
       this.bandwidth = value;
+    }
+    
+    public void setScaleUi(final int value) {
+      this.scaleUi = value;
+    }
+    
+    public int getScaleUi() {
+      return this.scaleUi;
     }
     
     @NonNull
@@ -356,6 +368,8 @@ public class OptionsPanel extends javax.swing.JPanel {
     this.textFieldKodiName.setText(data.getKodiName());
     this.textFieldKodiPassword.setText(data.getKodiPassword());
 
+    this.spinnerScaleUi.setValue(data.getScaleUi());
+    
     this.textFieldFfmpeg.setText(data.getFfmpegPath());
     this.checkGrabCursor.setSelected(data.isGrabCursor());
     this.comboGrabberType.setSelectedItem(data.getGrabberType().name());
@@ -432,6 +446,11 @@ public class OptionsPanel extends javax.swing.JPanel {
         spinnerGrabThreads = new javax.swing.JSpinner();
         jLabel16 = new javax.swing.JLabel();
         spinnerCrf = new javax.swing.JSpinner();
+        panelGeneral = new javax.swing.JPanel();
+        labelScaleUi = new javax.swing.JLabel();
+        spinnerScaleUi = new javax.swing.JSpinner();
+        filler1 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0), new java.awt.Dimension(32767, 0));
+        jLabel15 = new javax.swing.JLabel();
 
         setLayout(new java.awt.GridBagLayout());
 
@@ -507,7 +526,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridy = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
         add(panelServerOptions, gridBagConstraints);
 
@@ -617,7 +636,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridy = 2;
         add(panelKodiOptions, gridBagConstraints);
 
         panelScreenCast.setBorder(javax.swing.BorderFactory.createTitledBorder("Screencast"));
@@ -851,10 +870,52 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridy = 1;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         add(panelScreenCast, gridBagConstraints);
+
+        panelGeneral.setBorder(javax.swing.BorderFactory.createTitledBorder("General"));
+        panelGeneral.setLayout(new java.awt.GridBagLayout());
+
+        labelScaleUi.setText("Scale UI: ");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        panelGeneral.add(labelScaleUi, gridBagConstraints);
+
+        spinnerScaleUi.setModel(new javax.swing.SpinnerNumberModel(1, 0, 5, 1));
+        spinnerScaleUi.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                spinnerScaleUiStateChanged(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        panelGeneral.add(spinnerScaleUi, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1111.0;
+        panelGeneral.add(filler1, gridBagConstraints);
+
+        jLabel15.setForeground(new java.awt.Color(255, 0, 0));
+        jLabel15.setText(" Requires restart ");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        panelGeneral.add(jLabel15, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        add(panelGeneral, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
   
@@ -944,6 +1005,10 @@ public class OptionsPanel extends javax.swing.JPanel {
         this.currentData.setCrf((Integer) this.spinnerCrf.getValue());
     }//GEN-LAST:event_spinnerCrfStateChanged
 
+    private void spinnerScaleUiStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spinnerScaleUiStateChanged
+        this.currentData.setScaleUi((Integer) this.spinnerScaleUi.getValue());
+    }//GEN-LAST:event_spinnerScaleUiStateChanged
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton buttonTestKodiConnection;
     private javax.swing.JCheckBox checkGrabCursor;
@@ -954,6 +1019,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     private javax.swing.JComboBox<String> comboQuality;
     private javax.swing.JComboBox<String> comboSoundLine;
     private javax.swing.JComboBox<String> comboSpeedProfile;
+    private javax.swing.Box.Filler filler1;
     private javax.swing.Box.Filler filler2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
@@ -961,6 +1027,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel14;
+    private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -974,6 +1041,8 @@ public class OptionsPanel extends javax.swing.JPanel {
     private javax.swing.JLabel labelKodiName;
     private javax.swing.JLabel labelKodiPassword;
     private javax.swing.JLabel labelKodiPort;
+    private javax.swing.JLabel labelScaleUi;
+    private javax.swing.JPanel panelGeneral;
     private javax.swing.JPanel panelKodiOptions;
     private javax.swing.JPanel panelScreenCast;
     private javax.swing.JPanel panelServerOptions;
@@ -981,6 +1050,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     private javax.swing.JSpinner spinnerCrf;
     private javax.swing.JSpinner spinnerGrabThreads;
     private javax.swing.JSpinner spinnerKodiPort;
+    private javax.swing.JSpinner spinnerScaleUi;
     private javax.swing.JSpinner spinnerServerPort;
     private javax.swing.JSpinner spinnerSnapsPerSecond;
     private javax.swing.JSpinner spinnerSoundOffset;
