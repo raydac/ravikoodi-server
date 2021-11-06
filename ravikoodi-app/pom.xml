@@ -194,6 +194,7 @@
                                         <option>--compress=2</option>
                                         <option>--no-header-files</option>
                                         <option>--no-man-pages</option>
+                                        <option>--strip-debug</option>
                                     </options>
                                     <addModules>
                                         <module>jdk.management.agent</module>
@@ -219,6 +220,7 @@
                                         <option>--compress=2</option>
                                         <option>--no-header-files</option>
                                         <option>--no-man-pages</option>
+                                        <option>--strip-debug</option>
                                     </options>
                                     <addModules>
                                         <module>jdk.management.agent</module>
@@ -244,6 +246,7 @@
                                         <option>--compress=2</option>
                                         <option>--no-header-files</option>
                                         <option>--no-man-pages</option>
+                                        <option>--strip-debug</option>
                                     </options>
                                     <addModules>
                                         <module>jdk.management.agent</module>
@@ -269,6 +272,7 @@
                                         <option>--compress=2</option>
                                         <option>--no-header-files</option>
                                         <option>--no-man-pages</option>
+                                        <option>--strip-debug</option>
                                     </options>
                                     <addModules>
                                         <module>jdk.management.agent</module>

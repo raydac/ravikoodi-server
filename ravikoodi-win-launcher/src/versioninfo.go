@@ -18,13 +18,13 @@ var versionInfo = unmarshalGoVersionInfo([]byte(`{
 		"FileVersion": {
 			"Major": 1,
 			"Minor": 1,
-			"Patch": 7,
+			"Patch": 8,
 			"Build": 0
 		},
 		"ProductVersion": {
 			"Major": 1,
 			"Minor": 1,
-			"Patch": 7,
+			"Patch": 8,
 			"Build": 0
 		},
 		"FileFlagsMask": "3f",
@@ -37,14 +37,14 @@ var versionInfo = unmarshalGoVersionInfo([]byte(`{
 		"Comments": "RaviKoodi media server.",
 		"CompanyName": "Igor Maznitsa",
 		"FileDescription": "RaviKoodi launcher",
-		"FileVersion": "v1.1.7.0",
+		"FileVersion": "v1.1.8.0",
 		"InternalName": "ravikoodi.exe",
 		"LegalCopyright": "Copyright (c) 2018-2021 Igor Maznitsa",
 		"LegalTrademarks": "",
 		"OriginalFilename": "ravikoodi.exe",
 		"PrivateBuild": "",
 		"ProductName": "RaviKoodi launcher",
-		"ProductVersion": "v1.1.7.0",
+		"ProductVersion": "v1.1.8.0",
 		"SpecialBuild": ""
 	},
 	"VarFileInfo":{

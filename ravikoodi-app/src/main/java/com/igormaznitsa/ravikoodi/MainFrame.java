@@ -18,6 +18,7 @@ import java.awt.Desktop;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Rectangle;
+import java.awt.Taskbar;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.FlavorEvent;
@@ -306,8 +307,14 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
         SwingUtilities.invokeAndWait(() -> {
             initComponents();
             this.setTitle("Ravikoodi content server");
-            this.setIconImage(Utils.loadImage("ravikoodi-logo-256.png"));
 
+            final Image icon = Utils.loadImage("ravikoodi-logo-256.png");
+            this.setIconImage(icon);
+            this.setIconImages(List.of(icon));
+            if (Taskbar.isTaskbarSupported()) {
+                Taskbar.getTaskbar().setIconImage(icon);
+            }
+            
             this.treeVideoFiles.setCellRenderer(new FileTreeRenderer());
 
             Toolkit.getDefaultToolkit().getSystemClipboard().addFlavorListener(this);

@@ -19,3 +19,5 @@ nbactions.xml
 *.iml
 /ravikoodi-win-launcher/bin/
 /ravikoodi-app/nbproject/
+*.syso
+versioninfo.go
