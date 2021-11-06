@@ -12,9 +12,11 @@ public class RaviKoodiServer {
 
     public static void main(@NonNull String[] args) {
         final int scaleUi = ApplicationPreferences.getScaleUi(ApplicationPreferences.findPreferences());
-        System.out.println("Scale UI: " + scaleUi);
-        System.setProperty("sun.java2d.uiScale", Integer.toString(scaleUi));
-        System.setProperty("sun.java2d.dpiaware", "true");
+        if (scaleUi > 1) {
+            System.out.println("Detected scale UI: " + scaleUi);
+            System.setProperty("sun.java2d.uiScale", Integer.toString(Math.min(5, scaleUi)));
+            System.setProperty("sun.java2d.uiScale.enabled", "true");
+        }
 
         new SpringApplicationBuilder(RaviKoodiServer.class)
                 .web(WebApplicationType.NONE)
