@@ -1,13 +1,19 @@
 package com.igormaznitsa.ravikoodi;
 
+import java.awt.Component;
 import java.awt.Desktop;
+import java.awt.Dialog;
 import java.awt.Image;
+import java.awt.Window;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
 import java.io.Closeable;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
 import javax.imageio.ImageIO;
+import javax.swing.SwingUtilities;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +52,29 @@ public final class Utils {
         }
     }
 
+    public static Component makeOwningDialogResizable(final Component component, final Runnable... extraActions) {
+        final HierarchyListener listener = new HierarchyListener() {
+            @Override
+            public void hierarchyChanged(final HierarchyEvent e) {
+                final Window window = SwingUtilities.getWindowAncestor(component);
+                if (window instanceof Dialog) {
+                    final Dialog dialog = (Dialog) window;
+                    if (!dialog.isResizable()) {
+                        dialog.setResizable(true);
+                        component.removeHierarchyListener(this);
+
+                        for (final Runnable r : extraActions) {
+                            r.run();
+                        }
+                    }
+                }
+            }
+        };
+        component.addHierarchyListener(listener);
+        return component;
+    }
+
+    
     public static long calculateNextKodiSpeedValue(final long currentSpeed, final boolean increase) {
         final long nextValue;
 

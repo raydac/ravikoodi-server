@@ -64,6 +64,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButtonMenuItem;
+import javax.swing.JScrollPane;
 import javax.swing.JTree;
 import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
@@ -231,7 +232,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
                     break;
                     case JOptionPane.YES_OPTION: {
                         final OptionsPanel.Data container = new OptionsPanel.Data(this.preferences);
-                        if (JOptionPane.showConfirmDialog(this, new OptionsPanel(container, this.soundAdapter), "Options", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+                        if (JOptionPane.showConfirmDialog(this, Utils.makeOwningDialogResizable(new JScrollPane(new OptionsPanel(container, this.soundAdapter))), "Options", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
                             container.save(this.preferences);
                             this.server.restartServer();
                         } else {
@@ -844,7 +845,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
 
   private void menuToolsOptionsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuToolsOptionsActionPerformed
       final OptionsPanel.Data container = new OptionsPanel.Data(this.preferences);
-      if (JOptionPane.showConfirmDialog(this, new OptionsPanel(container, this.soundAdapter), "Options", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+      if (JOptionPane.showConfirmDialog(this, Utils.makeOwningDialogResizable(new JScrollPane(new OptionsPanel(container, this.soundAdapter))), "Options", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
           container.save(this.preferences);
           this.server.restartServer();
       }
