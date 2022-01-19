@@ -87,12 +87,12 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 @org.springframework.stereotype.Component
-public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeModel, FlavorListener, InternalServer.InternalServerListener {
+public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorListener, InternalServer.InternalServerListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MainFrame.class);
-    
+
     private static final int STR_CUT_LEN = 48;
-    
+
     private Path currentRootFolder;
 
     private final List<TreeModelListener> treeListeners = new CopyOnWriteArrayList<>();
@@ -279,7 +279,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
             }
         };
     }
-    
+
     private void stopScreenCast() {
         Utils.closeQuietly(this.currentScreenGrabber.getAndSet(null));
         SwingUtilities.invokeLater(() -> {
@@ -315,7 +315,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
             if (Taskbar.isTaskbarSupported()) {
                 Taskbar.getTaskbar().setIconImage(icon);
             }
-            
+
             this.treeVideoFiles.setCellRenderer(new FileTreeRenderer());
 
             Toolkit.getDefaultToolkit().getSystemClipboard().addFlavorListener(this);
@@ -352,8 +352,8 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
                     }
                 }
             });
-            
-            final DropTarget dropTarget = new DropTarget(this.panelMain, new DropTargetAdapter(){
+
+            final DropTarget dropTarget = new DropTarget(this.panelMain, new DropTargetAdapter() {
                 @Override
                 public void drop(final DropTargetDropEvent dtde) {
                     onMainPanelDropEvent(dtde);
@@ -365,7 +365,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
 
     private void onMainPanelDropEvent(@NonNull final DropTargetDropEvent event) {
         final Transferable transferable = event.getTransferable();
-        
+
         try {
             if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
                 event.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
@@ -390,10 +390,10 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
                     this.openYoutubeLink(droppedLink);
                 } else {
                     LOGGER.info("Dropped string recognized as just URL: {}", droppedLink);
-                    if (droppedLink.contains("://")){
+                    if (droppedLink.contains("://")) {
                         this.openUrlLink(droppedLink);
                     } else {
-                        this.openUrlLink("https://"+droppedLink);
+                        this.openUrlLink("https://" + droppedLink);
                     }
                 }
             } else {
@@ -404,7 +404,7 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
             LOGGER.error("Error during process transferable object", ex);
         }
     }
-    
+
     private void fillLookAndFeel() {
         final LookAndFeel current = UIManager.getLookAndFeel();
         final ButtonGroup lfGroup = new ButtonGroup();
@@ -956,48 +956,48 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
       JOptionPane.showMessageDialog(this, new AboutPanel(this.donationController, this.buildProperties), "About", JOptionPane.PLAIN_MESSAGE);
   }//GEN-LAST:event_menuAboutActionPerformed
 
-  private final void openUrlLink(final String url) {
-      OpeningFileInfoPanel infoPanel = this.openingFileInfoPanel.get();
-      if (infoPanel == null) {
-          infoPanel = new OpeningFileInfoPanel();
-          this.openingFileInfoPanel.set(infoPanel);
-          this.setGlassPane(infoPanel);
-      }
-      infoPanel.setTextInfo(String.format("Opening link '%s'", Utils.cutStrLength(url, STR_CUT_LEN)));
-      infoPanel.setVisible(true);
+    private final void openUrlLink(final String url) {
+        OpeningFileInfoPanel infoPanel = this.openingFileInfoPanel.get();
+        if (infoPanel == null) {
+            infoPanel = new OpeningFileInfoPanel();
+            this.openingFileInfoPanel.set(infoPanel);
+            this.setGlassPane(infoPanel);
+        }
+        infoPanel.setTextInfo(String.format("Opening link '%s'", Utils.cutStrLength(url, STR_CUT_LEN)));
+        infoPanel.setVisible(true);
 
-      this.executorService.submit(() -> {
-          final KodiAddress kodiAddress;
-          kodiAddress = new KodiAddress(
-                  this.preferences.getKodiAddress(),
-                  this.preferences.getKodiPort(),
-                  this.preferences.getKodiName(),
-                  this.preferences.getKodiPassword(),
-                  this.preferences.isKodiSsl()
-          );
+        this.executorService.submit(() -> {
+            final KodiAddress kodiAddress;
+            kodiAddress = new KodiAddress(
+                    this.preferences.getKodiAddress(),
+                    this.preferences.getKodiPort(),
+                    this.preferences.getKodiName(),
+                    this.preferences.getKodiPassword(),
+                    this.preferences.isKodiSsl()
+            );
 
-          final AtomicReference<Throwable> error = new AtomicReference<>();
-          try {
-              final String result = new KodiService(kodiAddress).doPlayerOpenFile(url);
-              LOGGER.info("Player open link response is '{}' for '{}'", result, url);
-              if (!"ok".equalsIgnoreCase(result)) {
-                  throw new IllegalStateException("Can't start play link, status : " + result);
-              }
-              notifyAllPlayersToRefreshFullData();
-          } catch (Throwable ex) {
-              error.set(ex);
-              LOGGER.error("Can't open link {}", url, ex);
-          } finally {
-              SwingUtilities.invokeLater(() -> {
-                  openingFileInfoPanel.get().setVisible(false);
-                  if (error.get() != null) {
-                      JOptionPane.showMessageDialog(MainFrame.this, "Can't open link by KODI, '" + Utils.cutStrLength(url,64) + "', error: " + Utils.cutStrLength(error.get().getMessage(),64), "Can't open URL", JOptionPane.ERROR_MESSAGE);
-                  }
-              });
-          }
-      });
-  }
-  
+            final AtomicReference<Throwable> error = new AtomicReference<>();
+            try {
+                final String result = new KodiService(kodiAddress).doPlayerOpenFile(url);
+                LOGGER.info("Player open link response is '{}' for '{}'", result, url);
+                if (!"ok".equalsIgnoreCase(result)) {
+                    throw new IllegalStateException("Can't start play link, status : " + result);
+                }
+                notifyAllPlayersToRefreshFullData();
+            } catch (Throwable ex) {
+                error.set(ex);
+                LOGGER.error("Can't open link {}", url, ex);
+            } finally {
+                SwingUtilities.invokeLater(() -> {
+                    openingFileInfoPanel.get().setVisible(false);
+                    if (error.get() != null) {
+                        JOptionPane.showMessageDialog(MainFrame.this, "Can't open link by KODI, '" + Utils.cutStrLength(url, 64) + "', error: " + Utils.cutStrLength(error.get().getMessage(), 64), "Can't open URL", JOptionPane.ERROR_MESSAGE);
+                    }
+                });
+            }
+        });
+    }
+
   private void menuFileOpenURLActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuFileOpenURLActionPerformed
       final Icon icon = new ImageIcon(Utils.loadImage("32_url_link.png"));
       final Object text = JOptionPane.showInputDialog(this, "Entered URL will be opened with KODI player", "Open URL", JOptionPane.PLAIN_MESSAGE, icon, null, null);
@@ -1137,10 +1137,10 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
             this.openUrlLink(String.format(patternVideo, id));
         }
     }
-    
+
     private void menuOpenYoutubeLinkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuOpenYoutubeLinkActionPerformed
         final Icon icon = new ImageIcon(Utils.loadImage("32_youtube.png"));
-        final String text = (String)JOptionPane.showInputDialog(this, "Entered Youtube URL will be opened with KODI player", "Open Youtube link", JOptionPane.PLAIN_MESSAGE, icon, null, null);
+        final String text = (String) JOptionPane.showInputDialog(this, "Entered Youtube URL will be opened with KODI player", "Open Youtube link", JOptionPane.PLAIN_MESSAGE, icon, null, null);
         if (text == null) {
             return;
         }
@@ -1366,26 +1366,5 @@ public class MainFrame extends javax.swing.JFrame implements GuiMessager, TreeMo
                 }
             }
         }
-    }
-
-    @Override
-    public void showErrorMessage(@NonNull final String title, @NonNull final String message) {
-        SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
-        });
-    }
-
-    @Override
-    public void showWarningMessage(@NonNull final String title, @NonNull final String message) {
-        SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(this, message, title, JOptionPane.WARNING_MESSAGE);
-        });
-    }
-
-    @Override
-    public void showInfoMessage(@NonNull final String title, @NonNull final String message) {
-        SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
-        });
     }
 }
