@@ -16,7 +16,7 @@
         <embedded.jdk.provider>BELLSOFT</embedded.jdk.provider>
         <embedded.jdk.type>jdk</embedded.jdk.type>
         <embedded.jdk.version>17.0.1+12</embedded.jdk.version>
-        <spring.boot.version>2.5.6</spring.boot.version>
+        <spring.boot.version>2.6.2</spring.boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <app.name>${project.build.finalName}</app.name>
@@ -80,7 +80,7 @@
                     <plugin>
                         <groupId>com.igormaznitsa</groupId>
                         <artifactId>mvn-jlink-wrapper</artifactId>
-                        <version>1.1.0</version>
+                        <version>1.1.1</version>
                         <executions>
                             <execution>
                                 <id>cache-work-jdk</id>
