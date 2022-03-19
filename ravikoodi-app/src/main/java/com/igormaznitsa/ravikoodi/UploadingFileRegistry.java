@@ -32,9 +32,9 @@ public class UploadingFileRegistry {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UploadingFileRegistry.class);
 
-  private static final long INITIAL_VALID_DELAY_MILLISECONDS = 15000L;
-  private static final long VALID_TIME_MILLISECONDS = 5000L;
-  private static final long CHECK_DELAY_MILLISECONDS = 3000L;
+  public static final long INITIAL_VALID_DELAY_MILLISECONDS = 15000L;
+  public static final long VALID_TIME_MILLISECONDS = 5000L;
+  public static final long CHECK_DELAY_MILLISECONDS = 3000L;
 
   @Autowired
   private MimeTypes mimeTypes;
@@ -44,82 +44,11 @@ public class UploadingFileRegistry {
 
   private final AtomicBoolean paused = new AtomicBoolean();
 
-  private final AtomicReference<Map<UUID,FileRecord>> removedFileRecordStore = new AtomicReference<>();
+  private final AtomicReference<Map<String,UploadFileRecord>> removedFileRecordStore = new AtomicReference<>();
   
-  public static final class FileRecord {
+  private final Map<String, UploadFileRecord> records = new ConcurrentHashMap<>();
 
-    private final UUID uuid;
-    private final Path file;
-    private final String mimeType;
-    private final AtomicInteger uploadsCounter = new AtomicInteger();
-
-    private final AtomicLong validUntil = new AtomicLong();
-    private final byte[] predefinedData;
-
-    FileRecord(@NonNull final UUID uuid, @NonNull final Path file, @NonNull final String mimeType, @Nullable final byte[] predefinedData) {
-      this.validUntil.set(System.currentTimeMillis() + INITIAL_VALID_DELAY_MILLISECONDS);
-      this.uuid = uuid;
-      this.file = file;
-      this.mimeType = mimeType;
-      this.predefinedData = predefinedData;
-    }
-
-    public InputStream getAsInputStream() throws IOException {
-      if (this.predefinedData == null) {
-        final long length = Files.size(this.file);
-        return new BufferedInputStream(new FileInputStream(this.file.toFile()), (int) Math.min(262144L, length));
-      } else {
-        return new ByteArrayInputStream(this.predefinedData);
-      }
-    }
-
-    public Optional<byte[]> getPredefinedData() {
-      return Optional.ofNullable(this.predefinedData);
-    }
-
-    public int getUploadsCounter() {
-      return this.uploadsCounter.get();
-    }
-
-    public void refreshValidTime() {
-      this.validUntil.set(System.currentTimeMillis() + VALID_TIME_MILLISECONDS);
-    }
-
-    public int incUploadsCounter() {
-      this.validUntil.set(System.currentTimeMillis() + VALID_TIME_MILLISECONDS);
-      return this.uploadsCounter.incrementAndGet();
-    }
-
-    public int decUploadsCounter() {
-      this.validUntil.set(System.currentTimeMillis() + VALID_TIME_MILLISECONDS);
-      return this.uploadsCounter.decrementAndGet();
-    }
-
-    @NonNull
-    public String getMimeType() {
-      return this.mimeType;
-    }
-
-    @NonNull
-    public UUID getUUID() {
-      return this.uuid;
-    }
-
-    @NonNull
-    public Path getFile() {
-      return this.file;
-    }
-  
-    @NonNull
-    @Override
-    public String toString() {
-      return String.format("FileRecord(%s,file=%s)", this.uuid, this.file.getFileName().toString());
-    }
-  }
-
-  private final Map<UUID, FileRecord> records = new ConcurrentHashMap<>();
-
-  public void setRemovedRecordsStore(final Map<UUID, FileRecord> store) {
+  public void setRemovedRecordsStore(final Map<String, UploadFileRecord> store) {
     this.removedFileRecordStore.set(store);
   }
   
@@ -145,19 +74,19 @@ public class UploadingFileRegistry {
       this.records.entrySet().forEach(x -> x.getValue().refreshValidTime());
     } else {
       final long time = System.currentTimeMillis();
-      final List<UUID> listOfTimeOut = this.records.entrySet()
+      final List<String> listOfTimeOut = this.records.entrySet()
               .stream()
-              .filter(x -> x.getValue().getUploadsCounter() == 0 && x.getValue().validUntil.get() < time)
+              .filter(x -> x.getValue().getUploadsCounter() == 0 && x.getValue().getValidUntil() < time)
               .map(x -> x.getKey())
               .collect(Collectors.toList());
 
-      final Map<UUID, FileRecord> removedRecordsStore = this.removedFileRecordStore.get();
+      final Map<String, UploadFileRecord> removedRecordsStore = this.removedFileRecordStore.get();
       listOfTimeOut.forEach(x -> {
         LOGGER.info("Collected file registry record '{}'", x);
         if (removedRecordsStore!=null) {
-          final FileRecord removedRecord = this.records.remove(x);
+          final UploadFileRecord removedRecord = this.records.remove(x);
           if (removedRecord != null) {
-            removedRecordsStore.put(removedRecord.uuid, removedRecord);
+            removedRecordsStore.put(removedRecord.getUid(), removedRecord);
           }
         }
       });
@@ -165,34 +94,34 @@ public class UploadingFileRegistry {
   }
 
   @Nullable
-  public FileRecord restoreRecord(@NonNull final FileRecord record) {
+  public UploadFileRecord restoreRecord(@NonNull final UploadFileRecord record) {
     LOGGER.info("Restoring record: {}", record);
-    FileRecord result = null;
-    if (this.records.putIfAbsent(record.getUUID(), record) == null) {
-      LOGGER.info("Record {} has been restored", record.getUUID());
+    UploadFileRecord result = null;
+    if (this.records.putIfAbsent(record.getUid(), record) == null) {
+      LOGGER.info("Record {} has been restored", record.getUid());
       record.refreshValidTime();
       result = record;
     }
     return result;
   }
   
-  public FileRecord registerFile(@NonNull final UUID uuid, @NonNull final Path file, @Nullable final byte[] data) {
-    final FileRecord newRecord = new FileRecord(uuid, file, this.mimeTypes.findMimeTypeForFile(file), data);
-    this.records.put(uuid, newRecord);
+  public UploadFileRecord registerFile(@NonNull final String uid, @NonNull final Path file, @Nullable final byte[] data) {
+    final UploadFileRecord newRecord = new UploadFileRecord(uid, file, this.mimeTypes.findMimeTypeForFile(file), data);
+    this.records.put(uid, newRecord);
     return newRecord;
   }
 
   public boolean isFileAtPlay(@NonNull final Path path) {
-    return this.records.values().stream().anyMatch((record) -> (record.file.equals(path)));
+    return this.records.values().stream().anyMatch((record) -> (record.getFile().equals(path)));
   }
 
-  public void unregisterFile(final UUID uuid, final boolean totally) {
-      LOGGER.info("Unregistering file {}, totally={}", uuid, totally);
-      this.records.remove(uuid);
+  public void unregisterFile(final String uid, final boolean totally) {
+      LOGGER.info("Unregistering file {}, totally={}", uid, totally);
+      this.records.remove(uid);
       if (totally) {
-          final Map<UUID, FileRecord> fileRecordStore = this.removedFileRecordStore.get();
+          final Map<String, UploadFileRecord> fileRecordStore = this.removedFileRecordStore.get();
           if (fileRecordStore!=null){
-            fileRecordStore.remove(uuid);
+            fileRecordStore.remove(uid);
           }
       }
   }
@@ -202,8 +131,8 @@ public class UploadingFileRegistry {
   }
 
   @Nullable
-  public FileRecord find(@NonNull final UUID uuid) {
-    return this.records.get(uuid);
+  public UploadFileRecord find(@NonNull final String uid) {
+    return this.records.get(uid);
   }
 
   public boolean hasActiveUploads() {

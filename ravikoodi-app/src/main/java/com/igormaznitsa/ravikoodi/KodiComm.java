@@ -191,22 +191,22 @@ public class KodiComm {
     }
 
     @NonNull
-    public Optional<UUID> openFileThroughRegistry(@NonNull final Path path, @Nullable final byte[] data, @NonNull final Map<String,String>... options) throws Throwable {
-        final UUID uuid = UUID.randomUUID();
-        final UploadingFileRegistry.FileRecord record = this.fileRegstry.registerFile(uuid, path, data);
+    public Optional<String> openFileThroughRegistry(@NonNull final Path path, @Nullable final byte[] data, @NonNull final Map<String,String>... options) throws Throwable {
+        final String uid = UUID.randomUUID().toString();
+        final UploadFileRecord record = this.fileRegstry.registerFile(uid, path, data);
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final String fileUrl = this.internalServer.makeUrlFor(record);
-        LOGGER.info("Opening file {} as {}, uuid={}", path, fileUrl, uuid);
-        return Optional.ofNullable(this.doPlayerOpenFile(fileUrl, options) ? uuid : null);
+        LOGGER.info("Opening file {} as {}, uuid={}", path, fileUrl, uid);
+        return Optional.ofNullable(this.doPlayerOpenFile(fileUrl, options) ? uid : null);
     }
 
     @NonNull
-    public Optional<Pair<Playlist,UUID>> openFileAsPlaylistThroughRegistry(@NonNull final Path path, @Nullable final byte[] data, @NonNull final Map<String,String>... options) throws Throwable {
-        final UUID uuid = UUID.randomUUID();
-        final UploadingFileRegistry.FileRecord record = this.fileRegstry.registerFile(uuid, path, data);
+    public Optional<Pair<Playlist,String>> openFileAsPlaylistThroughRegistry(@NonNull final Path path, @Nullable final byte[] data, @NonNull final Map<String,String>... options) throws Throwable {
+        final String uid = UUID.randomUUID().toString();
+        final UploadFileRecord record = this.fileRegstry.registerFile(uid, path, data);
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final String fileUrl = this.internalServer.makeUrlFor(record);
-        LOGGER.info("Opening file {} as {} through playlist, uuid={}", path, fileUrl, uuid);
+        LOGGER.info("Opening file {} as {} through playlist, uuid={}", path, fileUrl, uid);
 
         final MimeTypes.MimeRecord foundMimeRecord = this.mimeTypes.getMimeRecord(path);
 
@@ -245,7 +245,7 @@ public class KodiComm {
             item.setFile(fileUrl);
             final String resultForAddPlayerItem = service.addPlaylistItem(targetList, item);
             if (isOk(resultForAddPlayerItem)) {
-                return Optional.ofNullable(isOk(service.doPlayerOpenPlaylist(targetList, Collections.singletonMap("repeat","one"))) ? Pair.of(targetList, uuid) : null);
+                return Optional.ofNullable(isOk(service.doPlayerOpenPlaylist(targetList, Collections.singletonMap("repeat","one"))) ? Pair.of(targetList, uid) : null);
             } else {
                 LOGGER.error("Can't add player list item");
                 throw new IOException("Can't add player list item: " + resultForAddPlayerItem);

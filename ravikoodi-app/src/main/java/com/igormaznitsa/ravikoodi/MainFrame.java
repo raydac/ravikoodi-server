@@ -5,7 +5,7 @@ import com.igormaznitsa.ContentFolder;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences.Timer;
 import static com.igormaznitsa.ravikoodi.ContentTreeItem.CONTENT_ITEM_COMPARATOR;
 import com.igormaznitsa.ravikoodi.MimeTypes.ContentType;
-import com.igormaznitsa.ravikoodi.UploadingFileRegistry.FileRecord;
+import com.igormaznitsa.ravikoodi.UploadFileRecord;
 import static com.igormaznitsa.ravikoodi.Utils.isBlank;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ActivePlayerInfo;
 import com.igormaznitsa.ravikoodi.kodijsonapi.KodiService;
@@ -1159,8 +1159,8 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
             infoPanel.setVisible(true);
 
             this.executorService.submit(() -> {
-                final UUID uuid = UUID.randomUUID();
-                final FileRecord record = this.fileRegstry.registerFile(uuid, contentFile.getFilePath(), data);
+                final String uuid = UUID.randomUUID().toString();
+                final UploadFileRecord record = this.fileRegstry.registerFile(uuid, contentFile.getFilePath(), data);
                 final AtomicReference<Throwable> error = new AtomicReference<>();
                 try {
                     if (!this.kodiComm.openFileThroughRegistry(record.getFile(), data, Collections.singletonMap("repeat", "off")).isPresent()) {

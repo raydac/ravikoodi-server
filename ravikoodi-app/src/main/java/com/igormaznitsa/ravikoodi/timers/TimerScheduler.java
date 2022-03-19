@@ -124,7 +124,7 @@ public class TimerScheduler {
         private final ScheduledExecutorService executorService;
         private final ApplicationPreferences.Timer timer;
         private final AtomicReference<ScheduledFuture<?>> scheduledFutureRef = new AtomicReference<>();
-        private final AtomicReference<UUID> lastUuid = new AtomicReference<>();
+        private final AtomicReference<String> lastUuid = new AtomicReference<>();
         private final UploadingFileRegistry fileRegistry;
         private final AtomicReference<Playlist> playlist = new AtomicReference<>();
 
@@ -226,8 +226,8 @@ public class TimerScheduler {
             }
         }
 
-        private Optional<ActivePlayerInfo> findPlayerForUuid(final UUID uuid) throws Throwable {
-            if (uuid != null) {
+        private Optional<ActivePlayerInfo> findPlayerForUuid(final String uid) throws Throwable {
+            if (uid != null) {
                 final List<ActivePlayerInfo> players = this.kodiComm.findActivePlayers();
                 LOGGER.info("Found active players: {}", players);
                 return players.stream()
@@ -235,7 +235,7 @@ public class TimerScheduler {
                         try {
                             final PlayerItem item = this.kodiComm.getPlayerItem(player);
                             LOGGER.info("Player {} is player item {}", player, item);
-                            return item.getItem().getFile().contains(uuid.toString());
+                            return item.getItem().getFile().contains(uid);
                         } catch (Throwable th) {
                             return false;
                         }
@@ -248,13 +248,13 @@ public class TimerScheduler {
         private void onEnd() {
             LOGGER.info("Ending {} timer", this.id);
             try {
-                final UUID uuid = this.lastUuid.getAndSet(null);
+                final String uid = this.lastUuid.getAndSet(null);
                 final Playlist savedPlaylist = this.playlist.getAndSet(null);
-                if (uuid != null) {
-                    LOGGER.info("Ending processing of file {}", uuid);
-                    this.fileRegistry.unregisterFile(uuid, true);
+                if (uid != null) {
+                    LOGGER.info("Ending processing of file {}", uid);
+                    this.fileRegistry.unregisterFile(uid, true);
 
-                    final Optional<ActivePlayerInfo> foundPlayer = this.findPlayerForUuid(uuid);
+                    final Optional<ActivePlayerInfo> foundPlayer = this.findPlayerForUuid(uid);
 
                     if (savedPlaylist != null) {
                         this.kodiComm.makeKodiService().ifPresent(service -> {

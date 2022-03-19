@@ -1,7 +1,7 @@
 package com.igormaznitsa.ravikoodi;
 
 import com.igormaznitsa.ravikoodi.screencast.PreemptiveBuffer;
-import com.igormaznitsa.ravikoodi.UploadingFileRegistry.FileRecord;
+import com.igormaznitsa.ravikoodi.UploadFileRecord;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -47,7 +47,8 @@ public class InternalServer {
   private final AtomicReference<Server> serverRef = new AtomicReference<>();
 
   private final UploadingFileRegistry fileRegistry;
-  private final Map<UUID, FileRecord> removedFileRecords = new ConcurrentHashMap<>();
+  private final StaticFileRegistry staticFileRegistry;
+  private final Map<String, UploadFileRecord> removedFileRecords = new ConcurrentHashMap<>();
   private final ApplicationPreferences options;
   private final PreemptiveBuffer screencastBuffer = new PreemptiveBuffer(4);
   private final List<InternalServerListener> listeners = new CopyOnWriteArrayList<>();
@@ -73,8 +74,10 @@ public class InternalServer {
   @Autowired
   public InternalServer(
           final UploadingFileRegistry fileRegistry,
+          final StaticFileRegistry staticFileRegistry,
           final ApplicationPreferences options
   ) {
+    this.staticFileRegistry = staticFileRegistry;  
     this.fileRegistry = fileRegistry;
     this.options = options;
     this.fileRegistry.setRemovedRecordsStore(this.removedFileRecords);
@@ -97,21 +100,21 @@ public class InternalServer {
   }
 
   @NonNull
-  public String makeUrlFor(@NonNull final FileRecord record) {
+  public String makeUrlFor(@NonNull final UploadFileRecord record) {
     try {
       final String name = record.getFile().getFileName().toString();
       final String encodedFileName = URLEncoder.encode(name, "UTF-8");
       return String.format((this.options.isServerSsl() ? "https://" : "http://")
               + "%s:%d/vfile/%s/%s", this.getHost(),
               this.getPort(),
-              record.getUUID().toString(),
+              record.getUid(),
               encodedFileName);
     } catch (UnsupportedEncodingException ex) {
       throw new Error("Unexpected exception", ex);
     }
   }
 
-  private void addStandardHeaders(final HttpServletResponse response, final FileRecord record, final boolean head) {
+  private void addStandardHeaders(final HttpServletResponse response, final UploadFileRecord record, final boolean head) {
     response.setContentType(record.getMimeType());
     response.setContentLengthLong(record.getFile().toFile().length());
     response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -271,21 +274,31 @@ public class InternalServer {
                 listeners.forEach(x -> x.onScreencastEnded(InternalServer.this));
               }
             }
-          } else if (path.length > 3 && "vfile".equals(path[1])) {
+          } else if (path.length > 3 && ("vfile".equals(path[1]) || "rsrc".equals(path[1]))) {
 
-            final UUID uuid = UUID.fromString(path[2]);
-            UploadingFileRegistry.FileRecord record = fileRegistry.find(uuid);
-
-            if (record == null) {
-              final FileRecord removedRecord = removedFileRecords.remove(uuid);
-              if (removedRecord != null) {
-                LOGGER.info("found among removed streams, restoring: {}", uuid);
-                record = fileRegistry.restoreRecord(removedRecord);
-              }
+            final boolean staticResiource = "rsrc".equals(path[1]);  
+              
+            final String uid = path[2];
+            
+            final UploadFileRecord record;
+            
+            if (staticResiource) {
+                LOGGER.info("Request for static file resource: {}", uid);
+                record = staticFileRegistry.findFile(uid).orElse(null);
+            } else {
+                UploadFileRecord rec = fileRegistry.find(uid);
+                if (rec == null) {
+                    final UploadFileRecord removedRecord = removedFileRecords.remove(uid);
+                    if (removedRecord != null) {
+                        LOGGER.info("found among removed streams, restoring: {}", uid);
+                        rec = fileRegistry.restoreRecord(removedRecord);
+                    }
+                }
+                record = rec;
             }
 
             if (record == null) {
-              LOGGER.warn("Request for non-registered file {}", uuid);
+              LOGGER.warn("Request for non-registered file {}", uid);
               response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             } else {
               record.incUploadsCounter();
@@ -304,7 +317,7 @@ public class InternalServer {
                     response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
                     return;
                   } else if (range.getStart() > 0 || range.getEnd() < (fileSize - 1)) {
-                    LOGGER.info("Request for {}, range {}", uuid, range);
+                    LOGGER.info("Request for {}, range {}", uid, range);
                     response.setContentLengthLong(range.getLength());
                     response.setHeader("Content-Range", range.toStringForHeader());
                     response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
@@ -326,7 +339,7 @@ public class InternalServer {
                       return;
                     }
 
-                    LOGGER.info("Start sending data for {} ({}) to device, requested range = {}, expected length = {} bytes", uuid, record.getFile(), range, range.getLength());
+                    LOGGER.info("Start sending data for {} ({}) to device, requested range = {}, expected length = {} bytes", uid, record.getFile(), range, range.getLength());
 
                     while (pos <= range.getEnd() && !Thread.currentThread().isInterrupted()) {
                       final long rangeEndPos = range.getEnd() - pos + 1;
@@ -339,7 +352,7 @@ public class InternalServer {
                       pos += read;
                     }
                   }
-                  LOGGER.info("Complete '{}' writing in range {}", uuid, range);
+                  LOGGER.info("Complete '{}' writing in range {}", uid, range);
                 } else {
                   LOGGER.warn("Bad request : {}", request);
                   response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
