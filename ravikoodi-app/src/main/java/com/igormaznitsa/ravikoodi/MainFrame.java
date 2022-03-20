@@ -790,7 +790,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
         menuTools.add(menuTimers);
 
         menuStaticContent.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_file_publish_sharepoint.png"))); // NOI18N
-        menuStaticContent.setText("Public files");
+        menuStaticContent.setText("Published files");
         menuStaticContent.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 menuStaticContentActionPerformed(evt);
@@ -1164,7 +1164,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
         final File root = filePath == null ? null : new File(filePath);
         
         final PublishedFilesTable publishedFilesTable = new PublishedFilesTable(this.server.makeUrlPrefix(InternalServer.PATH_RESOURCES), root, this.preferences.getStaticResources());
-        if (JOptionPane.showConfirmDialog(this, publishedFilesTable, "Public files", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+        if (JOptionPane.showConfirmDialog(this, publishedFilesTable, "Published files", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
             final List<StaticResource> newResources = publishedFilesTable.getResources();
             this.preferences.setStaticResources(newResources);
             this.staticFileRegistry.refresh();
