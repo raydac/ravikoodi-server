@@ -86,7 +86,7 @@ public class UploadingFileRegistry {
         if (removedRecordsStore!=null) {
           final UploadFileRecord removedRecord = this.records.remove(x);
           if (removedRecord != null) {
-            removedRecordsStore.put(removedRecord.getUid(), removedRecord);
+            removedRecordsStore.put(removedRecord.getId(), removedRecord);
           }
         }
       });
@@ -97,8 +97,8 @@ public class UploadingFileRegistry {
   public UploadFileRecord restoreRecord(@NonNull final UploadFileRecord record) {
     LOGGER.info("Restoring record: {}", record);
     UploadFileRecord result = null;
-    if (this.records.putIfAbsent(record.getUid(), record) == null) {
-      LOGGER.info("Record {} has been restored", record.getUid());
+    if (this.records.putIfAbsent(record.getId(), record) == null) {
+      LOGGER.info("Record {} has been restored", record.getId());
       record.refreshValidTime();
       result = record;
     }

@@ -2,13 +2,13 @@ package com.igormaznitsa.ravikoodi;
 
 import com.igormaznitsa.ravikoodi.timers.TimerScheduler;
 import com.igormaznitsa.ContentFolder;
-import com.igormaznitsa.ravikoodi.ApplicationPreferences.Timer;
+import com.igormaznitsa.ravikoodi.prefs.TimerResource;
 import static com.igormaznitsa.ravikoodi.ContentTreeItem.CONTENT_ITEM_COMPARATOR;
 import com.igormaznitsa.ravikoodi.MimeTypes.ContentType;
-import com.igormaznitsa.ravikoodi.UploadFileRecord;
 import static com.igormaznitsa.ravikoodi.Utils.isBlank;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ActivePlayerInfo;
 import com.igormaznitsa.ravikoodi.kodijsonapi.KodiService;
+import com.igormaznitsa.ravikoodi.prefs.StaticResource;
 import com.igormaznitsa.ravikoodi.screencast.FfmpegWrapper;
 import com.igormaznitsa.ravikoodi.screencast.JavaSoundAdapter;
 import com.igormaznitsa.ravikoodi.screencast.ScreenGrabber;
@@ -117,6 +117,8 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
     private JavaSoundAdapter soundAdapter;
     @Autowired
     private TimerScheduler timerScheduler;
+    @Autowired
+    private StaticFileRegistry staticFileRegistry;
     @Autowired
     private KodiComm kodiComm;
 
@@ -613,6 +615,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
         menuExit = new javax.swing.JMenuItem();
         menuTools = new javax.swing.JMenu();
         menuTimers = new javax.swing.JMenuItem();
+        menuStaticContent = new javax.swing.JMenuItem();
         menuLookAndFeel = new javax.swing.JMenu();
         menuToolsOptions = new javax.swing.JMenuItem();
         menuHelp = new javax.swing.JMenu();
@@ -620,6 +623,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
         menuAbout = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        getContentPane().setLayout(new java.awt.BorderLayout());
 
         mainPanelSplit.setDividerLocation(255);
 
@@ -634,7 +638,6 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
 
         panelFileTree.add(fileTreeScrollPane, java.awt.BorderLayout.CENTER);
 
-        jToolBar1.setFloatable(false);
         jToolBar1.setRollover(true);
 
         buttonSelectFolder.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/folders_explorer.png"))); // NOI18N
@@ -785,6 +788,15 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
             }
         });
         menuTools.add(menuTimers);
+
+        menuStaticContent.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_file_publish_sharepoint.png"))); // NOI18N
+        menuStaticContent.setText("Public files");
+        menuStaticContent.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                menuStaticContentActionPerformed(evt);
+            }
+        });
+        menuTools.add(menuStaticContent);
 
         menuLookAndFeel.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_eye.png"))); // NOI18N
         menuLookAndFeel.setText("Look and Feel");
@@ -1112,7 +1124,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
         final File root = filePath == null ? null : new File(filePath);
         final TimersTable timersTable = new TimersTable(root, this.preferences.getTimers());
         if (JOptionPane.showConfirmDialog(this, timersTable, "Timers", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
-            final List<Timer> newTimers = timersTable.getTimers();
+            final List<TimerResource> newTimers = timersTable.getTimers();
             this.preferences.setTimers(newTimers);
             this.timerScheduler.reloadTimers();
         }
@@ -1146,6 +1158,18 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
         }
         this.openYoutubeLink(text);
     }//GEN-LAST:event_menuOpenYoutubeLinkActionPerformed
+
+    private void menuStaticContentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuStaticContentActionPerformed
+        final String filePath = this.preferences.getFileRoot();
+        final File root = filePath == null ? null : new File(filePath);
+        
+        final PublishedFilesTable publishedFilesTable = new PublishedFilesTable(this.server.makeUrlPrefix(InternalServer.PATH_RESOURCES), root, this.preferences.getStaticResources());
+        if (JOptionPane.showConfirmDialog(this, publishedFilesTable, "Public files", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+            final List<StaticResource> newResources = publishedFilesTable.getResources();
+            this.preferences.setStaticResources(newResources);
+            this.staticFileRegistry.refresh();
+        }
+    }//GEN-LAST:event_menuStaticContentActionPerformed
 
     public void startPlaying(@NonNull final ContentFile contentFile, @Nullable final byte[] data) {
         final Runnable run = () -> {
@@ -1272,6 +1296,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
     private javax.swing.JMenuItem menuOpenFile;
     private javax.swing.JMenuItem menuOpenYoutubeLink;
     private javax.swing.JMenuItem menuSelectFolder;
+    private javax.swing.JMenuItem menuStaticContent;
     private javax.swing.JMenuItem menuTimers;
     private javax.swing.JMenu menuTools;
     private javax.swing.JMenuItem menuToolsOptions;

@@ -56,6 +56,9 @@ public class InternalServer {
 
   private final AtomicReference<Throwable> lastStartServerError = new AtomicReference<>();
   
+  public static final String PATH_RESOURCES = "res";
+  public static final String PATH_VFILES = "vfile";
+  
   public interface InternalServerListener {
 
     void onScreencastStarted(@NonNull InternalServer source); 
@@ -100,14 +103,22 @@ public class InternalServer {
   }
 
   @NonNull
+  public String makeUrlPrefix(@NonNull final String resourcePath) {
+      return String.format((this.options.isServerSsl() ? "https://" : "http://")
+              + "%s:%d/%s", this.getHost(),
+              this.getPort(),
+              resourcePath);
+  }
+  
+  @NonNull
   public String makeUrlFor(@NonNull final UploadFileRecord record) {
     try {
       final String name = record.getFile().getFileName().toString();
       final String encodedFileName = URLEncoder.encode(name, "UTF-8");
-      return String.format((this.options.isServerSsl() ? "https://" : "http://")
-              + "%s:%d/vfile/%s/%s", this.getHost(),
-              this.getPort(),
-              record.getUid(),
+      final String pathPrefix = makeUrlPrefix(PATH_VFILES);
+      return String.format("%s/%s/%s",
+              pathPrefix,
+              record.getId(),
               encodedFileName);
     } catch (UnsupportedEncodingException ex) {
       throw new Error("Unexpected exception", ex);
@@ -274,9 +285,9 @@ public class InternalServer {
                 listeners.forEach(x -> x.onScreencastEnded(InternalServer.this));
               }
             }
-          } else if (path.length > 3 && ("vfile".equals(path[1]) || "rsrc".equals(path[1]))) {
+          } else if (path.length > 3 && (PATH_VFILES.equals(path[1]) || PATH_RESOURCES.equals(path[1]))) {
 
-            final boolean staticResiource = "rsrc".equals(path[1]);  
+            final boolean staticResiource = PATH_RESOURCES.equals(path[1]);  
               
             final String uid = path[2];
             

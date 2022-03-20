@@ -30,16 +30,16 @@ import org.springframework.lang.Nullable;
 
 public final class UploadFileRecord {
     
-    private final String uid;
+    private final String id;
     private final Path file;
     private final String mimeType;
     private final AtomicInteger uploadsCounter = new AtomicInteger();
     private final AtomicLong validUntil = new AtomicLong();
     private final byte[] predefinedData;
 
-    UploadFileRecord(@NonNull final String uid, @NonNull final Path file, @NonNull final String mimeType, @Nullable final byte[] predefinedData) {
+    UploadFileRecord(@NonNull final String id, @NonNull final Path file, @NonNull final String mimeType, @Nullable final byte[] predefinedData) {
         this.validUntil.set(System.currentTimeMillis() + UploadingFileRegistry.INITIAL_VALID_DELAY_MILLISECONDS);
-        this.uid = uid;
+        this.id = id;
         this.file = file;
         this.mimeType = mimeType;
         this.predefinedData = predefinedData;
@@ -90,8 +90,8 @@ public final class UploadFileRecord {
     }
 
     @NonNull
-    public String getUid() {
-        return this.uid;
+    public String getId() {
+        return this.id;
     }
 
     @NonNull
@@ -102,7 +102,7 @@ public final class UploadFileRecord {
     @NonNull
     @Override
     public String toString() {
-        return String.format("FileRecord(%s,file=%s)", this.uid, this.file.getFileName().toString());
+        return String.format("FileRecord(%s,file=%s)", this.id, this.file.getFileName().toString());
     }
     
 }

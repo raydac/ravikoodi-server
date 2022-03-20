@@ -15,10 +15,13 @@
  */
 package com.igormaznitsa.ravikoodi;
 
+import com.igormaznitsa.ravikoodi.prefs.StaticResource;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,12 +37,20 @@ public class StaticFileRegistry {
     @Autowired
     private MimeTypes mimeTypes;
 
+    @Autowired
+    private ApplicationPreferences applicationPreferences;
+
     private final Map<String, UploadFileRecord> records = new ConcurrentHashMap<>();
 
     public StaticFileRegistry() {
 
     }
 
+    @PostConstruct
+    public void onPostConstruct() {
+        this.refresh();
+    }
+    
     public Optional<UploadFileRecord> findFile(@NonNull final String uid) {
         return Optional.ofNullable(this.records.get(uid));
     }
@@ -58,6 +69,24 @@ public class StaticFileRegistry {
 
     public void clear() {
         this.records.clear();
+    }
+
+    public synchronized void refresh() {
+        LOGGER.info("Refreshing static resources");
+        this.records.clear();
+        this.applicationPreferences.getStaticResources()
+                .stream()
+                .filter(r -> r.isEnabled() && r.getResourcePath() != null)
+                .forEach(r -> {
+            try {
+                final Path path = r.getResourcePath().toPath();
+                final UploadFileRecord record = new UploadFileRecord(r.getId(), path, this.mimeTypes.findMimeTypeForFile(path), null);
+                this.records.put(r.getId(), record);
+                LOGGER.info("Registered static resource {}: {}", r.getId(), record);
+            } catch (Exception ex) {
+                LOGGER.error("Error during registration static resource: {}", r, ex);
+            }
+        });
     }
 
 }

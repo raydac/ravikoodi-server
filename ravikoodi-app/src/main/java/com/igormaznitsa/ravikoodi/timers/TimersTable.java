@@ -15,11 +15,12 @@
  */
 package com.igormaznitsa.ravikoodi.timers;
 
-import com.igormaznitsa.ravikoodi.ApplicationPreferences.Timer;
+import com.igormaznitsa.ravikoodi.FilePathCellEditor;
+import com.igormaznitsa.ravikoodi.TableLookupButton;
 import static com.igormaznitsa.ravikoodi.Utils.isBlank;
+import com.igormaznitsa.ravikoodi.prefs.TimerResource;
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -40,22 +41,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.AbstractCellEditor;
 import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JFileChooser;
 import javax.swing.JFormattedTextField;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
@@ -72,7 +68,7 @@ public final class TimersTable extends JPanel {
 
     private final JTable timersTable;
 
-    public TimersTable(@NonNull final File dir, @NonNull final List<Timer> timers) {
+    public TimersTable(@NonNull final File dir, @NonNull final List<TimerResource> timers) {
         super(new BorderLayout());
 
         this.timersTable = new JTable();
@@ -117,7 +113,7 @@ public final class TimersTable extends JPanel {
 
         removeAll.addActionListener(e -> {
             if (this.timersTable.getRowCount() > 0
-                && JOptionPane.showConfirmDialog(this, "Remove all timers?", "Remove timers", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                    && JOptionPane.showConfirmDialog(this, "Remove all timers?", "Remove timers", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
                 ((TimersTableModel) this.timersTable.getModel()).clear();
             }
         });
@@ -125,7 +121,7 @@ public final class TimersTable extends JPanel {
         removeTimer.addActionListener(e -> {
             final int[] indexes = this.timersTable.getSelectedRows();
             if (indexes.length > 0
-                && JOptionPane.showConfirmDialog(this, String.format("Remove %d timer(s)?", indexes.length), "Remove timers", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                    && JOptionPane.showConfirmDialog(this, String.format("Remove %d timer(s)?", indexes.length), "Remove timers", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
                 ((TimersTableModel) this.timersTable.getModel()).removeIndexes(indexes);
             }
         });
@@ -146,7 +142,7 @@ public final class TimersTable extends JPanel {
         removeAll.setEnabled(!timers.isEmpty());
 
         addTimer.addActionListener(e -> {
-            model.addTimer(new Timer("Unnamed"));
+            model.addTimer(new TimerResource("Unnamed"));
         });
 
         this.timersTable.getSelectionModel().addListSelectionListener(event -> {
@@ -166,20 +162,8 @@ public final class TimersTable extends JPanel {
     }
 
     @NonNull
-    public List<Timer> getTimers() {
+    public List<TimerResource> getTimers() {
         return new ArrayList<>(((TimersTableModel) this.timersTable.getModel()).timers);
-    }
-
-    private static final class TableLookupButton extends JButton {
-
-        public TableLookupButton(@NonNull final String text) {
-            super(Objects.requireNonNull(text));
-            this.setFont(UIManager.getFont("Button.font").deriveFont(Font.BOLD));
-            this.setFocusable(false);
-            this.setBackground(UIManager.getColor("ComboBox.buttonBackground"));
-            this.setBorder(UIManager.getBorder("ComboBox[button].border"));
-        }
-
     }
 
     private static final class LocalTimeEditor extends JPanel {
@@ -254,76 +238,6 @@ public final class TimersTable extends JPanel {
         }
     }
 
-    static final class FilePathEditor extends JPanel {
-
-        private final JTextField text;
-        private final TableLookupButton button;
-
-        public FilePathEditor(@NonNull final TableCellEditor editor, @Nullable final AtomicReference<File> dir) {
-            super(new BorderLayout(0, 0));
-
-            this.text = new JTextField();
-            this.text.setBorder(new EmptyBorder(0, 0, 0, 0));
-            this.text.setColumns(1);
-            this.add(this.text, BorderLayout.CENTER);
-            this.button = new TableLookupButton("...");
-
-            this.button.addActionListener(e -> {
-                final JFileChooser chooser = new JFileChooser(dir.get());
-                chooser.setAcceptAllFileFilterUsed(true);
-                chooser.setDialogTitle("Select media resource");
-                chooser.setMultiSelectionEnabled(false);
-                chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-
-                if (chooser.showOpenDialog(SwingUtilities.getWindowAncestor(this)) == JFileChooser.APPROVE_OPTION) {
-                    final File file = chooser.getSelectedFile();
-                    dir.set(file.getParentFile());
-                    this.text.setText(file.getAbsolutePath());
-                    editor.stopCellEditing();
-                }
-            });
-
-            this.add(this.button, BorderLayout.EAST);
-            this.setBorder(new EmptyBorder(0, 0, 0, 0));
-        }
-
-        public void setPath(final File value) {
-            this.text.setText(value == null ? "" : value.getAbsolutePath());
-        }
-
-        public File getPath() {
-            return isBlank(this.text.getText()) ? null : new File(this.text.getText());
-        }
-
-    }
-
-    static final class FilePathCellEditor extends AbstractCellEditor implements TableCellEditor {
-
-        private final AtomicReference<File> dirRef = new AtomicReference<>();
-        private final FilePathEditor editor;
-
-        public FilePathCellEditor(final File file) {
-            super();
-            this.editor = new FilePathEditor(FilePathCellEditor.this, dirRef);
-            this.dirRef.set(file);
-            editor.text.addActionListener(a -> {
-                this.stopCellEditing();
-            });
-        }
-
-        @Override
-        public Object getCellEditorValue() {
-            return this.editor.getPath();
-        }
-
-        @Override
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            this.editor.setPath((File) value);
-            return this.editor;
-        }
-
-    }
-
     static final class LocalTimeCellEditor extends AbstractCellEditor implements TableCellEditor {
 
         private final LocalTimeEditor edit = new LocalTimeEditor(LocalTime.of(0, 0, 0));
@@ -341,7 +255,7 @@ public final class TimersTable extends JPanel {
                 return false;
             }
         }
-        
+
         public LocalTimeCellEditor() {
             super();
             this.edit.getTextField().addActionListener(x -> {
@@ -369,9 +283,9 @@ public final class TimersTable extends JPanel {
 
         private final List<TableModelListener> listeners = new CopyOnWriteArrayList<>();
 
-        private final List<Timer> timers = new ArrayList<>();
+        private final List<TimerResource> timers = new ArrayList<>();
 
-        public TimersTableModel(final List<Timer> timers) {
+        public TimersTableModel(final List<TimerResource> timers) {
             this.timers.addAll(timers);
             Collections.sort(this.timers);
         }
@@ -443,7 +357,7 @@ public final class TimersTable extends JPanel {
 
         @Override
         public Object getValueAt(int row, int col) {
-            final Timer timer = this.timers.get(row);
+            final TimerResource timer = this.timers.get(row);
             switch (col) {
                 case 0:
                     return timer.isEnabled();
@@ -464,7 +378,7 @@ public final class TimersTable extends JPanel {
 
         @Override
         public void setValueAt(Object value, int row, int col) {
-            final Timer timer = this.timers.get(row);
+            final TimerResource timer = this.timers.get(row);
             switch (col) {
                 case 0:
                     timer.setEnabled((Boolean) value);
@@ -482,14 +396,14 @@ public final class TimersTable extends JPanel {
                     timer.setResourcePath((File) value);
                     break;
                 case 5:
-                    timer.setReplay((Boolean)value);
+                    timer.setReplay((Boolean) value);
                     break;
                 default:
                     throw new Error("Unexpected column: " + col);
             }
         }
 
-        private void addTimer(@NonNull final Timer timer) {
+        private void addTimer(@NonNull final TimerResource timer) {
             this.timers.add(timer);
             this.listeners.forEach(x -> {
                 x.tableChanged(new TableModelEvent(this));
@@ -561,12 +475,12 @@ public final class TimersTable extends JPanel {
         @NonNull
         @Override
         public Component getTableCellRendererComponent(
-            JTable table,
-            Object value,
-            boolean isSelected,
-            boolean hasFocus,
-            int row,
-            int column
+                JTable table,
+                Object value,
+                boolean isSelected,
+                boolean hasFocus,
+                int row,
+                int column
         ) {
             final String text;
             if (value == null) {

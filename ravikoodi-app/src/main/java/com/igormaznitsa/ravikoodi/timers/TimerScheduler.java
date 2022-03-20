@@ -18,6 +18,7 @@ package com.igormaznitsa.ravikoodi.timers;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences;
 import com.igormaznitsa.ravikoodi.GuiMessager;
 import com.igormaznitsa.ravikoodi.KodiComm;
+import com.igormaznitsa.ravikoodi.prefs.TimerResource;
 import com.igormaznitsa.ravikoodi.UploadingFileRegistry;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ActivePlayerInfo;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerItem;
@@ -83,7 +84,7 @@ public class TimerScheduler {
             timers.clear();
             final AtomicLong counter = new AtomicLong(1L);
 
-            final List<ApplicationPreferences.Timer> prefereceTimers = preferences.getTimers();
+            final List<TimerResource> prefereceTimers = preferences.getTimers();
 
             this.timers.addAll(prefereceTimers.stream()
                 .filter(x -> x.isEnabled() && x.getFrom() != null && x.getResourcePath() != null)
@@ -122,7 +123,7 @@ public class TimerScheduler {
         private final File resource;
         private final KodiComm kodiComm;
         private final ScheduledExecutorService executorService;
-        private final ApplicationPreferences.Timer timer;
+        private final TimerResource timer;
         private final AtomicReference<ScheduledFuture<?>> scheduledFutureRef = new AtomicReference<>();
         private final AtomicReference<String> lastUuid = new AtomicReference<>();
         private final UploadingFileRegistry fileRegistry;
@@ -133,7 +134,7 @@ public class TimerScheduler {
             @NonNull final GuiMessager guiMessager,
             @NonNull final KodiComm kodiComm,
             @NonNull final String id,
-            @NonNull final ApplicationPreferences.Timer timer,
+            @NonNull final TimerResource timer,
             @NonNull final ScheduledExecutorService executorService
         ) {
             this.fileRegistry = fileRegistry;

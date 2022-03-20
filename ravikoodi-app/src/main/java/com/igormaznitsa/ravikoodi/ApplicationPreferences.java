@@ -1,21 +1,15 @@
 package com.igormaznitsa.ravikoodi;
 
+import com.igormaznitsa.ravikoodi.prefs.StaticResource;
+import com.igormaznitsa.ravikoodi.prefs.TimerResource;
 import static com.igormaznitsa.ravikoodi.Utils.isBlank;
-import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-import java.util.Properties;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
@@ -71,133 +65,6 @@ public class ApplicationPreferences {
         }
     }
 
-    public static final class Timer implements Comparable<Timer> {
-
-        @NonNull
-        public static Timer fromBase64(@NonNull final String base64encoded) throws IOException {
-            final Properties properties = new Properties();
-            properties.load(new StringReader(new String(Base64.getDecoder().decode(base64encoded), StandardCharsets.UTF_8)));
-            if (!properties.containsKey("name")) {
-                throw new IllegalArgumentException("Can't find 'name' field");
-            }
-            final Timer result = new Timer(properties.getProperty("name"));
-            result.setEnabled(Boolean.parseBoolean(properties.getProperty("enabled")));
-            result.setReplay(Boolean.parseBoolean(properties.getProperty("replay", "false")));
-            if (properties.containsKey("resource")) {
-                result.setResourcePath(new File(properties.getProperty("resource")));
-            }
-            if (properties.containsKey("from")) {
-                result.setFrom(LocalTime.parse(properties.getProperty("from")));
-            }
-            if (properties.containsKey("to")) {
-                result.setTo(LocalTime.parse(properties.getProperty("to")));
-            }
-            return result;
-        }
-
-        private String name;
-        private boolean enabled;
-        private boolean replay;
-        private LocalTime from;
-        private LocalTime to;
-        private File resourcePath;
-
-        public Timer(@NonNull final String id) {
-            this.name = Objects.requireNonNull(id);
-            this.enabled = false;
-            this.replay = false;
-            this.from = null;
-            this.to = null;
-            this.resourcePath = null;
-        }
-
-        public boolean isReplay() {
-            return this.replay;
-        }
-
-        public void setReplay(final boolean value) {
-            this.replay = value;
-        }
-
-        @NonNull
-        public String getName() {
-            return this.name;
-        }
-
-        public boolean isEnabled() {
-            return this.enabled;
-        }
-
-        public void setEnabled(final boolean value) {
-            this.enabled = value;
-        }
-
-        @Nullable
-        public LocalTime getFrom() {
-            return this.from;
-        }
-
-        public void setFrom(@Nullable final LocalTime time) {
-            this.from = time;
-        }
-
-        @Nullable
-        public LocalTime getTo() {
-            return this.to;
-        }
-
-        public void setTo(@Nullable final LocalTime to) {
-            this.to = to;
-        }
-
-        @Nullable
-        public File getResourcePath() {
-            return this.resourcePath;
-        }
-
-        public void setResourcePath(@Nullable final File path) {
-            this.resourcePath = path;
-        }
-
-        @NonNull
-        public String toBase64() {
-            final Properties properties = new Properties();
-            properties.setProperty("name", this.name);
-            properties.setProperty("enabled", Boolean.toString(this.enabled));
-            properties.setProperty("replay", Boolean.toString(this.replay));
-            if (this.from != null) {
-                properties.setProperty("from", this.from.toString());
-            }
-            if (this.to != null) {
-                properties.setProperty("to", this.to.toString());
-            }
-            if (this.resourcePath != null) {
-                properties.setProperty("resource", this.resourcePath.getAbsolutePath());
-            }
-            try {
-                final StringWriter writer = new StringWriter();
-                properties.store(writer, null);
-                return Base64.getEncoder().encodeToString(writer.toString().getBytes(StandardCharsets.UTF_8));
-            } catch (IOException ex) {
-                throw new Error("Unexpected IOException in internal operation", ex);
-            }
-        }
-
-        public void setName(@NonNull String value) {
-            this.name = Objects.requireNonNull(value);
-        }
-
-        @Override
-        public int compareTo(@NonNull final Timer that) {
-            if (this.from == null) {
-                return -1;
-            }
-            if (that.from == null) {
-                return -1;
-            }
-            return this.from.isBefore(that.from) ? -1 : 1;
-        }
-    }
 
     public enum GrabberType {
         AUTO,
@@ -272,6 +139,7 @@ public class ApplicationPreferences {
         FILE_ROOT("file.root"),
         LANDF("lookandfeel.class"),
         TIMERS("timers.list"),
+        STATIC_RESOURCES("static.resources.list"),
         KODI_ADDRESS("kodi.address"),
         KODI_PORT("kodi.port"),
         KODI_NAME("kodi.name"),
@@ -302,17 +170,16 @@ public class ApplicationPreferences {
     }
     
     @NonNull
-    public List<Timer> getTimers() {
+    public List<TimerResource> getTimers() {
         synchronized (this.preferences) {
-            final List<Timer> result = new ArrayList<>();
             final String value = this.preferences.get(Option.TIMERS.getPropertyName(), null);
             if (!isBlank(value)) {
-                final Timer ERROR = new Timer("<>");
+                final TimerResource ERROR = new TimerResource("<>");
                 return Arrays.stream(value.split("\\r?\\n"))
                     .filter(m -> !isBlank(m))
                     .map(m -> {
                         try {
-                            return Timer.fromBase64(m.trim());
+                            return TimerResource.fromBase64(m.trim());
                         } catch (IOException ex) {
                             return ERROR;
                         }
@@ -325,14 +192,57 @@ public class ApplicationPreferences {
         }
     }
 
-    public void setTimers(@Nullable final List<Timer> timers) {
+    @NonNull
+    public List<StaticResource> getStaticResources() {
+        synchronized (this.preferences) {
+            final String value = this.preferences.get(Option.STATIC_RESOURCES.getPropertyName(), null);
+            if (!isBlank(value)) {
+                final StaticResource ERROR = new StaticResource("<>");
+                return Arrays.stream(value.split("\\r?\\n"))
+                    .filter(m -> !isBlank(m))
+                    .map(m -> {
+                        try {
+                            return StaticResource.fromBase64(m.trim());
+                        } catch (IOException ex) {
+                            return ERROR;
+                        }
+                    })
+                    .filter(x -> x != ERROR)
+                    .collect(Collectors.toList());
+            } else {
+                return Collections.emptyList();
+            }
+        }
+    }
+
+    public void setStaticResources(@Nullable final List<StaticResource> resources) {
+        if (resources == null || resources.isEmpty()) {
+            synchronized (this.preferences) {
+                this.preferences.remove(Option.STATIC_RESOURCES.getPropertyName());
+            }
+        } else {
+            final StringBuilder buffer = new StringBuilder();
+            for (final StaticResource t : resources) {
+                if (buffer.length() > 0) {
+                    buffer.append('\n');
+                }
+                buffer.append(t.toBase64());
+            }
+            synchronized (this.preferences) {
+                this.preferences.put(Option.STATIC_RESOURCES.getPropertyName(), buffer.toString());
+            }
+        }
+    }
+
+
+    public void setTimers(@Nullable final List<TimerResource> timers) {
         if (timers == null || timers.isEmpty()) {
             synchronized (this.preferences) {
                 this.preferences.remove(Option.TIMERS.getPropertyName());
             }
         } else {
             final StringBuilder buffer = new StringBuilder();
-            for (final Timer t : timers) {
+            for (final TimerResource t : timers) {
                 if (buffer.length() > 0) {
                     buffer.append('\n');
                 }
