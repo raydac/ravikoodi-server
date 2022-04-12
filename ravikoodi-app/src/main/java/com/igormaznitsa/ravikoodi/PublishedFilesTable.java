@@ -181,7 +181,7 @@ public class PublishedFilesTable extends JPanel {
                 case 0:
                     return "Enabled";
                 case 1:
-                    return "Uid";
+                    return "ID";
                 case 2:
                     return "Path";
                 default:

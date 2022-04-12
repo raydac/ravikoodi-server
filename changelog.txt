@@ -1,3 +1,8 @@
+# __1.1.8 (12-apr-2022)__
+  - added local file publishing through Tools->Published files
+  - updated Spring Boot to 2.6.6
+  - refactoring
+
 # __1.1.7 (30-oct-2021)__
   - removed Fast-Robot screen grabber
   - added Youtube links processing (through Kodi Youtube plugin)

@@ -7,6 +7,11 @@
 
 # Changelog
 
+- __1.1.8 (12-apr-2022)__
+  - added local file publishing through Tools->Published files
+  - updated Spring Boot to 2.6.6
+  - refactoring
+
 - __1.1.7 (30-oct-2021)__
   - removed Fast-Robot screen grabber
   - added Youtube links processing (through Kodi Youtube plugin)
@@ -15,11 +20,6 @@
   - Launch4j starter replaced by self-written one
   - updated Spring Boot to 2.5.6
   - removed application bundle for MacOS
-
-- __1.1.6 (31-aug-2021)__
-  - fixed embedded JRE version for MacOS
-  - updated Spring Boot to 2.5.4
-  - updated Launch4j starter for Windows
 
 [Full changelog](changelog.txt)
 
