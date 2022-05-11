@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -238,10 +239,18 @@ public class InternalServer {
         try {
           LOGGER.info("Incoming request {} {}", request.getMethod(), target);
           response.setBufferSize(32 * 1024);
-
-          final String[] path = target.split("\\/");
-
-          if (path.length >= 2 && "screen-cast.ts".equals(path[1])) {
+          
+          String preparedTarget = target;
+          if (target.contains("?")) {
+              preparedTarget = target.substring(0, target.indexOf("?"));
+          }
+          
+          final List<String> path = Stream.of(preparedTarget.split("\\/")).collect(Collectors.toList());
+          final String pathLast = path.size() > 0 ? path.get(path.size()-1) : null;
+          final String pathPreLast = path.size() > 1 ? path.get(path.size()-2) : null;
+          final String pathPrePreLast = path.size() > 2 ? path.get(path.size()-3) : null;
+          
+          if ("screen-cast.ts".equals(pathLast)) {
             if ("head".equalsIgnoreCase(request.getMethod())) {
               addScreenCastHeaders(response, true);
               response.setStatus(HttpServletResponse.SC_OK);
@@ -285,11 +294,10 @@ public class InternalServer {
                 listeners.forEach(x -> x.onScreencastEnded(InternalServer.this));
               }
             }
-          } else if (path.length > 3 && (PATH_VFILES.equals(path[1]) || PATH_RESOURCES.equals(path[1]))) {
+          } else if (PATH_VFILES.equals(pathPrePreLast) || PATH_RESOURCES.equals(pathPreLast)) {
 
-            final boolean staticResiource = PATH_RESOURCES.equals(path[1]);  
-              
-            final String uid = path[2];
+            final boolean staticResiource = PATH_RESOURCES.equals(pathPreLast);  
+            final String uid = staticResiource ? pathLast : pathPreLast;
             
             final UploadFileRecord record;
             

@@ -1365,7 +1365,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
         return this.currentRootFolder == null ? "NOT SELECTED" : this.currentRootFolder.getFileName().toString();
     }
 
-    private void openInSystem(@NonNull final ContentFile file) {
+    public static void openInSystem(@NonNull final ContentFile file) {
         LOGGER.info("Opening '{}' in system viewer", file.getFilePathAsString());
         if (Desktop.isDesktopSupported()) {
             final Desktop desktop = Desktop.getDesktop();

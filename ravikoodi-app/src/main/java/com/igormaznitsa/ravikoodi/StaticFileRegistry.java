@@ -15,9 +15,7 @@
  */
 package com.igormaznitsa.ravikoodi;
 
-import com.igormaznitsa.ravikoodi.prefs.StaticResource;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
