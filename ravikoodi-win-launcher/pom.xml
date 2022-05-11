@@ -6,7 +6,7 @@
   <parent>
     <groupId>com.igormaznitsa</groupId>
     <artifactId>ravikoodi</artifactId>
-    <version>1.1.8</version>
+    <version>1.1.9-SNAPSHOT</version>
   </parent>
 
   <artifactId>ravikoodi-win-launcher</artifactId>
