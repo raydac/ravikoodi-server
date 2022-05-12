@@ -78,6 +78,83 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>de.perdian.maven.plugins</groupId>
+                        <artifactId>macosappbundler-maven-plugin</artifactId>
+                        <version>1.17.1</version>
+                        <configuration>
+                            <plist>
+                                <CFBundleIconFile>appico.icns</CFBundleIconFile>
+                                <CFBundleDisplayName>RaviKoodi media server</CFBundleDisplayName>
+                                <CFBundleDevelopmentRegion>English</CFBundleDevelopmentRegion>
+                                <CFBundleURLTypes>
+                                    <string>msa</string>
+                                </CFBundleURLTypes>
+                                <JVMVersion>11+</JVMVersion>
+                                <JVMMainClassName>RaviKoodiServer</JVMMainClassName>
+                            </plist>
+                            <dmg>
+                                <generate>true</generate>
+                                <autoFallback>true</autoFallback>
+                            </dmg>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>make-macos-bundle</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>bundle</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.akathist.maven.plugins.launch4j</groupId>
+                        <artifactId>launch4j-maven-plugin</artifactId>
+                        <version>2.1.2</version>
+                        <configuration>
+                            <headerType>gui</headerType>
+                            <outfile>${project.build.directory}/${app.name}.exe</outfile>
+                            <downloadUrl>https://bell-sw.com/pages/downloads/#/java-11-lts</downloadUrl>
+                            <classPath>
+                                <mainClass>com.igormaznitsa.pdfimgremover.Application</mainClass>
+                                <preCp>anything</preCp>
+                            </classPath>
+                            <icon>
+                                ${basedir}/logo.ico
+                            </icon>
+                            <singleInstance>
+                                <mutexName>sciaretoeditor</mutexName>
+                            </singleInstance>
+                            <versionInfo>
+                                <fileVersion>1.1.9.0</fileVersion>
+                                <productVersion>1.1.9.0</productVersion>
+                                <txtFileVersion>${project.version}</txtFileVersion>
+                                <fileDescription>Pdf Image Remover</fileDescription>
+                                <copyright>2018-2022 Igor Maznitsa</copyright>
+                                <txtProductVersion>${project.version}</txtProductVersion>
+                                <productName>${project.name}</productName>
+                                <companyName>igormaznitsa.com</companyName>
+                                <internalName>${project.name}</internalName>
+                                <originalFilename>${app.name}.exe</originalFilename>
+                            </versionInfo>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>l4j-pack</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>launch4j</goal>
+                                </goals>
+                                <configuration>
+                                    <outfile>${project.build.directory}${file.separator}${app.name}.exe</outfile>
+                                    <jre>
+                                        <minVersion>11</minVersion>
+                                    </jre>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>com.igormaznitsa</groupId>
                         <artifactId>mvn-jlink-wrapper</artifactId>
                         <version>1.1.1</version>
