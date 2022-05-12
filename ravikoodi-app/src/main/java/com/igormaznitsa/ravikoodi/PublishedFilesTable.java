@@ -23,6 +23,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Window;
 import java.awt.event.HierarchyEvent;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,7 +54,25 @@ public class PublishedFilesTable extends JPanel {
 
         this.staticResourcePathPrefix = urlPrefix;
 
-        this.resourceTable = new JTable();
+        this.resourceTable = new JTable(){
+            @Override
+            public String getToolTipText(final MouseEvent e) {
+                String tip = null;
+                java.awt.Point p = e.getPoint();
+                final int rowIndex = rowAtPoint(p);
+                final int colIndex = columnAtPoint(p);
+
+                try {
+                    if (rowIndex >= 0) {
+                        tip = ((StaticResourcesTableModel) getModel()).getTooltipForResource(rowIndex);
+                    }
+                } catch (RuntimeException e1) {
+                    //catch null pointer exception if mouse is over an empty line
+                }
+
+                return tip;
+            }  
+        };
         this.resourceTable.setShowVerticalLines(true);
         this.resourceTable.setShowHorizontalLines(true);
         this.resourceTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
@@ -73,28 +92,29 @@ public class PublishedFilesTable extends JPanel {
 
         GridBagConstraints gbc = new GridBagConstraints(0, GridBagConstraints.RELATIVE, 1, 1, 1, 1, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(1, 1, 1, 1), 0, 0);
 
-        final JButton addResource = new JButton("Add");
-        final JButton removeResource = new JButton("Remove");
-        final JButton removeAll = new JButton("Remove All");
-        final JButton enableAll = new JButton("Enable All");
-        final JButton disableAll = new JButton("Disable All");
+        final JButton buttonResourceAdd = new JButton("Add");
+        final JButton buttonResourceRemove = new JButton("Remove");
+        final JButton buttonRemoveAll = new JButton("Remove All");
+        final JButton buttonEnableAll = new JButton("Enable All");
+        final JButton buttonDisableAll = new JButton("Disable All");
+        final JButton buttonShow = new JButton("Show");
 
-        enableAll.addActionListener(e -> {
+        buttonEnableAll.addActionListener(e -> {
             ((StaticResourcesTableModel) this.resourceTable.getModel()).enableAll();
         });
 
-        disableAll.addActionListener(e -> {
+        buttonDisableAll.addActionListener(e -> {
             ((StaticResourcesTableModel) this.resourceTable.getModel()).disableAll();
         });
 
-        removeAll.addActionListener(e -> {
+        buttonRemoveAll.addActionListener(e -> {
             if (this.resourceTable.getRowCount() > 0
                     && JOptionPane.showConfirmDialog(this, "Remove all resources?", "Remove resources", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
                 ((StaticResourcesTableModel) this.resourceTable.getModel()).clear();
             }
         });
 
-        removeResource.addActionListener(e -> {
+        buttonResourceRemove.addActionListener(e -> {
             final int[] indexes = this.resourceTable.getSelectedRows();
             if (indexes.length > 0
                     && JOptionPane.showConfirmDialog(this, String.format("Remove %d resource(s)?", indexes.length), "Remove resources", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
@@ -102,12 +122,27 @@ public class PublishedFilesTable extends JPanel {
             }
         });
 
-        buttonPanel.add(addResource, gbc);
-        buttonPanel.add(removeResource, gbc);
-        buttonPanel.add(removeAll, gbc);
+        buttonShow.addActionListener(e -> {
+            final int[] indexes = this.resourceTable.getSelectedRows();
+            if (indexes.length > 0) {
+                final StaticResource staticResource = ((StaticResourcesTableModel) this.resourceTable.getModel()).resources.get(indexes[0]);
+                final File file = staticResource.getResourcePath();
+                if (file.isFile()) {
+                    final ContentFile contentFile = new ContentFile(file.toPath(), MimeTypes.ContentType.findType(file));
+                    MainFrame.openInSystem(contentFile);
+                } else {
+                    JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(this), "Can't find file: "+file.getAbsolutePath(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        
+        buttonPanel.add(buttonResourceAdd, gbc);
+        buttonPanel.add(buttonResourceRemove, gbc);
+        buttonPanel.add(buttonRemoveAll, gbc);
+        buttonPanel.add(buttonShow, gbc);
         buttonPanel.add(Box.createVerticalStrut(16), gbc);
-        buttonPanel.add(enableAll, gbc);
-        buttonPanel.add(disableAll, gbc);
+        buttonPanel.add(buttonEnableAll, gbc);
+        buttonPanel.add(buttonDisableAll, gbc);
 
         gbc.weighty = 10000;
         buttonPanel.add(Box.createVerticalGlue(), gbc);
@@ -116,19 +151,23 @@ public class PublishedFilesTable extends JPanel {
 
         this.add(buttonPanel, BorderLayout.EAST);
 
-        removeResource.setEnabled(false);
-        removeAll.setEnabled(!resources.isEmpty());
+        buttonResourceRemove.setEnabled(false);
+        buttonRemoveAll.setEnabled(!resources.isEmpty());
 
-        addResource.addActionListener(e -> {
+        buttonResourceAdd.addActionListener(e -> {
             model.addResource(new StaticResource("rsrc" + (model.resources.size() + 1)));
         });
 
+        buttonResourceRemove.setEnabled(false);
+        buttonShow.setEnabled(false);
+        
         this.resourceTable.getSelectionModel().addListSelectionListener(event -> {
             if (this.resourceTable.getSelectedRowCount() > 0) {
-                removeResource.setEnabled(true);
+                buttonResourceRemove.setEnabled(true);
             }
-            removeAll.setEnabled(this.resourceTable.getRowCount() > 0);
-            removeResource.setEnabled(this.resourceTable.getRowCount() != 0);
+            buttonShow.setEnabled(this.resourceTable.getSelectedRows().length == 1);
+            buttonRemoveAll.setEnabled(this.resourceTable.getRowCount() > 0);
+            buttonResourceRemove.setEnabled(this.resourceTable.getRowCount() != 0);
         });
 
         this.addHierarchyListener((HierarchyEvent e) -> {
@@ -144,12 +183,11 @@ public class PublishedFilesTable extends JPanel {
         return new ArrayList<>(((StaticResourcesTableModel) this.resourceTable.getModel()).resources);
     }
 
-    private static final class StaticResourcesTableModel implements TableModel {
+    private final class StaticResourcesTableModel implements TableModel {
 
         private final List<TableModelListener> listeners = new CopyOnWriteArrayList<>();
-
         private final List<StaticResource> resources = new ArrayList<>();
-
+        
         public StaticResourcesTableModel(final List<StaticResource> resources) {
             this.resources.addAll(resources);
             Collections.sort(this.resources);
@@ -179,7 +217,7 @@ public class PublishedFilesTable extends JPanel {
         public String getColumnName(final int column) {
             switch (column) {
                 case 0:
-                    return "Enabled";
+                    return "Enable";
                 case 1:
                     return "ID";
                 case 2:
@@ -230,9 +268,22 @@ public class PublishedFilesTable extends JPanel {
                 case 0:
                     timer.setEnabled((Boolean) value);
                     break;
-                case 1:
-                    timer.setId((String) value);
-                    break;
+                case 1: {
+                    final String newId = ((String) value).trim();
+                    if (newId.isEmpty()) {
+                        JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(resourceTable), "ID can't be empty", "Wrong ID", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    for(int i=0;i<this.resources.size();i++){
+                        if (i == row) continue;
+                        final StaticResource that = this.resources.get(i);
+                        if (that.getId().endsWith(newId)){
+                            JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(resourceTable), "ID already presented", "Duplicated ID", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+                    }
+                    timer.setId(newId);
+                }break;
                 case 2:
                     timer.setResourcePath((File) value);
                     break;
@@ -278,6 +329,14 @@ public class PublishedFilesTable extends JPanel {
             this.listeners.forEach(x -> {
                 x.tableChanged(new TableModelEvent(this));
             });
+        }
+
+        private String getTooltipForResource(final int index) {
+            if (index < 0 || index >= this.resources.size()) {
+                return null;
+            } else {
+                return staticResourcePathPrefix + '/' + this.resources.get(index).getId();
+            }
         }
     }
 
