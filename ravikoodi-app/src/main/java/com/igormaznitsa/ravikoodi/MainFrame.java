@@ -315,7 +315,11 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
             this.setIconImage(icon);
             this.setIconImages(List.of(icon));
             if (Taskbar.isTaskbarSupported()) {
-                Taskbar.getTaskbar().setIconImage(icon);
+                try{
+                    Taskbar.getTaskbar().setIconImage(icon);
+                }catch(final Exception ex) {
+                    LOGGER.error("Can't set taskbar icon for error", ex);
+                }
             }
 
             this.treeVideoFiles.setCellRenderer(new FileTreeRenderer());
