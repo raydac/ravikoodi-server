@@ -381,18 +381,13 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                 if (!files.isEmpty()) {
                     final File fileToOpen = files.get(0);
                     if (fileToOpen.isFile()) {
-                        if (fileToOpen.getName().toLowerCase(Locale.ENGLISH).endsWith(".url")) {
-                            LOGGER.info("Detected URL file, trying to extract link");
-                            final URI uri = extractUrlLinkFromFile(fileToOpen);
-                            if (uri == null) {
-                                LOGGER.warn("Can't find any URI in file {}", fileToOpen);
-                            } else {
-                                LOGGER.info("Detected URI to be opened: {}", uri);
-                                this.openUrlLink(uri.toASCIIString());
-                            }
-                        } else {
+                        final URI uri = extractUrlLinkFromFile(fileToOpen);
+                        if (uri == null) {
                             LOGGER.info("Opening file: {}", fileToOpen);
                             startPlaying(new ContentFile(fileToOpen.toPath(), ContentType.findType(fileToOpen)), null);
+                        } else {
+                            LOGGER.info("Detected URI to be opened: {}", uri);
+                            this.openUrlLink(uri.toASCIIString());
                         }
                     }
                 }
