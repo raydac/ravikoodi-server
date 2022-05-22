@@ -38,6 +38,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -380,8 +381,19 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                 if (!files.isEmpty()) {
                     final File fileToOpen = files.get(0);
                     if (fileToOpen.isFile()) {
-                        LOGGER.info("Opening file: {}", fileToOpen);
-                        startPlaying(new ContentFile(fileToOpen.toPath(), ContentType.findType(fileToOpen)), null);
+                        if (fileToOpen.getName().toLowerCase(Locale.ENGLISH).endsWith(".url")) {
+                            LOGGER.info("Detected URL file, trying to extract link");
+                            final URI uri = extractUrlLinkFromFile(fileToOpen);
+                            if (uri == null) {
+                                LOGGER.warn("Can't find any URI in file {}", fileToOpen);
+                            } else {
+                                LOGGER.info("Detected URI to be opened: {}", uri);
+                                this.openUrlLink(uri.toASCIIString());
+                            }
+                        } else {
+                            LOGGER.info("Opening file: {}", fileToOpen);
+                            startPlaying(new ContentFile(fileToOpen.toPath(), ContentType.findType(fileToOpen)), null);
+                        }
                     }
                 }
             } else if (transferable.isDataFlavorSupported(DataFlavor.stringFlavor)) {
@@ -1396,4 +1408,20 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
             }
         }
     }
+
+    public static URI extractUrlLinkFromFile(final File file) {
+        URI result = null;
+        if (file.isFile()) {
+            if (file.getName().endsWith(".url") || (SystemUtils.IS_OS_WINDOWS && file.length() < 1024)) {
+                try {
+                    final String uri = new UrlFile(file).getURL();
+                    result = uri == null ? null : new URI(uri);
+                } catch (URISyntaxException | IOException ex) {
+                    result = null;
+                }
+            }
+        }
+        return result;
+    }
+
 }
