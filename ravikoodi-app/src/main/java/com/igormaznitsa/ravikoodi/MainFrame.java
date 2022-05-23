@@ -386,8 +386,16 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                             LOGGER.info("Opening file: {}", fileToOpen);
                             startPlaying(new ContentFile(fileToOpen.toPath(), ContentType.findType(fileToOpen)), null);
                         } else {
-                            LOGGER.info("Detected URI to be opened: {}", uri);
-                            this.openUrlLink(uri.toASCIIString());
+                            final String link = uri.toASCIIString();
+                            final String lowerCased = link.toLowerCase(Locale.ENGLISH);
+                            LOGGER.info("Detected URI to be opened: {}", link);
+                            if (lowerCased.contains("youtu.be") || lowerCased.contains("youtube")) {
+                                LOGGER.info("Dropped URI recognized as Youtube one: {}", link);
+                                this.openYoutubeLink(link);
+                            } else {
+                                LOGGER.info("Dropped URI recognized as regular one: {}", link);
+                                this.openUrlLink(uri.toASCIIString());
+                            }
                         }
                     }
                 }
