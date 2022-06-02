@@ -15,7 +15,7 @@
     <properties>
         <embedded.jdk.provider>BELLSOFT</embedded.jdk.provider>
         <embedded.jdk.type>jdk</embedded.jdk.type>
-        <embedded.jdk.version>17.0.2+9</embedded.jdk.version>
+        <embedded.jdk.version>17.0.3.1+2</embedded.jdk.version>
         <spring.boot.version>2.7.0</spring.boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -596,7 +596,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.8.1</version>
+                    <version>3.10.1</version>
                     <configuration>
                         <fork>true</fork>
                         <compilerArgument>-XDignore.symbol.file</compilerArgument>
