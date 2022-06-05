@@ -7,19 +7,16 @@
 
 # Changelog
 
+- __1.1.9 (06-jun-2022)__
+  - added support of drag and drop link for Chrome under Windows
+  - minor bugfixing
+  - updated embedded JDK to 17.0.3.1+2
+  - updated Spring Boot to 2.7.0
+
 - __1.1.8 (12-apr-2022)__
   - added local file publishing through Tools->Published files
   - updated Spring Boot to 2.6.6
   - refactoring
-
-- __1.1.7 (30-oct-2021)__
-  - removed Fast-Robot screen grabber
-  - added Youtube links processing (through Kodi Youtube plugin)
-  - embedded JDK changed to BellSoft Liberica JDK 17.0.1+12
-  - SSL certificate generator replaced by pre-generated certificate 
-  - Launch4j starter replaced by self-written one
-  - updated Spring Boot to 2.5.6
-  - removed application bundle for MacOS
 
 [Full changelog](changelog.txt)
 
