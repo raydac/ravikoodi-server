@@ -29,10 +29,10 @@ At home I use [Raspberry PI 3](https://www.raspberrypi.org/products/raspberry-pi
 ## If you don't have installed Java or don't care about that
 
 It is a Java application so that in ideal it needs pre-installed Java 1.8+, but since 1.1.0 release Iprovide also pre-built versions with embedded JDK images, they can be started without installed Java:
- - [version for Linux with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.8/ravikoodi-app-1.1.8-linux-jdk-amd64.tar.gz)
- - [version for Windows with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.8/ravikoodi-app-1.1.8-windows-jdk-amd64.zip)
- - [version for MacOS with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.8/ravikoodi-app-1.1.8-macos-jdk-amd64.zip)
- - [version for MacOS (ARM64) with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.8/ravikoodi-app-1.1.8-macos-jdk-aarch64.zip)
+ - [version for Linux with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.9/ravikoodi-app-1.1.9-linux-jdk-amd64.tar.gz)
+ - [version for Windows with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.9/ravikoodi-app-1.1.9-windows-jdk-amd64.zip)
+ - [version for MacOS with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.9/ravikoodi-app-1.1.9-macos-jdk-amd64.zip)
+ - [version for MacOS (ARM64) with JDK image](https://github.com/raydac/ravikoodi-server/releases/download/1.1.9/ravikoodi-app-1.1.9-macos-jdk-aarch64.zip)
 
 You can just load needed archive, unpack in a folder and start its executable file.
 
