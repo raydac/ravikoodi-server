@@ -7,16 +7,16 @@
 
 # Changelog
 
+- __1.1.10 (SNAPSHOT)__
+  - windows launcher moved from i386 to amd64
+  - updated embedded JDK to 17.0.4.1+1
+  - updated Spring Boot to 2.7.3
+
 - __1.1.9 (06-jun-2022)__
   - added support of drag and drop link for Chrome under Windows
   - minor bugfixing
   - updated embedded JDK to 17.0.3.1+2
   - updated Spring Boot to 2.7.0
-
-- __1.1.8 (12-apr-2022)__
-  - added local file publishing through Tools->Published files
-  - updated Spring Boot to 2.6.6
-  - refactoring
 
 [Full changelog](changelog.txt)
 
