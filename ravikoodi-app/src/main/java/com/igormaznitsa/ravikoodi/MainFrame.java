@@ -39,6 +39,8 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -53,6 +55,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -377,8 +381,29 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
             if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
                 event.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
                 final List<File> files = (List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
-                LOGGER.info("Detected drop action for file list: {}", files);
-                if (!files.isEmpty()) {
+                if (files.isEmpty()) {
+                    LOGGER.warn("File list is empty, check for string");
+                    if (transferable.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+                        final String stringValue = (String) transferable.getTransferData(DataFlavor.stringFlavor);
+                        LOGGER.info("Extracted string from transferable: {}", stringValue);
+                        final Pattern filePattern = Pattern.compile("\\s*([\\S]+)\\s*.*");
+                        final Matcher matcher = filePattern.matcher(stringValue);
+                        if (matcher.find()) {
+                            String filePath = matcher.group(1);
+                            if (filePath.toLowerCase(Locale.ENGLISH).startsWith("smb://") && filePath.contains("%")){
+                                LOGGER.info("Decoding SAMBA path: {}", filePath);
+                                filePath = URLDecoder.decode(filePath, StandardCharsets.UTF_8);
+                            }
+                            LOGGER.info("Opening file path as URI: {}", filePath);    
+                            this.openUrlLink(filePath);
+                        } else {
+                            LOGGER.error("Can't extract file path from: {}", stringValue);
+                        }
+                    } else {
+                        LOGGER.warn("String non among transferable flawors: {}", transferable.getTransferDataFlavors());
+                    }
+                } else {
+                    LOGGER.info("Detected drop action for file list: {}", files);
                     final File fileToOpen = files.get(0);
                     if (fileToOpen.isFile()) {
                         final URI uri = extractUrlLinkFromFile(fileToOpen);
