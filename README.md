@@ -9,8 +9,8 @@
 
 - __1.1.10 (SNAPSHOT)__
   - windows launcher moved from i386 to amd64
-  - updated embedded JDK to 17.0.4.1+1
-  - updated Spring Boot to 2.7.3
+  - updated embedded JDK to 19.0.1+11
+  - updated Spring Boot to 2.7.5
 
 - __1.1.9 (06-jun-2022)__
   - added support of drag and drop link for Chrome under Windows
