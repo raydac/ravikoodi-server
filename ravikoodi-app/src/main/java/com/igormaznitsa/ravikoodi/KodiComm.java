@@ -90,7 +90,7 @@ public class KodiComm {
                 this.preferences.getKodiName(),
                 this.preferences.getKodiPassword(),
                 this.preferences.isKodiSsl()
-            )));
+            ), this.preferences.getJsonRequestTimeout()));
         } catch (MalformedURLException ex) {
             LOGGER.error("Can't create kodi service : {}", ex.getMessage());
             result = Optional.empty();

@@ -6,7 +6,7 @@ import static com.igormaznitsa.ravikoodi.Utils.isBlank;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -145,7 +145,8 @@ public class ApplicationPreferences {
         KODI_NAME("kodi.name"),
         KODI_SSL("kodi.ssl"),
         KODI_PASSWORD("kodi.password"),
-        GENERAL_SCALE_UI("ui.scale");
+        GENERAL_SCALE_UI("ui.scale"),
+        JSON_REQUEST_TIMEOUT("json.request.timeout");
 
         private final String propertyName;
 
@@ -330,6 +331,19 @@ public class ApplicationPreferences {
         }
     }
 
+    @NonNull
+    public Duration getJsonRequestTimeout() {
+        synchronized (this.preferences) {
+            return Duration.ofMillis(Math.max(1L, this.preferences.getLong(Option.JSON_REQUEST_TIMEOUT.getPropertyName(), 3000L)));
+        }
+    }
+    
+    public void setJsonRequestTimeout(@NonNull final Duration duration) {
+        synchronized (this.preferences) {
+            this.preferences.putLong(Option.JSON_REQUEST_TIMEOUT.getPropertyName(), duration.toMillis());
+        }
+    }
+    
     public float getSoundOffset() {
         synchronized (this.preferences) {
             return this.preferences.getFloat(Option.SCREENCAST_SOUNDOFFSET.getPropertyName(), 0.0f);

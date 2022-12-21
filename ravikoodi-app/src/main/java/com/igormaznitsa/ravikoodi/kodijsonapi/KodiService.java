@@ -6,6 +6,7 @@ import com.igormaznitsa.ravikoodi.KodiAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
@@ -19,6 +20,7 @@ public class KodiService {
   private static final Logger LOGGER = LoggerFactory.getLogger(KodiService.class);
 
   private final KodiAddress address;
+  private final Duration requestTimeout;
   private final URL url;
 
   public enum Control {
@@ -43,7 +45,8 @@ public class KodiService {
     }
   }
 
-  public KodiService(final KodiAddress address) throws MalformedURLException {
+  public KodiService(final KodiAddress address, final Duration requestTimeout) throws MalformedURLException {
+    this.requestTimeout = requestTimeout;
     this.address = address;
     this.url = new URL((address.isUseSsl() ? "https://" : "http://") + address.getHost() + ':' + address.getPort() + "/jsonrpc");
   }
@@ -215,8 +218,8 @@ public class KodiService {
     }
 
     final JsonRpcHttpClient result = new JsonRpcHttpClient(this.url, headers);
-
-    result.setReadTimeoutMillis(5000);
+    result.setReadTimeoutMillis((int)this.requestTimeout.toMillis());
+    result.setConnectionTimeoutMillis((int)this.requestTimeout.toMillis());
 
     return result;
   }

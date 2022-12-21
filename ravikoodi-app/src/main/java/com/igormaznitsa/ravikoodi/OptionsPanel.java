@@ -9,6 +9,7 @@ import com.igormaznitsa.ravikoodi.kodijsonapi.KodiService;
 import java.net.MalformedURLException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -54,6 +55,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     private SpeedProfile speedProfile;
     private boolean kodiSsl;
     private float soundOffset;
+    private long jsonRequestTimeout;
 
     public Data(@NonNull final ApplicationPreferences preferences) {
       this.threads = preferences.getThreads();
@@ -75,6 +77,7 @@ public class OptionsPanel extends javax.swing.JPanel {
       this.soundOffset = preferences.getSoundOffset();
       this.speedProfile = preferences.getSpeedProfile();
       this.grabberType = preferences.getGrabberType();
+      this.jsonRequestTimeout = preferences.getJsonRequestTimeout().toMillis();
       this.crf = preferences.getCrf();
     }
 
@@ -104,6 +107,8 @@ public class OptionsPanel extends javax.swing.JPanel {
       
       preferences.setKodiPort(this.kodiPort);
 
+      preferences.setJsonRequestTimeout(Duration.ofMillis(this.jsonRequestTimeout));
+      
       preferences.flush();
     }
     
@@ -123,6 +128,14 @@ public class OptionsPanel extends javax.swing.JPanel {
       this.threads = threads;
     }
 
+    public long getJsonRequestTimeout() {
+        return this.jsonRequestTimeout;
+    }
+    
+    public void setJsonRequestTimeout(final long value) {
+        this.jsonRequestTimeout = Math.max(0L, value);
+    }
+    
     @NonNull
     public GrabberType getGrabberType() {
       return this.grabberType;
@@ -383,6 +396,8 @@ public class OptionsPanel extends javax.swing.JPanel {
     this.checkServerSsl.setSelected(data.isServerSsl());
     this.checkKodiSsl.setSelected(data.isKodiSsl());
     
+    this.spinnerRpcTimeout.setValue(data.jsonRequestTimeout);
+    
     DocumentWrapper.of(this.textFieldFfmpeg.getDocument(), x -> data.setFfmpegPath(x));
     DocumentWrapper.of(this.textFieldKodiAddress.getDocument(), x -> data.setKodiAddress(x));
     DocumentWrapper.of(this.textFieldKodiName.getDocument(), x -> data.setKodiName(x));
@@ -423,6 +438,8 @@ public class OptionsPanel extends javax.swing.JPanel {
         buttonTestKodiConnection = new javax.swing.JButton();
         jLabel4 = new javax.swing.JLabel();
         checkKodiSsl = new javax.swing.JCheckBox();
+        labelKodiRpcTimeout = new javax.swing.JLabel();
+        spinnerRpcTimeout = new javax.swing.JSpinner();
         panelScreenCast = new javax.swing.JPanel();
         jLabel5 = new javax.swing.JLabel();
         textFieldFfmpeg = new javax.swing.JTextField();
@@ -553,7 +570,7 @@ public class OptionsPanel extends javax.swing.JPanel {
         labelKodiName.setText("Name:");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 3;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(labelKodiName, gridBagConstraints);
 
@@ -561,7 +578,7 @@ public class OptionsPanel extends javax.swing.JPanel {
         labelKodiPassword.setText("Password:");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridy = 4;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(labelKodiPassword, gridBagConstraints);
 
@@ -575,14 +592,14 @@ public class OptionsPanel extends javax.swing.JPanel {
         textFieldKodiName.setToolTipText("Authorization name for connection, must be the same as in KODI HTTP service");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 3;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(textFieldKodiName, gridBagConstraints);
 
         textFieldKodiPassword.setToolTipText("Authorization password, must be the same as defined for KODI HTTP service");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridy = 4;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(textFieldKodiPassword, gridBagConstraints);
 
@@ -608,7 +625,7 @@ public class OptionsPanel extends javax.swing.JPanel {
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 5;
+        gridBagConstraints.gridy = 6;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(buttonTestKodiConnection, gridBagConstraints);
@@ -617,7 +634,7 @@ public class OptionsPanel extends javax.swing.JPanel {
         jLabel4.setText("Use SSL:");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridy = 5;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(jLabel4, gridBagConstraints);
 
@@ -629,10 +646,31 @@ public class OptionsPanel extends javax.swing.JPanel {
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridy = 5;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         panelKodiOptions.add(checkKodiSsl, gridBagConstraints);
+
+        labelKodiRpcTimeout.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        labelKodiRpcTimeout.setText("RPC Timeout (ms):");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        panelKodiOptions.add(labelKodiRpcTimeout, gridBagConstraints);
+
+        spinnerRpcTimeout.setModel(new javax.swing.SpinnerNumberModel(Long.valueOf(100L), Long.valueOf(1L), Long.valueOf(60000L), Long.valueOf(1L)));
+        spinnerRpcTimeout.setToolTipText("Timeout allowed for RPC Json call to KODI player");
+        spinnerRpcTimeout.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                spinnerRpcTimeoutStateChanged(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        panelKodiOptions.add(spinnerRpcTimeout, gridBagConstraints);
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
@@ -941,7 +979,7 @@ public class OptionsPanel extends javax.swing.JPanel {
                       this.textFieldKodiName.getText(),
                       this.textFieldKodiPassword.getText(),
                       this.checkKodiSsl.isSelected()
-              )
+              ), Duration.ofMillis(((Number)this.spinnerRpcTimeout.getValue()).longValue())
       );
       final ApplicationProperties properties = testKodiService.getAllApplicationProperties();
       JOptionPane.showMessageDialog(this, "Detected kodi: " + properties.getVersion(), "Connection test", JOptionPane.INFORMATION_MESSAGE);
@@ -1009,6 +1047,10 @@ public class OptionsPanel extends javax.swing.JPanel {
         this.currentData.setScaleUi((Integer) this.spinnerScaleUi.getValue());
     }//GEN-LAST:event_spinnerScaleUiStateChanged
 
+    private void spinnerRpcTimeoutStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spinnerRpcTimeoutStateChanged
+        this.currentData.setJsonRequestTimeout(((Number) this.spinnerRpcTimeout.getValue()).longValue());
+    }//GEN-LAST:event_spinnerRpcTimeoutStateChanged
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton buttonTestKodiConnection;
     private javax.swing.JCheckBox checkGrabCursor;
@@ -1041,6 +1083,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     private javax.swing.JLabel labelKodiName;
     private javax.swing.JLabel labelKodiPassword;
     private javax.swing.JLabel labelKodiPort;
+    private javax.swing.JLabel labelKodiRpcTimeout;
     private javax.swing.JLabel labelScaleUi;
     private javax.swing.JPanel panelGeneral;
     private javax.swing.JPanel panelKodiOptions;
@@ -1050,6 +1093,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     private javax.swing.JSpinner spinnerCrf;
     private javax.swing.JSpinner spinnerGrabThreads;
     private javax.swing.JSpinner spinnerKodiPort;
+    private javax.swing.JSpinner spinnerRpcTimeout;
     private javax.swing.JSpinner spinnerScaleUi;
     private javax.swing.JSpinner spinnerServerPort;
     private javax.swing.JSpinner spinnerSnapsPerSecond;

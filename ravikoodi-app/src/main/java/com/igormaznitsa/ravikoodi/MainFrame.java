@@ -1034,7 +1034,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
 
             final AtomicReference<Throwable> error = new AtomicReference<>();
             try {
-                final String result = new KodiService(kodiAddress).doPlayerOpenFile(url);
+                final String result = new KodiService(kodiAddress, this.preferences.getJsonRequestTimeout()).doPlayerOpenFile(url);
                 LOGGER.info("Player open link response is '{}' for '{}'", result, url);
                 if (!"ok".equalsIgnoreCase(result)) {
                     throw new IllegalStateException("Can't start play link, status : " + result);
@@ -1281,7 +1281,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
             final AtomicReference<Throwable> error = new AtomicReference<>();
             try {
                 final String screenCastUrl = this.server.getScreenCastUrl();
-                final String result = new KodiService(kodiAddress).doPlayerOpenFile(screenCastUrl);
+                final String result = new KodiService(kodiAddress, this.preferences.getJsonRequestTimeout()).doPlayerOpenFile(screenCastUrl);
                 LOGGER.info("Player open response for '{}' is '{}'", screenCastUrl, result);
                 if (!"ok".equalsIgnoreCase(result)) {
                     throw new IllegalStateException("Can't start play, status : " + result);

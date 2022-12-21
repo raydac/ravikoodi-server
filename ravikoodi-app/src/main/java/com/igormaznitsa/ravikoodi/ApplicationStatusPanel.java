@@ -79,7 +79,7 @@ public class ApplicationStatusPanel extends javax.swing.JPanel {
               thePanel.sliderVolume.removeChangeListener(this);
               try {
                 updateStatusCounter.incrementAndGet();
-                final long agreedValue = new KodiService(thePanel.makeKodiAddress()).setApplicationVolume(volume);
+                final long agreedValue = new KodiService(thePanel.makeKodiAddress(), preferences.getJsonRequestTimeout()).setApplicationVolume(volume);
                 LOGGER.info("Player agreed volume {}%", agreedValue);
                 thePanel.sliderVolume.setValue((int) agreedValue);
               } catch (Throwable thr) {
@@ -101,7 +101,7 @@ public class ApplicationStatusPanel extends javax.swing.JPanel {
       if (this.allowListenersProcessing) {
         final boolean muted = this.buttonMute.isSelected();
         try {
-          new KodiService(makeKodiAddress()).setApplicationMute(muted);
+          new KodiService(makeKodiAddress(), this.preferences.getJsonRequestTimeout()).setApplicationMute(muted);
         } catch (Throwable thr) {
           LOGGER.error("Can't mute : " + thr.getMessage());
         }
@@ -111,7 +111,7 @@ public class ApplicationStatusPanel extends javax.swing.JPanel {
     this.buttonReboot.addActionListener(x -> {
       if (JOptionPane.showConfirmDialog(this.parent, "Do you really want reboot?", "Reboot", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
         try {
-          new KodiService(makeKodiAddress()).doSystemReboot();
+          new KodiService(makeKodiAddress(), this.preferences.getJsonRequestTimeout()).doSystemReboot();
         } catch (Throwable thr) {
           LOGGER.error("Can't reboot : " + thr.getMessage());
         }
@@ -121,7 +121,7 @@ public class ApplicationStatusPanel extends javax.swing.JPanel {
     this.buttonShutdown.addActionListener(x -> {
       if (JOptionPane.showConfirmDialog(this.parent, "Do you really want shutdown?", "Shutdown", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
         try {
-          new KodiService(makeKodiAddress()).doSystemShutdown();
+          new KodiService(makeKodiAddress(), this.preferences.getJsonRequestTimeout()).doSystemShutdown();
         } catch (Throwable thr) {
           LOGGER.error("Can't shutdown : " + thr.getMessage());
         }
@@ -162,7 +162,7 @@ public class ApplicationStatusPanel extends javax.swing.JPanel {
       if (this.updateStatusCounter.get() == counterValue) {
         final KodiService kodiService;
         try {
-          kodiService = new KodiService(kodiAddress);
+          kodiService = new KodiService(kodiAddress, this.preferences.getJsonRequestTimeout());
         } catch (Exception ex) {
           SwingUtilities.invokeLater(() -> {
             SwingUtilities.invokeLater(() -> {
@@ -224,7 +224,7 @@ public class ApplicationStatusPanel extends javax.swing.JPanel {
 
   private void sendInputExecuteAction(final ExecuteAction action) {
     try {
-      new KodiService(makeKodiAddress()).sendInputExecuteAction(action);
+      new KodiService(makeKodiAddress(), this.preferences.getJsonRequestTimeout()).sendInputExecuteAction(action);
     } catch (Throwable thr) {
       LOGGER.error("Can't send input execute action '" + action + "' : " + thr.getMessage());
     }
@@ -232,7 +232,7 @@ public class ApplicationStatusPanel extends javax.swing.JPanel {
 
   private void sendControlEvent(final KodiService.Control event, final Object... args) {
     try {
-      new KodiService(makeKodiAddress()).sendControlEvent(event, args);
+      new KodiService(makeKodiAddress(), this.preferences.getJsonRequestTimeout()).sendControlEvent(event, args);
     } catch (Throwable thr) {
       LOGGER.error("Can't send control event '" + event + "' : " + thr.getMessage());
     }
