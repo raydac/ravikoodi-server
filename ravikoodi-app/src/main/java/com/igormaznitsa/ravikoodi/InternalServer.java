@@ -2,6 +2,11 @@ package com.igormaznitsa.ravikoodi;
 
 import com.igormaznitsa.ravikoodi.screencast.PreemptiveBuffer;
 import com.igormaznitsa.ravikoodi.UploadFileRecord;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -13,18 +18,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -197,7 +196,8 @@ public class InternalServer {
 
     final ServerConnector connector;
     if (this.options.isServerSsl()) {
-      final SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
+      final SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+      sslContextFactory.setTrustAll(true);
       sslContextFactory.setExcludeCipherSuites("");
 
       try (final InputStream keyStoreStream = Objects.requireNonNull(new ClassPathResource("jks/selfsigned.jks").getInputStream())) {
