@@ -80,7 +80,7 @@
                     <plugin>
                         <groupId>de.perdian.maven.plugins</groupId>
                         <artifactId>macosappbundler-maven-plugin</artifactId>
-                        <version>1.18.0</version>
+                        <version>1.19.0</version>
                         <configuration>
                             <plist>
                                 <CFBundleIconFile>appico.icns</CFBundleIconFile>
@@ -90,7 +90,7 @@
                                     <string>msa</string>
                                 </CFBundleURLTypes>
                                 <JVMVersion>11+</JVMVersion>
-                                <JVMMainClassName>RaviKoodiServer</JVMMainClassName>
+                                <JVMMainClassName>com.igormaznitsa.ravikoodi.RaviKoodiServer</JVMMainClassName>
                             </plist>
                             <dmg>
                                 <generate>true</generate>
@@ -110,13 +110,13 @@
                     <plugin>
                         <groupId>com.akathist.maven.plugins.launch4j</groupId>
                         <artifactId>launch4j-maven-plugin</artifactId>
-                        <version>2.1.2</version>
+                        <version>2.2.0</version>
                         <configuration>
                             <headerType>gui</headerType>
                             <outfile>${project.build.directory}/${app.name}.exe</outfile>
                             <downloadUrl>https://bell-sw.com/pages/downloads/#/java-11-lts</downloadUrl>
                             <classPath>
-                                <mainClass>com.igormaznitsa.pdfimgremover.Application</mainClass>
+                                <mainClass>com.igormaznitsa.ravikoodi.RaviKoodiServer</mainClass>
                                 <preCp>anything</preCp>
                             </classPath>
                             <icon>
@@ -149,6 +149,7 @@
                                     <outfile>${project.build.directory}${file.separator}${app.name}.exe</outfile>
                                     <jre>
                                         <minVersion>11</minVersion>
+                                        <path>%VAR%</path>
                                     </jre>
                                 </configuration>
                             </execution>

@@ -1,7 +1,6 @@
 package com.igormaznitsa.ravikoodi;
 
 import com.igormaznitsa.ravikoodi.screencast.PreemptiveBuffer;
-import com.igormaznitsa.ravikoodi.UploadFileRecord;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.ServletException;
@@ -24,11 +23,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -194,12 +197,18 @@ public class InternalServer {
 
     theServer = new Server(new QueuedThreadPool(8, 2, 30000));
 
+    final HttpConfiguration httpConfiguration = new HttpConfiguration();
+    final SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer();
+    secureRequestCustomizer.setSniHostCheck(false);
+    httpConfiguration.addCustomizer(secureRequestCustomizer);
+    
     final ServerConnector connector;
     if (this.options.isServerSsl()) {
       final SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+      sslContextFactory.setSniRequired(false);
       sslContextFactory.setTrustAll(true);
       sslContextFactory.setExcludeCipherSuites("");
-
+      
       try (final InputStream keyStoreStream = Objects.requireNonNull(new ClassPathResource("jks/selfsigned.jks").getInputStream())) {
           LOGGER.info("Loading certificate store");
           final String key = "someSecretKey";
@@ -219,9 +228,11 @@ public class InternalServer {
           LOGGER.error("Can't generate self-signed certificate, see log!", ex);
       }
 
-      connector = new ServerConnector(theServer, sslContextFactory, new HttpConnectionFactory());
+      connector = new ServerConnector(theServer, 
+              new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()), 
+              new HttpConnectionFactory(httpConfiguration));
     } else {
-      connector = new ServerConnector(theServer, new HttpConnectionFactory());
+      connector = new ServerConnector(theServer, new HttpConnectionFactory(httpConfiguration));
     }
 
     connector.setHost(host);
