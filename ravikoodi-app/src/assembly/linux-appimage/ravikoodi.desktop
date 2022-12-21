@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=RaviKoodi
+Comment=Ravikoodi server
+GenericName=Ravikoodi
+Terminal=false
+Type=Application
+Icon=icon
+Categories=Application;
+Keywords=kodi;ravi;koodi;tv;stream;
+StartupWMClass=RavikoodiServer
+StartupNotify=true
