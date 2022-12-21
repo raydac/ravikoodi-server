@@ -3,7 +3,9 @@ spring:
      enabled: false
 ---     
 spring:
-  profiles: debug
+   config:
+      activate:
+         on-profile: debug
 
 logging:
   level.igormaznitsa.ravikoodi: DEBUG
