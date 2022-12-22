@@ -114,7 +114,7 @@
                         <configuration>
                             <headerType>gui</headerType>
                             <outfile>${project.build.directory}/${app.name}.exe</outfile>
-                            <downloadUrl>https://bell-sw.com/pages/downloads/#/java-11-lts</downloadUrl>
+                            <downloadUrl>https://bell-sw.com/pages/downloads/#/java-19-current</downloadUrl>
                             <classPath>
                                 <mainClass>com.igormaznitsa.ravikoodi.RaviKoodiServer</mainClass>
                                 <preCp>anything</preCp>
@@ -129,7 +129,7 @@
                                 <fileVersion>1.1.10.0</fileVersion>
                                 <productVersion>1.1.10.0</productVersion>
                                 <txtFileVersion>${project.version}</txtFileVersion>
-                                <fileDescription>Pdf Image Remover</fileDescription>
+                                <fileDescription>RaviKoodi communication server for Kodi player</fileDescription>
                                 <copyright>2018-2022 Igor Maznitsa</copyright>
                                 <txtProductVersion>${project.version}</txtProductVersion>
                                 <productName>${project.name}</productName>
