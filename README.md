@@ -7,10 +7,12 @@
 
 # Changelog
 
-- __1.1.10 (SNAPSHOT)__
+- __1.1.10 (05-jan-2023)__
+  - minor fixes
+  - added AppImage version
   - windows launcher moved from i386 to amd64
   - updated embedded JDK to 19.0.1+11
-  - updated Spring Boot to 2.7.5
+  - updated Spring Boot to 3.0.1
 
 - __1.1.9 (06-jun-2022)__
   - added support of drag and drop link for Chrome under Windows
