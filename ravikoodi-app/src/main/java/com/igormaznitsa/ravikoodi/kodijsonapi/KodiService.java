@@ -1,6 +1,7 @@
 package com.igormaznitsa.ravikoodi.kodijsonapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.googlecode.jsonrpc4j.JsonRpcClientException;
 import com.googlecode.jsonrpc4j.JsonRpcHttpClient;
 import com.igormaznitsa.ravikoodi.KodiAddress;
 import java.net.MalformedURLException;
@@ -75,7 +76,12 @@ public class KodiService {
   }
 
   public PlayerSeekResult doPlayerSeekPercentage(final ActivePlayerInfo player, final double percentage) throws Throwable {
-    return makeJsonRpcClient().invoke("Player.Seek", new PlayerSeekPercentageReq(player, percentage), PlayerSeekResult.class);
+      try {
+        return makeJsonRpcClient().invoke("Player.Seek", new PlayerSeekPercentageReq(player, percentage), PlayerSeekResult.class);
+      } catch (JsonRpcClientException ex) {
+        LOGGER.info("Trying new API request format for Player.Seek as fallback");
+        return makeJsonRpcClient().invoke("Player.Seek", new PlayerSeekPercentageReq2(player, percentage), PlayerSeekResult.class);  
+      }
   }
 
   public ActivePlayerInfo[] getActivePlayers() throws Throwable {
