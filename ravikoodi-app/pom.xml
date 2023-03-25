@@ -15,8 +15,8 @@
     <properties>
         <embedded.jdk.provider>BELLSOFT</embedded.jdk.provider>
         <embedded.jdk.type>jdk</embedded.jdk.type>
-        <embedded.jdk.version>19.0.2+9</embedded.jdk.version>
-        <spring.boot.version>3.0.3</spring.boot.version>
+        <embedded.jdk.version>20+37</embedded.jdk.version>
+        <spring.boot.version>3.0.5</spring.boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <app.name>${project.build.finalName}</app.name>
@@ -158,7 +158,7 @@
                     <plugin>
                         <groupId>com.igormaznitsa</groupId>
                         <artifactId>mvn-jlink-wrapper</artifactId>
-                        <version>1.2.0</version>
+                        <version>1.2.1</version>
                         <executions>
                             <execution>
                                 <id>cache-work-jdk</id>
@@ -551,6 +551,12 @@
                                             </directory>
                                             <targetPath>jre</targetPath>
                                             <filtering>false</filtering>
+                                            <excludes>
+                                                <exclude>**/ASSEMBLY_EXCEPTION</exclude>
+                                                <exclude>**/ADDITIONAL_LICENSE_INFO</exclude>
+                                                <exclude>**/LICENSE</exclude>
+                                                <exclude>**/cldr.md</exclude>
+                                            </excludes>
                                         </resource>
                                         <resource>
                                             <directory>
