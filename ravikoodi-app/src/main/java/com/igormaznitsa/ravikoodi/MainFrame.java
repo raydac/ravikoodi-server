@@ -667,7 +667,6 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
         menuAbout = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        getContentPane().setLayout(new java.awt.BorderLayout());
 
         mainPanelSplit.setDividerLocation(255);
 
@@ -682,6 +681,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
 
         panelFileTree.add(fileTreeScrollPane, java.awt.BorderLayout.CENTER);
 
+        jToolBar1.setFloatable(false);
         jToolBar1.setRollover(true);
 
         buttonSelectFolder.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/folders_explorer.png"))); // NOI18N
