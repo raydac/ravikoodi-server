@@ -13,6 +13,7 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -434,6 +435,13 @@ public class OptionsPanel extends javax.swing.JPanel {
         this.checkServerSsl.setSelected(data.isServerSsl());
         this.checkKodiSsl.setSelected(data.isKodiSsl());
 
+        this.checkBoxYoutubeForceSearchUrl.setSelected(data.isYoutubeForceSearchDirectUrl());
+        this.comboBoxYoutubePreferredQuality.setSelectedItem(data.getYoutubePreferredQuality());
+        this.comboBoxYoutubeRequiredFormat.setSelectedItem(data.getYoutubeRequiredFormat());
+        
+        this.comboBoxYoutubePreferredQuality.setEnabled(this.checkBoxYoutubeForceSearchUrl.isSelected());
+        this.comboBoxYoutubeRequiredFormat.setEnabled(this.checkBoxYoutubeForceSearchUrl.isSelected());
+        
         this.spinnerRpcTimeout.setValue(data.jsonRequestTimeout);
 
         DocumentWrapper.of(this.textFieldFfmpeg.getDocument(), x -> data.setFfmpegPath(x));
@@ -510,6 +518,15 @@ public class OptionsPanel extends javax.swing.JPanel {
         spinnerGrabThreads = new javax.swing.JSpinner();
         jLabel16 = new javax.swing.JLabel();
         spinnerCrf = new javax.swing.JSpinner();
+        tabYoutube = new javax.swing.JPanel();
+        jLabel17 = new javax.swing.JLabel();
+        jLabel18 = new javax.swing.JLabel();
+        jLabel19 = new javax.swing.JLabel();
+        filler4 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 32767));
+        checkBoxYoutubeForceSearchUrl = new javax.swing.JCheckBox();
+        comboBoxYoutubePreferredQuality = new javax.swing.JComboBox<>();
+        comboBoxYoutubeRequiredFormat = new javax.swing.JComboBox<>();
+        filler5 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0), new java.awt.Dimension(32767, 0));
 
         setLayout(new java.awt.BorderLayout());
 
@@ -774,7 +791,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         tabScreencast.setLayout(new java.awt.BorderLayout());
 
-        panelScreenCast.setBorder(javax.swing.BorderFactory.createTitledBorder("Screencast"));
+        panelScreenCast.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 8, 8, 8));
         panelScreenCast.setLayout(new java.awt.GridBagLayout());
 
         jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
@@ -1007,6 +1024,85 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         tabPanel.addTab("Screencast", tabScreencast);
 
+        tabYoutube.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        tabYoutube.setLayout(new java.awt.GridBagLayout());
+
+        jLabel17.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jLabel17.setText("Force search direct video URL: ");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        tabYoutube.add(jLabel17, gridBagConstraints);
+
+        jLabel18.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jLabel18.setText("Preferred video quality: ");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        tabYoutube.add(jLabel18, gridBagConstraints);
+
+        jLabel19.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jLabel19.setText("Required video format: ");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        tabYoutube.add(jLabel19, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.weighty = 1000.0;
+        tabYoutube.add(filler4, gridBagConstraints);
+
+        checkBoxYoutubeForceSearchUrl.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                checkBoxYoutubeForceSearchUrlActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        tabYoutube.add(checkBoxYoutubeForceSearchUrl, gridBagConstraints);
+
+        comboBoxYoutubePreferredQuality.setModel(new DefaultComboBoxModel<>(Arrays.stream(YtQuality.values()).filter(x -> x!=YtQuality.UNKNOWN).toArray(x -> new YtQuality[x]))
+        );
+        comboBoxYoutubePreferredQuality.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                comboBoxYoutubePreferredQualityActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        tabYoutube.add(comboBoxYoutubePreferredQuality, gridBagConstraints);
+
+        comboBoxYoutubeRequiredFormat.setModel(new DefaultComboBoxModel<>(Arrays.stream(YtVideoType.values()).filter(x -> x!=YtVideoType.UNKNOWN).toArray(x -> new YtVideoType[x]))
+        );
+        comboBoxYoutubeRequiredFormat.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                comboBoxYoutubeRequiredFormatActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        tabYoutube.add(comboBoxYoutubeRequiredFormat, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.weightx = 1000.0;
+        tabYoutube.add(filler5, gridBagConstraints);
+
+        tabPanel.addTab("Youtube", tabYoutube);
+
         add(tabPanel, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
 
@@ -1104,11 +1200,28 @@ public class OptionsPanel extends javax.swing.JPanel {
         this.currentData.setJsonRequestTimeout(((Number) this.spinnerRpcTimeout.getValue()).longValue());
     }//GEN-LAST:event_spinnerRpcTimeoutStateChanged
 
+    private void checkBoxYoutubeForceSearchUrlActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkBoxYoutubeForceSearchUrlActionPerformed
+        this.currentData.setYoutubeForceSearchDirectUrl(this.checkBoxYoutubeForceSearchUrl.isSelected());
+        this.comboBoxYoutubePreferredQuality.setEnabled(this.checkBoxYoutubeForceSearchUrl.isSelected());
+        this.comboBoxYoutubeRequiredFormat.setEnabled(this.checkBoxYoutubeForceSearchUrl.isSelected());
+    }//GEN-LAST:event_checkBoxYoutubeForceSearchUrlActionPerformed
+
+    private void comboBoxYoutubePreferredQualityActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboBoxYoutubePreferredQualityActionPerformed
+        this.currentData.setYoutubePreferredQuality((YtQuality)this.comboBoxYoutubePreferredQuality.getSelectedItem());
+    }//GEN-LAST:event_comboBoxYoutubePreferredQualityActionPerformed
+
+    private void comboBoxYoutubeRequiredFormatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboBoxYoutubeRequiredFormatActionPerformed
+        this.currentData.setYoutubeRequiredFormat((YtVideoType) this.comboBoxYoutubeRequiredFormat.getSelectedItem());
+    }//GEN-LAST:event_comboBoxYoutubeRequiredFormatActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton buttonTestKodiConnection;
+    private javax.swing.JCheckBox checkBoxYoutubeForceSearchUrl;
     private javax.swing.JCheckBox checkGrabCursor;
     private javax.swing.JCheckBox checkKodiSsl;
     private javax.swing.JCheckBox checkServerSsl;
+    private javax.swing.JComboBox<YtQuality> comboBoxYoutubePreferredQuality;
+    private javax.swing.JComboBox<YtVideoType> comboBoxYoutubeRequiredFormat;
     private javax.swing.JComboBox<String> comboGrabberType;
     private javax.swing.JComboBox<String> comboInterface;
     private javax.swing.JComboBox<String> comboQuality;
@@ -1117,6 +1230,8 @@ public class OptionsPanel extends javax.swing.JPanel {
     private javax.swing.Box.Filler filler1;
     private javax.swing.Box.Filler filler2;
     private javax.swing.Box.Filler filler3;
+    private javax.swing.Box.Filler filler4;
+    private javax.swing.Box.Filler filler5;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -1125,6 +1240,9 @@ public class OptionsPanel extends javax.swing.JPanel {
     private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
+    private javax.swing.JLabel jLabel17;
+    private javax.swing.JLabel jLabel18;
+    private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -1155,6 +1273,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     private javax.swing.JPanel tabGeneral;
     private javax.swing.JTabbedPane tabPanel;
     private javax.swing.JPanel tabScreencast;
+    private javax.swing.JPanel tabYoutube;
     private javax.swing.JTextField textFieldFfmpeg;
     private javax.swing.JTextField textFieldKodiAddress;
     private javax.swing.JTextField textFieldKodiName;

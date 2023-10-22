@@ -219,8 +219,6 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
 
     @PostConstruct
     public void postInit() {
-        this.preferences.setYoutubeForceUrlSearch(true);
-        
         final Throwable lastServerError = this.server.getLastStartServerError();
         if (lastServerError != null) {
             LOGGER.error("Detected error during server start", lastServerError);
