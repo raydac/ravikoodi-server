@@ -1,7 +1,6 @@
 package com.igormaznitsa.ravikoodi;
 
 import com.igormaznitsa.ravikoodi.timers.TimerScheduler;
-import com.igormaznitsa.ContentFolder;
 import com.igormaznitsa.ravikoodi.prefs.TimerResource;
 import static com.igormaznitsa.ravikoodi.ContentTreeItem.CONTENT_ITEM_COMPARATOR;
 import com.igormaznitsa.ravikoodi.MimeTypes.ContentType;
@@ -13,6 +12,9 @@ import com.igormaznitsa.ravikoodi.screencast.FfmpegWrapper;
 import com.igormaznitsa.ravikoodi.screencast.JavaSoundAdapter;
 import com.igormaznitsa.ravikoodi.screencast.ScreenGrabber;
 import com.igormaznitsa.ravikoodi.timers.TimersTable;
+import com.igormaznitsa.ravikoodi.ytloader.YtLinkExtractor;
+import com.igormaznitsa.ravikoodi.ytloader.YtQuality;
+import com.igormaznitsa.ravikoodi.ytloader.YtVideoType;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.awt.Component;
@@ -126,6 +128,8 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
     private StaticFileRegistry staticFileRegistry;
     @Autowired
     private KodiComm kodiComm;
+    @Autowired
+    private YtLinkExtractor youTubeLinkExtractor;
 
     private File lastSelectedFileFolder = null;
     private final AtomicReference<OpeningFileInfoPanel> openingFileInfoPanel = new AtomicReference<>();
@@ -215,6 +219,8 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
 
     @PostConstruct
     public void postInit() {
+        this.preferences.setYoutubeForceUrlSearch(true);
+        
         final Throwable lastServerError = this.server.getLastStartServerError();
         if (lastServerError != null) {
             LOGGER.error("Detected error during server start", lastServerError);
@@ -320,9 +326,9 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
             this.setIconImage(icon);
             this.setIconImages(List.of(icon));
             if (Taskbar.isTaskbarSupported()) {
-                try{
+                try {
                     Taskbar.getTaskbar().setIconImage(icon);
-                }catch(final Exception ex) {
+                } catch (final Exception ex) {
                     LOGGER.error("Can't set taskbar icon for error", ex);
                 }
             }
@@ -390,11 +396,11 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                         final Matcher matcher = filePattern.matcher(stringValue);
                         if (matcher.find()) {
                             String filePath = matcher.group(1);
-                            if (filePath.toLowerCase(Locale.ENGLISH).startsWith("smb://") && filePath.contains("%")){
+                            if (filePath.toLowerCase(Locale.ENGLISH).startsWith("smb://") && filePath.contains("%")) {
                                 LOGGER.info("Decoding SAMBA path: {}", filePath);
                                 filePath = URLDecoder.decode(filePath, StandardCharsets.UTF_8);
                             }
-                            LOGGER.info("Opening file path as URI: {}", filePath);    
+                            LOGGER.info("Opening file path as URI: {}", filePath);
                             this.openUrlLink(filePath);
                         } else {
                             LOGGER.error("Can't extract file path from: {}", stringValue);
@@ -1174,23 +1180,67 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
         }
     }//GEN-LAST:event_menuTimersActionPerformed
 
-    private void openYoutubeLink(final String youtubeLinkUrl) {
+    private void openYoutubeVideoLinkWithKodiPlugin(final String youTubeVideoId) {
         final String patternVideo = "plugin://plugin.video.youtube/play/?video_id=%s";
-        final String patternPlayList = "plugin://plugin.video.youtube/play/?playlist_id=%s";
+        LOGGER.info("Opening Youtube video for id: {}", youTubeVideoId);
+        this.openUrlLink(String.format(patternVideo, youTubeVideoId.trim()));
+    }
 
-        String id = YoutubeUtils.extractYoutubeVideoId(youtubeLinkUrl).orElse(null);
-        if (id == null) {
-            id = YoutubeUtils.extractYoutubePlaylistId(youtubeLinkUrl).orElse(null);
+    private void openYoutubePlaylistLinkWithKodiPlugin(final String youTubeVideoId) {
+        final String patternPlayList = "plugin://plugin.video.youtube/play/?playlist_id=%s";
+        LOGGER.info("Opening Youtube playlist for id: {}", youTubeVideoId);
+        this.openUrlLink(String.format(patternPlayList, youTubeVideoId));
+    }
+
+    private void openYoutubeThroughDirectLinkSearch(
+            @NonNull final String youTubeVideoId, 
+            @NonNull final YtQuality preferredQuality,
+            @NonNull final YtVideoType requiredFormat,
+            final boolean playListId) {
+        LOGGER.info("Opening youtube (playlist is {}) through direct link search, preffered quality is {}, required format is {}: {}", playListId, preferredQuality, requiredFormat, youTubeVideoId);
+        this.youTubeLinkExtractor.findUrlAsync(youTubeVideoId, preferredQuality, requiredFormat, this::onResolvedYoutubeUrlLink);
+    }
+
+    private void onResolvedYoutubeUrlLink(@NonNull final String youTubeVideoId, @Nullable final String url, @Nullable final Throwable error) {
+        if (error == null) {
+            SwingUtilities.invokeLater(() -> this.openUrlLink(url));
+        } else {
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(MainFrame.this, error.getMessage(), "Error '" + youTubeVideoId + '\'', JOptionPane.ERROR_MESSAGE);
+            });
+        }
+    }
+
+    private void openYoutubeLink(@NonNull final String youtubeLinkUrl) {
+        if (this.preferences.isYoutubeForceDirectUrlSearch()) {
+            final YtQuality preferredQuality = this.preferences.getYoutubePreferredQuality();
+            final YtVideoType requiredFormat = this.preferences.getYoutubeRequiredFormat();
+            String id = YoutubeUtils.extractYoutubeVideoId(youtubeLinkUrl).orElse(null);
             if (id == null) {
-                LOGGER.info("Opening Youtube video for id: {}", youtubeLinkUrl);
-                this.openUrlLink(String.format(patternVideo, youtubeLinkUrl.trim()));
+                id = YoutubeUtils.extractYoutubePlaylistId(youtubeLinkUrl).orElse(null);
+                if (id == null) {
+                    this.openYoutubeThroughDirectLinkSearch(youtubeLinkUrl.trim(), 
+                            preferredQuality, requiredFormat, false);
+                } else {
+                    this.openYoutubeThroughDirectLinkSearch(id,
+                            preferredQuality, requiredFormat, true);
+                }
             } else {
-                LOGGER.info("Opening Youtube playlist for id: {}", id);
-                this.openUrlLink(String.format(patternPlayList, id));
+                this.openYoutubeThroughDirectLinkSearch(id,
+                        preferredQuality, requiredFormat, false);
             }
         } else {
-            LOGGER.info("Opening Youtube video for id: {}", id);
-            this.openUrlLink(String.format(patternVideo, id));
+            String id = YoutubeUtils.extractYoutubeVideoId(youtubeLinkUrl).orElse(null);
+            if (id == null) {
+                id = YoutubeUtils.extractYoutubePlaylistId(youtubeLinkUrl).orElse(null);
+                if (id == null) {
+                    openYoutubeVideoLinkWithKodiPlugin(youtubeLinkUrl.trim());
+                } else {
+                    openYoutubePlaylistLinkWithKodiPlugin(id);
+                }
+            } else {
+                openYoutubeVideoLinkWithKodiPlugin(id);
+            }
         }
     }
 
@@ -1206,7 +1256,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
     private void menuStaticContentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuStaticContentActionPerformed
         final String filePath = this.preferences.getFileRoot();
         final File root = filePath == null ? null : new File(filePath);
-        
+
         final PublishedFilesTable publishedFilesTable = new PublishedFilesTable(this.server.makeUrlPrefix(InternalServer.PATH_RESOURCES), root, this.preferences.getStaticResources());
         if (JOptionPane.showConfirmDialog(this, publishedFilesTable, "Published files", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
             final List<StaticResource> newResources = publishedFilesTable.getResources();

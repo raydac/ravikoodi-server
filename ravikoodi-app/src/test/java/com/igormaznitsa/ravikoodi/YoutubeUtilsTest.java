@@ -15,6 +15,12 @@
  */
 package com.igormaznitsa.ravikoodi;
 
+import com.github.kiulian.downloader.YoutubeDownloader;
+import com.github.kiulian.downloader.downloader.YoutubeCallback;
+import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
+import com.github.kiulian.downloader.downloader.response.Response;
+import com.github.kiulian.downloader.model.videos.VideoInfo;
+import com.github.kiulian.downloader.model.videos.formats.Format;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -57,6 +63,29 @@ public class YoutubeUtilsTest {
         assertEquals("PLOl4b517qn8hmH4Pe0_P8-Y723NmtL08S",YoutubeUtils.extractYoutubePlaylistId("https://www.youtube.com/playlist?list=PLOl4b517qn8hmH4Pe0_P8-Y723NmtL08S").orElseThrow());
         assertEquals("PLOl4b517qn8hmH4Pe0_P8-Y723NmtL08S",YoutubeUtils.extractYoutubePlaylistId("http://youtube.com/playlist?list=PLOl4b517qn8hmH4Pe0_P8-Y723NmtL08S").orElseThrow());
         assertEquals("PLOl4b517qn8hmH4Pe0_P8-Y723NmtL08S",YoutubeUtils.extractYoutubePlaylistId("http://youtu.be?list=PLOl4b517qn8hmH4Pe0_P8-Y723NmtL08S").orElseThrow());
+    }
+    
+    public void testLoad() {
+        String videoId = "x91MPoITQ3I";
+        YoutubeDownloader downloader = new YoutubeDownloader();
+        
+        RequestVideoInfo request = new RequestVideoInfo(videoId)
+                .callback(new YoutubeCallback<VideoInfo>() {
+                    @Override
+                    public void onFinished(VideoInfo videoInfo) {
+                        System.out.println("Finished parsing: "+videoInfo);
+                        for(var s : videoInfo.videoFormats()) {
+                            System.out.println("format: quality="+s.qualityLabel()+" type="+s.type()+" length "+s.contentLength()+ " mime="+s.mimeType()+"  url="+s.url());
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable throwable) {
+                        System.out.println("Error: " + throwable.getMessage());
+                    }
+                })
+                .async();
+        var d = downloader.getVideoInfo(request).data();
     }
     
 }

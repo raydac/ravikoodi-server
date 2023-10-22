@@ -12,11 +12,26 @@
     <artifactId>ravikoodi-app</artifactId>
     <packaging>jar</packaging>
 
+    <!-- Required by https://github.com/sealedtx/java-youtube-downloader -->
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>    
+        </repository>
+    </repositories>
+
     <properties>
         <embedded.jdk.provider>BELLSOFT</embedded.jdk.provider>
         <embedded.jdk.type>jdk</embedded.jdk.type>
-        <embedded.jdk.version>21+37</embedded.jdk.version>
-        <spring.boot.version>3.1.4</spring.boot.version>
+        <embedded.jdk.version>21.0.1+12</embedded.jdk.version>
+        <spring.boot.version>3.1.5</spring.boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <app.name>${project.build.finalName}</app.name>
@@ -649,6 +664,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.github.sealedtx</groupId>
+            <artifactId>java-youtube-downloader</artifactId>
+            <version>3.2.3</version>
+        </dependency>
+        
+        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-quickstart</artifactId>
         </dependency>
@@ -699,31 +720,47 @@
     </dependencies>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.11.0</version>
-                    <configuration>
-                        <fork>true</fork>
-                        <compilerArgument>-XDignore.symbol.file</compilerArgument>
-                        <compilerArgs>
-                            <arg>--add-exports</arg>
-                            <arg>java.base/sun.security.x509=ALL-UNNAMED</arg>
-                            <arg>--add-exports</arg>
-                            <arg>java.base/sun.security.tools.keytool=ALL-UNNAMED</arg>
-                            <arg>--add-exports</arg>
-                            <arg>java.desktop/java.awt.peer=ALL-UNNAMED</arg>
-                        </compilerArgs>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <id>enforce</id>
+                        <configuration>
+                            <rules>
+                                <dependencyConvergence/>
+                                <requireSameVersions/>
+                            </rules>
+                        </configuration>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <fork>true</fork>
+                    <compilerArgument>-XDignore.symbol.file</compilerArgument>
+                    <compilerArgs>
+                        <arg>--add-exports</arg>
+                        <arg>java.base/sun.security.x509=ALL-UNNAMED</arg>
+                        <arg>--add-exports</arg>
+                        <arg>java.base/sun.security.tools.keytool=ALL-UNNAMED</arg>
+                        <arg>--add-exports</arg>
+                        <arg>java.desktop/java.awt.peer=ALL-UNNAMED</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>3.1.5</version>
                 <configuration>
                     <finalName>${project.build.finalName}${final.ext}</finalName>
                     <executable>${executable.jar}</executable>

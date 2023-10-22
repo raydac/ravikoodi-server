@@ -6,6 +6,8 @@ import com.igormaznitsa.ravikoodi.ApplicationPreferences.Quality;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences.SpeedProfile;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ApplicationProperties;
 import com.igormaznitsa.ravikoodi.kodijsonapi.KodiService;
+import com.igormaznitsa.ravikoodi.ytloader.YtQuality;
+import com.igormaznitsa.ravikoodi.ytloader.YtVideoType;
 import java.net.MalformedURLException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -31,389 +33,425 @@ import org.springframework.lang.NonNull;
 @SuppressWarnings("all")
 public class OptionsPanel extends javax.swing.JPanel {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(OptionsPanel.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OptionsPanel.class);
 
-  public static final class Data {
+    public static final class Data {
 
-    private String host;
-    private int port;
-    private int threads;
-    private boolean serverSsl;
-    private String kodiAddress;
-    private String kodiName;
-    private String kodiPassword;
-    private String ffmpegPath;
-    private boolean grabCursor;
-    private int snapsPerSecond;
-    private int kodiPort;
-    private int scaleUi;
-    private String soundInput;
-    private int bandwidth;
-    private int crf;
-    private Quality quality;
-    private GrabberType grabberType;
-    private SpeedProfile speedProfile;
-    private boolean kodiSsl;
-    private float soundOffset;
-    private long jsonRequestTimeout;
+        private String host;
+        private int port;
+        private int threads;
+        private boolean serverSsl;
+        private String kodiAddress;
+        private String kodiName;
+        private String kodiPassword;
+        private String ffmpegPath;
+        private boolean grabCursor;
+        private int snapsPerSecond;
+        private int kodiPort;
+        private int scaleUi;
+        private String soundInput;
+        private int bandwidth;
+        private int crf;
+        private Quality quality;
+        private GrabberType grabberType;
+        private SpeedProfile speedProfile;
+        private boolean kodiSsl;
+        private float soundOffset;
+        private long jsonRequestTimeout;
+        private boolean youtubeForceSearchDirectUrl;
+        private YtQuality youtubePreferredQuality;
+        private YtVideoType youtubeRequiredFormat;
 
-    public Data(@NonNull final ApplicationPreferences preferences) {
-      this.threads = preferences.getThreads();
-      this.scaleUi = preferences.getScaleUi();
-      this.host = preferences.getServerHost();
-      this.port = preferences.getServerPort();
-      this.kodiAddress = preferences.getKodiAddress();
-      this.kodiName = preferences.getKodiName();
-      this.kodiPassword = preferences.getKodiPassword();
-      this.kodiPort = preferences.getKodiPort();
-      this.serverSsl = preferences.isServerSsl();
-      this.kodiSsl = preferences.isKodiSsl();
-      this.ffmpegPath = preferences.getFfmpegPath();
-      this.snapsPerSecond = preferences.getSnapsPerSecond();
-      this.grabCursor = preferences.isGrabCursor();
-      this.soundInput = preferences.getSoundInput();
-      this.quality = preferences.getQuality();
-      this.bandwidth = preferences.getBandwidth();
-      this.soundOffset = preferences.getSoundOffset();
-      this.speedProfile = preferences.getSpeedProfile();
-      this.grabberType = preferences.getGrabberType();
-      this.jsonRequestTimeout = preferences.getJsonRequestTimeout().toMillis();
-      this.crf = preferences.getCrf();
-    }
+        public Data(@NonNull final ApplicationPreferences preferences) {
+            this.youtubeForceSearchDirectUrl = preferences.isYoutubeForceDirectUrlSearch();
+            this.youtubePreferredQuality = preferences.getYoutubePreferredQuality();
+            this.youtubeRequiredFormat = preferences.getYoutubeRequiredFormat();
+            this.threads = preferences.getThreads();
+            this.scaleUi = preferences.getScaleUi();
+            this.host = preferences.getServerHost();
+            this.port = preferences.getServerPort();
+            this.kodiAddress = preferences.getKodiAddress();
+            this.kodiName = preferences.getKodiName();
+            this.kodiPassword = preferences.getKodiPassword();
+            this.kodiPort = preferences.getKodiPort();
+            this.serverSsl = preferences.isServerSsl();
+            this.kodiSsl = preferences.isKodiSsl();
+            this.ffmpegPath = preferences.getFfmpegPath();
+            this.snapsPerSecond = preferences.getSnapsPerSecond();
+            this.grabCursor = preferences.isGrabCursor();
+            this.soundInput = preferences.getSoundInput();
+            this.quality = preferences.getQuality();
+            this.bandwidth = preferences.getBandwidth();
+            this.soundOffset = preferences.getSoundOffset();
+            this.speedProfile = preferences.getSpeedProfile();
+            this.grabberType = preferences.getGrabberType();
+            this.jsonRequestTimeout = preferences.getJsonRequestTimeout().toMillis();
+            this.crf = preferences.getCrf();
+        }
 
-    public void save(@NonNull final ApplicationPreferences preferences) {
-      preferences.setScaleUi(this.scaleUi);
+        public void save(@NonNull final ApplicationPreferences preferences) {
+            preferences.setYoutubeForceUrlSearch(this.youtubeForceSearchDirectUrl);
+            preferences.setYoutubePreferredQuality(this.youtubePreferredQuality);
+            preferences.setYoutubeRequiredFormat(this.youtubeRequiredFormat);
 
-      preferences.setServerInterface(this.host);
-      preferences.setServerPort(this.port);
-      preferences.setServerSsl(this.serverSsl);
-      
-      preferences.setGrabCursor(this.grabCursor);
-      preferences.setFfmpegPath(this.ffmpegPath);
-      preferences.setSnapsPerSecond(this.snapsPerSecond);
-      preferences.setSoundnput(this.soundInput);
-      preferences.setQuality(this.quality);
-      preferences.setSpeedProfile(this.speedProfile);
-      preferences.setBandwidth(this.bandwidth);
-      preferences.setSoundOffset(this.soundOffset);
-      preferences.setGrabberType(this.grabberType);
-      preferences.setThreads(this.threads);
-      preferences.setCrf(this.crf);
-      
-      preferences.setKodiAddress(this.kodiAddress);
-      preferences.setKodiName(this.kodiName);
-      preferences.setKodiPassword(this.kodiPassword);
-      preferences.setKodiSsl(this.kodiSsl);
-      
-      preferences.setKodiPort(this.kodiPort);
+            preferences.setScaleUi(this.scaleUi);
 
-      preferences.setJsonRequestTimeout(Duration.ofMillis(this.jsonRequestTimeout));
-      
-      preferences.flush();
-    }
-    
-    public int getCrf() {
-        return this.crf;
-    }
-    
-    public void setCrf(final int value) {
-        this.crf = value;
-    }
-    
-    public int getThreads() {
-      return this.threads;
-    }
-    
-    public void setThreads(final int threads) {
-      this.threads = threads;
-    }
+            preferences.setServerInterface(this.host);
+            preferences.setServerPort(this.port);
+            preferences.setServerSsl(this.serverSsl);
 
-    public long getJsonRequestTimeout() {
-        return this.jsonRequestTimeout;
-    }
-    
-    public void setJsonRequestTimeout(final long value) {
-        this.jsonRequestTimeout = Math.max(0L, value);
-    }
-    
-    @NonNull
-    public GrabberType getGrabberType() {
-      return this.grabberType;
-    }
-    
-    public void setGrabberType(@NonNull final GrabberType grabberType) {
-      this.grabberType = grabberType;
-    }
-    
-    public int getBandwidth() {
-      return this.bandwidth;
-    }
-    
-    public void setBandwidth(final int value) {
-      this.bandwidth = value;
-    }
-    
-    public void setScaleUi(final int value) {
-      this.scaleUi = value;
-    }
-    
-    public int getScaleUi() {
-      return this.scaleUi;
-    }
-    
-    @NonNull
-    public SpeedProfile getSpeedProfile() {
-      return this.speedProfile;
-    }
-    
-    public void setSpeedProfile(@NonNull final SpeedProfile value) {
-      this.speedProfile = value;
-    }
-    
-    @NonNull
-    public Quality getQuality() {
-      return this.quality;
-    }
-    
-    public void setQuality(@NonNull final Quality value) {
-      this.quality = value;
-    }
-        
-    @NonNull
-    public String getSoundInput() {
-      return this.soundInput;
-    }
-    
-    public void setSoundInput(@NonNull final String value) {
-      this.soundInput = value;
-    }
-    
-    public float getSoundOffset() {
-      return this.soundOffset;
-    }
-    
-    public void setSoundOffset(final float value) {
-      this.soundOffset = value;
-    }
-    
-    @NonNull
-    public String getKodiAddress() {
-      return this.kodiAddress;
-    }
+            preferences.setGrabCursor(this.grabCursor);
+            preferences.setFfmpegPath(this.ffmpegPath);
+            preferences.setSnapsPerSecond(this.snapsPerSecond);
+            preferences.setSoundnput(this.soundInput);
+            preferences.setQuality(this.quality);
+            preferences.setSpeedProfile(this.speedProfile);
+            preferences.setBandwidth(this.bandwidth);
+            preferences.setSoundOffset(this.soundOffset);
+            preferences.setGrabberType(this.grabberType);
+            preferences.setThreads(this.threads);
+            preferences.setCrf(this.crf);
 
-    public void setKodiAddress(@NonNull final String address) {
-      this.kodiAddress = address.trim();
-    }
+            preferences.setKodiAddress(this.kodiAddress);
+            preferences.setKodiName(this.kodiName);
+            preferences.setKodiPassword(this.kodiPassword);
+            preferences.setKodiSsl(this.kodiSsl);
 
-    @NonNull
-    public String getKodiName() {
-      return this.kodiName;
-    }
+            preferences.setKodiPort(this.kodiPort);
 
-    public void setKodiName(@NonNull final String name) {
-      this.kodiName = name;
-    }
+            preferences.setJsonRequestTimeout(Duration.ofMillis(this.jsonRequestTimeout));
 
-    @NonNull
-    public String getKodiPassword() {
-      return this.kodiPassword;
-    }
+            preferences.flush();
+        }
 
-    public void setKodiPassword(@NonNull final String password) {
-      this.kodiPassword = password;
-    }
+        public boolean isYoutubeForceSearchDirectUrl() {
+            return this.youtubeForceSearchDirectUrl;
+        }
 
-    public int getKodiPort() {
-      return this.kodiPort;
-    }
+        public void setYoutubeForceSearchDirectUrl(final boolean youtubeForceSearchDirectUrl) {
+            this.youtubeForceSearchDirectUrl = youtubeForceSearchDirectUrl;
+        }
 
-    public void setKodiPort(final int port) {
-      this.kodiPort = port;
-    }
+        @NonNull
+        public YtQuality getYoutubePreferredQuality() {
+            return this.youtubePreferredQuality;
+        }
 
-    @NonNull
-    public String getFfmpegPath() {
-      return this.ffmpegPath;
-    }
+        public void setYoutubePreferredQuality(@NonNull final YtQuality youtubePreferredQuality) {
+            this.youtubePreferredQuality = youtubePreferredQuality;
+        }
 
-    @NonNull
-    public void setFfmpegPath(@NonNull final String path) {
-      this.ffmpegPath = path;
-    }
-    
-    public int getSnapsPerSecond() {
-      return this.snapsPerSecond;
-    }
+        @NonNull
+        public YtVideoType getYoutubeRequiredFormat() {
+            return this.youtubeRequiredFormat;
+        }
 
-    public void setSnapsPerSecond(final int value) {
-      this.snapsPerSecond = value;
-    }
+        public void setYoutubeRequiredFormat(@NonNull final YtVideoType youtubeRequiredFormat) {
+            this.youtubeRequiredFormat = youtubeRequiredFormat;
+        }
 
-    public void setServerHost(@NonNull final String host) {
-      this.host = host;
-    }
+        public int getCrf() {
+            return this.crf;
+        }
 
-    public void setGrabCursor(final boolean value) {
-      this.grabCursor = value;
-    }
+        public void setCrf(final int value) {
+            this.crf = value;
+        }
 
-    public boolean isGrabCursor() {
-      return this.grabCursor;
-    }
-    
-    public void setServerPort(final int port) {
-      this.port = port;
-    }
+        public int getThreads() {
+            return this.threads;
+        }
 
-    public void setServerSsl(final boolean useSsl) {
-      this.serverSsl = useSsl;
-    }
-    
-    public boolean isServerSsl() {
-      return this.serverSsl;
-    }
-    
-    public void setKodiSsl(final boolean useSsl) {
-      this.kodiSsl = useSsl;
-    }
-    
-    public boolean isKodiSsl() {
-      return this.kodiSsl;
-    }
-    
-    @NonNull
-    public String getServerHost() {
-      return this.host;
-    }
+        public void setThreads(final int threads) {
+            this.threads = threads;
+        }
 
-    public int getServerPort() {
-      return this.port;
-    }
-  }
+        public long getJsonRequestTimeout() {
+            return this.jsonRequestTimeout;
+        }
 
-  private final Data currentData;
+        public void setJsonRequestTimeout(final long value) {
+            this.jsonRequestTimeout = Math.max(0L, value);
+        }
 
-  private static final class DocumentWrapper implements DocumentListener {
+        @NonNull
+        public GrabberType getGrabberType() {
+            return this.grabberType;
+        }
 
-    private final Consumer<String> consumer;
-    
-    private DocumentWrapper(@NonNull final Document document, final Consumer<String> consumer) {
-      this.consumer = consumer;
-    }
+        public void setGrabberType(@NonNull final GrabberType grabberType) {
+            this.grabberType = grabberType;
+        }
 
-    public static void of(@NonNull final Document document, final Consumer<String> consumer) {
-      document.addDocumentListener(new DocumentWrapper(document, consumer));
-    }
-    
-    @NonNull
-    private String getText(@NonNull final Document doc) {
-      try {
-        return doc.getText(0, doc.getLength());
-      } catch (BadLocationException ex) {
-        return "";
-      }
-    }
+        public int getBandwidth() {
+            return this.bandwidth;
+        }
 
-    @Override
-    public void insertUpdate(@NonNull final DocumentEvent e) {
-      this.consumer.accept(getText(e.getDocument()));
-    }
+        public void setBandwidth(final int value) {
+            this.bandwidth = value;
+        }
 
-    @Override
-    public void removeUpdate(@NonNull final DocumentEvent e) {
-      this.consumer.accept(getText(e.getDocument()));
-    }
+        public void setScaleUi(final int value) {
+            this.scaleUi = value;
+        }
 
-    @Override
-    public void changedUpdate(@NonNull final DocumentEvent e) {
-      this.consumer.accept(getText(e.getDocument()));
+        public int getScaleUi() {
+            return this.scaleUi;
+        }
+
+        @NonNull
+        public SpeedProfile getSpeedProfile() {
+            return this.speedProfile;
+        }
+
+        public void setSpeedProfile(@NonNull final SpeedProfile value) {
+            this.speedProfile = value;
+        }
+
+        @NonNull
+        public Quality getQuality() {
+            return this.quality;
+        }
+
+        public void setQuality(@NonNull final Quality value) {
+            this.quality = value;
+        }
+
+        @NonNull
+        public String getSoundInput() {
+            return this.soundInput;
+        }
+
+        public void setSoundInput(@NonNull final String value) {
+            this.soundInput = value;
+        }
+
+        public float getSoundOffset() {
+            return this.soundOffset;
+        }
+
+        public void setSoundOffset(final float value) {
+            this.soundOffset = value;
+        }
+
+        @NonNull
+        public String getKodiAddress() {
+            return this.kodiAddress;
+        }
+
+        public void setKodiAddress(@NonNull final String address) {
+            this.kodiAddress = address.trim();
+        }
+
+        @NonNull
+        public String getKodiName() {
+            return this.kodiName;
+        }
+
+        public void setKodiName(@NonNull final String name) {
+            this.kodiName = name;
+        }
+
+        @NonNull
+        public String getKodiPassword() {
+            return this.kodiPassword;
+        }
+
+        public void setKodiPassword(@NonNull final String password) {
+            this.kodiPassword = password;
+        }
+
+        public int getKodiPort() {
+            return this.kodiPort;
+        }
+
+        public void setKodiPort(final int port) {
+            this.kodiPort = port;
+        }
+
+        @NonNull
+        public String getFfmpegPath() {
+            return this.ffmpegPath;
+        }
+
+        @NonNull
+        public void setFfmpegPath(@NonNull final String path) {
+            this.ffmpegPath = path;
+        }
+
+        public int getSnapsPerSecond() {
+            return this.snapsPerSecond;
+        }
+
+        public void setSnapsPerSecond(final int value) {
+            this.snapsPerSecond = value;
+        }
+
+        public void setServerHost(@NonNull final String host) {
+            this.host = host;
+        }
+
+        public void setGrabCursor(final boolean value) {
+            this.grabCursor = value;
+        }
+
+        public boolean isGrabCursor() {
+            return this.grabCursor;
+        }
+
+        public void setServerPort(final int port) {
+            this.port = port;
+        }
+
+        public void setServerSsl(final boolean useSsl) {
+            this.serverSsl = useSsl;
+        }
+
+        public boolean isServerSsl() {
+            return this.serverSsl;
+        }
+
+        public void setKodiSsl(final boolean useSsl) {
+            this.kodiSsl = useSsl;
+        }
+
+        public boolean isKodiSsl() {
+            return this.kodiSsl;
+        }
+
+        @NonNull
+        public String getServerHost() {
+            return this.host;
+        }
+
+        public int getServerPort() {
+            return this.port;
+        }
     }
 
-  }
+    private final Data currentData;
 
-  public OptionsPanel(@NonNull final Data data, @NonNull final JavaSoundAdapter soundAdapter) {
-    this.currentData = data;
-    initComponents();
-    this.comboSoundLine.setPrototypeDisplayValue("############################");
-    final List<String> ne = new ArrayList<>();
+    private static final class DocumentWrapper implements DocumentListener {
 
-    try {
-      final Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
-      while (e.hasMoreElements()) {
-        e.nextElement().getInterfaceAddresses().stream().map(a -> a.getAddress().getHostAddress()).collect(Collectors.toCollection(() -> ne));
-      }
+        private final Consumer<String> consumer;
 
-      if (!ne.contains(data.getServerHost())) {
-        ne.add(data.getServerHost());
-      }
+        private DocumentWrapper(@NonNull final Document document, final Consumer<String> consumer) {
+            this.consumer = consumer;
+        }
 
-      Collections.sort(ne);
-    } catch (SocketException e) {
-      LOGGER.error("Can't get interfaces", e);
+        public static void of(@NonNull final Document document, final Consumer<String> consumer) {
+            document.addDocumentListener(new DocumentWrapper(document, consumer));
+        }
+
+        @NonNull
+        private String getText(@NonNull final Document doc) {
+            try {
+                return doc.getText(0, doc.getLength());
+            } catch (BadLocationException ex) {
+                return "";
+            }
+        }
+
+        @Override
+        public void insertUpdate(@NonNull final DocumentEvent e) {
+            this.consumer.accept(getText(e.getDocument()));
+        }
+
+        @Override
+        public void removeUpdate(@NonNull final DocumentEvent e) {
+            this.consumer.accept(getText(e.getDocument()));
+        }
+
+        @Override
+        public void changedUpdate(@NonNull final DocumentEvent e) {
+            this.consumer.accept(getText(e.getDocument()));
+        }
+
     }
 
-    final List<String> inputLines = new ArrayList<>();
-    inputLines.add("(none)");
-    soundAdapter.getAvailableSoundPorts().forEach((port) -> {
-      inputLines.add(port.getName());
-    });
-    
-    this.spinnerKodiPort.setEditor(new JSpinner.NumberEditor(this.spinnerKodiPort, "#"));
-    this.spinnerGrabThreads.setEditor(new JSpinner.NumberEditor(this.spinnerGrabThreads, "##"));
-    this.spinnerServerPort.setEditor(new JSpinner.NumberEditor(this.spinnerServerPort, "#"));
-    this.spinnerSnapsPerSecond.setEditor(new JSpinner.NumberEditor(this.spinnerSnapsPerSecond, "##"));
-    this.spinnerBandwidth.setEditor(new JSpinner.NumberEditor(this.spinnerBandwidth,"##"));
-    this.spinnerSoundOffset.setEditor(new JSpinner.NumberEditor(this.spinnerSoundOffset, "##.##"));
-    
-    this.comboSoundLine.setModel(new DefaultComboBoxModel<>(inputLines.toArray(new String[inputLines.size()])));
-    this.comboSoundLine.setSelectedItem(data.getSoundInput());
-    
-    this.comboGrabberType.setModel(new DefaultComboBoxModel<>(Stream.of(GrabberType.values()).map(x -> x.name()).toArray(String[]::new)));
-    this.comboQuality.setModel(new DefaultComboBoxModel<>(Stream.of(Quality.values()).map(x -> x.getViewName()).toArray(String[]::new)));
-    this.comboSpeedProfile.setModel(new DefaultComboBoxModel<>(Stream.of(SpeedProfile.values()).map(x -> x.getViewName()).toArray(String[]::new)));
-    
-    this.comboInterface.setModel(new DefaultComboBoxModel<>(ne.toArray(new String[ne.size()])));
-    this.comboInterface.setSelectedItem(data.getServerHost());
-    this.spinnerServerPort.setValue(data.getServerPort());
-    this.spinnerSoundOffset.setValue(data.getSoundOffset());
-    this.textFieldKodiAddress.setText(data.getKodiAddress());
-    this.spinnerKodiPort.setValue(data.getKodiPort());
-    this.textFieldKodiName.setText(data.getKodiName());
-    this.textFieldKodiPassword.setText(data.getKodiPassword());
+    public OptionsPanel(@NonNull final Data data, @NonNull final JavaSoundAdapter soundAdapter) {
+        this.currentData = data;
+        initComponents();
+        this.comboSoundLine.setPrototypeDisplayValue("############################");
+        final List<String> ne = new ArrayList<>();
 
-    this.spinnerScaleUi.setValue(data.getScaleUi());
-    
-    this.textFieldFfmpeg.setText(data.getFfmpegPath());
-    this.checkGrabCursor.setSelected(data.isGrabCursor());
-    this.comboGrabberType.setSelectedItem(data.getGrabberType().name());
-    this.comboQuality.setSelectedItem(data.getQuality().getViewName());
-    this.comboSpeedProfile.setSelectedItem(data.getSpeedProfile().getViewName());
-    this.spinnerSnapsPerSecond.setValue(data.getSnapsPerSecond());
-    this.spinnerCrf.setValue(data.getCrf());
-    this.spinnerBandwidth.setValue(data.getBandwidth());
-    this.spinnerGrabThreads.setValue(data.getThreads());
-    
-    this.checkServerSsl.setSelected(data.isServerSsl());
-    this.checkKodiSsl.setSelected(data.isKodiSsl());
-    
-    this.spinnerRpcTimeout.setValue(data.jsonRequestTimeout);
-    
-    DocumentWrapper.of(this.textFieldFfmpeg.getDocument(), x -> data.setFfmpegPath(x));
-    DocumentWrapper.of(this.textFieldKodiAddress.getDocument(), x -> data.setKodiAddress(x));
-    DocumentWrapper.of(this.textFieldKodiName.getDocument(), x -> data.setKodiName(x));
-    DocumentWrapper.of(this.textFieldKodiPassword.getDocument(), x -> data.setKodiPassword(x));
-  }
+        try {
+            final Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
+            while (e.hasMoreElements()) {
+                e.nextElement().getInterfaceAddresses().stream().map(a -> a.getAddress().getHostAddress()).collect(Collectors.toCollection(() -> ne));
+            }
 
-  public Data getData() {
-    return this.currentData;
-  }
+            if (!ne.contains(data.getServerHost())) {
+                ne.add(data.getServerHost());
+            }
 
-  /**
-   * This method is called from within the constructor to initialize the form.
-   * WARNING: Do NOT modify this code. The content of this method is always
-   * regenerated by the Form Editor.
-   */
-  @SuppressWarnings("unchecked")
+            Collections.sort(ne);
+        } catch (SocketException e) {
+            LOGGER.error("Can't get interfaces", e);
+        }
+
+        final List<String> inputLines = new ArrayList<>();
+        inputLines.add("(none)");
+        soundAdapter.getAvailableSoundPorts().forEach((port) -> {
+            inputLines.add(port.getName());
+        });
+
+        this.spinnerKodiPort.setEditor(new JSpinner.NumberEditor(this.spinnerKodiPort, "#"));
+        this.spinnerGrabThreads.setEditor(new JSpinner.NumberEditor(this.spinnerGrabThreads, "##"));
+        this.spinnerServerPort.setEditor(new JSpinner.NumberEditor(this.spinnerServerPort, "#"));
+        this.spinnerSnapsPerSecond.setEditor(new JSpinner.NumberEditor(this.spinnerSnapsPerSecond, "##"));
+        this.spinnerBandwidth.setEditor(new JSpinner.NumberEditor(this.spinnerBandwidth, "##"));
+        this.spinnerSoundOffset.setEditor(new JSpinner.NumberEditor(this.spinnerSoundOffset, "##.##"));
+
+        this.comboSoundLine.setModel(new DefaultComboBoxModel<>(inputLines.toArray(new String[inputLines.size()])));
+        this.comboSoundLine.setSelectedItem(data.getSoundInput());
+
+        this.comboGrabberType.setModel(new DefaultComboBoxModel<>(Stream.of(GrabberType.values()).map(x -> x.name()).toArray(String[]::new)));
+        this.comboQuality.setModel(new DefaultComboBoxModel<>(Stream.of(Quality.values()).map(x -> x.getViewName()).toArray(String[]::new)));
+        this.comboSpeedProfile.setModel(new DefaultComboBoxModel<>(Stream.of(SpeedProfile.values()).map(x -> x.getViewName()).toArray(String[]::new)));
+
+        this.comboInterface.setModel(new DefaultComboBoxModel<>(ne.toArray(new String[ne.size()])));
+        this.comboInterface.setSelectedItem(data.getServerHost());
+        this.spinnerServerPort.setValue(data.getServerPort());
+        this.spinnerSoundOffset.setValue(data.getSoundOffset());
+        this.textFieldKodiAddress.setText(data.getKodiAddress());
+        this.spinnerKodiPort.setValue(data.getKodiPort());
+        this.textFieldKodiName.setText(data.getKodiName());
+        this.textFieldKodiPassword.setText(data.getKodiPassword());
+
+        this.spinnerScaleUi.setValue(data.getScaleUi());
+
+        this.textFieldFfmpeg.setText(data.getFfmpegPath());
+        this.checkGrabCursor.setSelected(data.isGrabCursor());
+        this.comboGrabberType.setSelectedItem(data.getGrabberType().name());
+        this.comboQuality.setSelectedItem(data.getQuality().getViewName());
+        this.comboSpeedProfile.setSelectedItem(data.getSpeedProfile().getViewName());
+        this.spinnerSnapsPerSecond.setValue(data.getSnapsPerSecond());
+        this.spinnerCrf.setValue(data.getCrf());
+        this.spinnerBandwidth.setValue(data.getBandwidth());
+        this.spinnerGrabThreads.setValue(data.getThreads());
+
+        this.checkServerSsl.setSelected(data.isServerSsl());
+        this.checkKodiSsl.setSelected(data.isKodiSsl());
+
+        this.spinnerRpcTimeout.setValue(data.jsonRequestTimeout);
+
+        DocumentWrapper.of(this.textFieldFfmpeg.getDocument(), x -> data.setFfmpegPath(x));
+        DocumentWrapper.of(this.textFieldKodiAddress.getDocument(), x -> data.setKodiAddress(x));
+        DocumentWrapper.of(this.textFieldKodiName.getDocument(), x -> data.setKodiName(x));
+        DocumentWrapper.of(this.textFieldKodiPassword.getDocument(), x -> data.setKodiPassword(x));
+    }
+
+    public Data getData() {
+        return this.currentData;
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
@@ -956,87 +994,86 @@ public class OptionsPanel extends javax.swing.JPanel {
         add(panelGeneral, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
-  
-  
+
   private void comboInterfaceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboInterfaceActionPerformed
-    this.currentData.setServerHost(this.comboInterface.getSelectedItem().toString());
+      this.currentData.setServerHost(this.comboInterface.getSelectedItem().toString());
   }//GEN-LAST:event_comboInterfaceActionPerformed
 
   private void spinnerServerPortStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spinnerServerPortStateChanged
-    this.currentData.setServerPort((Integer) this.spinnerServerPort.getValue());
+      this.currentData.setServerPort((Integer) this.spinnerServerPort.getValue());
   }//GEN-LAST:event_spinnerServerPortStateChanged
 
   private void spinnerKodiPortStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spinnerKodiPortStateChanged
-    this.currentData.setKodiPort((Integer) this.spinnerKodiPort.getValue());
+      this.currentData.setKodiPort((Integer) this.spinnerKodiPort.getValue());
   }//GEN-LAST:event_spinnerKodiPortStateChanged
 
   private void buttonTestKodiConnectionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonTestKodiConnectionActionPerformed
-    try {
-      final KodiService testKodiService = new KodiService(
-              new KodiAddress(
-                      this.textFieldKodiAddress.getText(),
-                      (Integer) this.spinnerKodiPort.getValue(),
-                      this.textFieldKodiName.getText(),
-                      this.textFieldKodiPassword.getText(),
-                      this.checkKodiSsl.isSelected()
-              ), Duration.ofMillis(((Number)this.spinnerRpcTimeout.getValue()).longValue())
-      );
-      final ApplicationProperties properties = testKodiService.getAllApplicationProperties();
-      JOptionPane.showMessageDialog(this, "Detected kodi: " + properties.getVersion(), "Connection test", JOptionPane.INFORMATION_MESSAGE);
-    } catch (MalformedURLException ex) {
-      JOptionPane.showMessageDialog(this, "Malformed URL, check KODI address", "Malformed URL", JOptionPane.ERROR_MESSAGE);
-    } catch (Throwable ex) {
-      JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-    }
+      try {
+          final KodiService testKodiService = new KodiService(
+                  new KodiAddress(
+                          this.textFieldKodiAddress.getText(),
+                          (Integer) this.spinnerKodiPort.getValue(),
+                          this.textFieldKodiName.getText(),
+                          this.textFieldKodiPassword.getText(),
+                          this.checkKodiSsl.isSelected()
+                  ), Duration.ofMillis(((Number) this.spinnerRpcTimeout.getValue()).longValue())
+          );
+          final ApplicationProperties properties = testKodiService.getAllApplicationProperties();
+          JOptionPane.showMessageDialog(this, "Detected kodi: " + properties.getVersion(), "Connection test", JOptionPane.INFORMATION_MESSAGE);
+      } catch (MalformedURLException ex) {
+          JOptionPane.showMessageDialog(this, "Malformed URL, check KODI address", "Malformed URL", JOptionPane.ERROR_MESSAGE);
+      } catch (Throwable ex) {
+          JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+      }
   }//GEN-LAST:event_buttonTestKodiConnectionActionPerformed
 
   private void checkServerSslActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkServerSslActionPerformed
-    this.currentData.setServerSsl(this.checkServerSsl.isSelected());
+      this.currentData.setServerSsl(this.checkServerSsl.isSelected());
   }//GEN-LAST:event_checkServerSslActionPerformed
 
   private void checkKodiSslActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkKodiSslActionPerformed
-    this.currentData.setKodiSsl(this.checkKodiSsl.isSelected());
+      this.currentData.setKodiSsl(this.checkKodiSsl.isSelected());
   }//GEN-LAST:event_checkKodiSslActionPerformed
 
   private void checkGrabCursorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkGrabCursorActionPerformed
-    this.currentData.setGrabCursor(this.checkGrabCursor.isSelected());
+      this.currentData.setGrabCursor(this.checkGrabCursor.isSelected());
   }//GEN-LAST:event_checkGrabCursorActionPerformed
 
   private void spinnerSnapsPerSecondStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spinnerSnapsPerSecondStateChanged
-    this.currentData.setSnapsPerSecond((Integer) this.spinnerSnapsPerSecond.getValue());
+      this.currentData.setSnapsPerSecond((Integer) this.spinnerSnapsPerSecond.getValue());
   }//GEN-LAST:event_spinnerSnapsPerSecondStateChanged
 
   private void comboSoundLineActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboSoundLineActionPerformed
-    this.currentData.setSoundInput(this.comboSoundLine.getSelectedIndex() == 0 ? "" : this.comboSoundLine.getSelectedItem().toString());
-    if (this.comboSoundLine.getSelectedIndex() == 0) {
-      this.comboSoundLine.setToolTipText("Found sound source to be grabbed during screencast");
-    } else {
-      this.comboSoundLine.setToolTipText(this.comboSoundLine.getItemAt(this.comboSoundLine.getSelectedIndex()));
-    }
+      this.currentData.setSoundInput(this.comboSoundLine.getSelectedIndex() == 0 ? "" : this.comboSoundLine.getSelectedItem().toString());
+      if (this.comboSoundLine.getSelectedIndex() == 0) {
+          this.comboSoundLine.setToolTipText("Found sound source to be grabbed during screencast");
+      } else {
+          this.comboSoundLine.setToolTipText(this.comboSoundLine.getItemAt(this.comboSoundLine.getSelectedIndex()));
+      }
   }//GEN-LAST:event_comboSoundLineActionPerformed
 
   private void comboQualityActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboQualityActionPerformed
-    this.currentData.setQuality(Quality.findForViewName(this.comboQuality.getSelectedItem().toString()));
+      this.currentData.setQuality(Quality.findForViewName(this.comboQuality.getSelectedItem().toString()));
   }//GEN-LAST:event_comboQualityActionPerformed
 
   private void spinnerBandwidthStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spinnerBandwidthStateChanged
-    this.currentData.setBandwidth((Integer)this.spinnerBandwidth.getValue());
+      this.currentData.setBandwidth((Integer) this.spinnerBandwidth.getValue());
   }//GEN-LAST:event_spinnerBandwidthStateChanged
 
   private void spinnerSoundOffsetStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spinnerSoundOffsetStateChanged
-    this.currentData.setSoundOffset((Float)this.spinnerSoundOffset.getValue());
+      this.currentData.setSoundOffset((Float) this.spinnerSoundOffset.getValue());
   }//GEN-LAST:event_spinnerSoundOffsetStateChanged
 
   private void comboSpeedProfileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboSpeedProfileActionPerformed
-    this.currentData.setSpeedProfile(SpeedProfile.findForViewName(this.comboSpeedProfile.getSelectedItem().toString()));
+      this.currentData.setSpeedProfile(SpeedProfile.findForViewName(this.comboSpeedProfile.getSelectedItem().toString()));
   }//GEN-LAST:event_comboSpeedProfileActionPerformed
 
   private void comboGrabberTypeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboGrabberTypeActionPerformed
-    this.currentData.setGrabberType(GrabberType.findForName(this.comboGrabberType.getSelectedItem().toString()));
+      this.currentData.setGrabberType(GrabberType.findForName(this.comboGrabberType.getSelectedItem().toString()));
   }//GEN-LAST:event_comboGrabberTypeActionPerformed
 
   private void spinnerGrabThreadsStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spinnerGrabThreadsStateChanged
-    this.currentData.setThreads((Integer) this.spinnerGrabThreads.getValue());
+      this.currentData.setThreads((Integer) this.spinnerGrabThreads.getValue());
   }//GEN-LAST:event_spinnerGrabThreadsStateChanged
 
     private void spinnerCrfStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spinnerCrfStateChanged

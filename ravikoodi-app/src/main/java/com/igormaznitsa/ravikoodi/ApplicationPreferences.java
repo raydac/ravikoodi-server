@@ -3,6 +3,8 @@ package com.igormaznitsa.ravikoodi;
 import com.igormaznitsa.ravikoodi.prefs.StaticResource;
 import com.igormaznitsa.ravikoodi.prefs.TimerResource;
 import static com.igormaznitsa.ravikoodi.Utils.isBlank;
+import com.igormaznitsa.ravikoodi.ytloader.YtQuality;
+import com.igormaznitsa.ravikoodi.ytloader.YtVideoType;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -27,136 +29,12 @@ public class ApplicationPreferences {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationPreferences.class);
 
-    public enum SpeedProfile {
-        VERYSLOW("Very slow", "veryslow"),
-        SLOWER("Slower", "slower"),
-        SLOW("Slow", "slow"),
-        MEDIUM("Medium", "medium"),
-        FAST("Fast", "fast"),
-        FASTER("Faster", "faster"),
-        VERYFAST("Very-fast", "veryfast"),
-        SUPERFAST("Super-fast", "superfast"),
-        ULTRAFAST("Ultra-fast", "ultrafast");
-
-        private final String viewName;
-        private final String ffmpegName;
-
-        private SpeedProfile(final String viewName, final String ffmpegName) {
-            this.viewName = viewName;
-            this.ffmpegName = ffmpegName;
-        }
-
-        @NonNull
-        public String getFfmpegName() {
-            return this.ffmpegName;
-        }
-
-        @NonNull
-        public String getViewName() {
-            return this.viewName;
-        }
-
-        @NonNull
-        public static SpeedProfile findForViewName(@NonNull final String name) {
-            return Stream.of(SpeedProfile.values())
-                .filter(x -> x.viewName.equalsIgnoreCase(name))
-                .findFirst()
-                .orElse(FASTER);
-        }
+    public static Preferences findPreferences() {
+        return Preferences.userNodeForPackage(ApplicationPreferences.class);
     }
-
-
-    public enum GrabberType {
-        AUTO,
-        ROBOT,
-        FFMPEG;
-
-        @NonNull
-        public static GrabberType findForName(@Nullable final String name) {
-            return Stream.of(GrabberType.values())
-                .filter(x -> x.name().equalsIgnoreCase(name))
-                .findFirst()
-                .orElse(AUTO);
-        }
-    }
-
-    public enum Quality {
-        MODE144P("144p", "-2:144", 144),
-        MODE240P("240p", "-2:240", 240),
-        MODE360P("360p", "-2:360", 360),
-        MODE480P("480p", "-2:480", 480),
-        MODE720P("720p", "-2:720", 720),
-        MODE1080P("1080p", "-2:1080", 1080);
-
-        private final String viewName;
-        private final String ffmpegScale;
-        private final int height;
-
-        private Quality(final String viewName, final String ffmpegScale, final int height) {
-            this.viewName = viewName;
-            this.ffmpegScale = ffmpegScale;
-            this.height = height;
-        }
-
-        public int getHeight() {
-            return this.height;
-        }
-
-        @NonNull
-        public String getViewName() {
-            return this.viewName;
-        }
-
-        @NonNull
-        public String getFfmpegScale() {
-            return this.ffmpegScale;
-        }
-
-        @NonNull
-        public static Quality findForViewName(@NonNull final String name) {
-            return Stream.of(Quality.values())
-                .filter(x -> x.getViewName().equalsIgnoreCase(name))
-                .findFirst()
-                .orElse(MODE720P);
-        }
-    }
-
-    public enum Option {
-        SCREENCAST_THREADS("screencast.threads"),
-        SCREENCAST_SOUND_INPUT("screencast.sound.input"),
-        SCREENCAST_GRAB_CURSOR("screencast.grab.cursor"),
-        SCREENCAST_FFMPEG_PATH("screencast.ffmpeg.path"),
-        SCREENCAST_SNAPSPERSECOND("screencast.snaps.per.second"),
-        SCREENCAST_QUALITY("screencast.quality"),
-        SCREENCAST_BANDWIDTH("screencast.bandwidth"),
-        SCREENCAST_SOUNDOFFSET("screencast.sndoffset"),
-        SCREENCAST_CRF("screencast.crf"),
-        SCREENCAST_SPEED_PROFILE("screencast.speed.profile"),
-        SCREENCAST_GRABBER_TYPE("screencast.grabber.type"),
-        SERVER_PORT("server.port"),
-        SERVER_INTERFACE("server.interface"),
-        SERVER_SSL("server.ssl"),
-        FILE_ROOT("file.root"),
-        LANDF("lookandfeel.class"),
-        TIMERS("timers.list"),
-        STATIC_RESOURCES("static.resources.list"),
-        KODI_ADDRESS("kodi.address"),
-        KODI_PORT("kodi.port"),
-        KODI_NAME("kodi.name"),
-        KODI_SSL("kodi.ssl"),
-        KODI_PASSWORD("kodi.password"),
-        GENERAL_SCALE_UI("ui.scale"),
-        JSON_REQUEST_TIMEOUT("json.request.timeout");
-
-        private final String propertyName;
-
-        private Option(final String propertyName) {
-            this.propertyName = propertyName;
-        }
-
-        @NonNull
-        public String getPropertyName() {
-            return this.propertyName;
+    public static int getScaleUi(final Preferences preferences) {
+        synchronized (preferences) {
+            return preferences.getInt(Option.GENERAL_SCALE_UI.getPropertyName(), 1);
         }
     }
 
@@ -166,10 +44,7 @@ public class ApplicationPreferences {
         this.preferences = findPreferences();
     }
 
-    public static Preferences findPreferences() {
-        return Preferences.userNodeForPackage(ApplicationPreferences.class);
-    }
-    
+
     @NonNull
     public List<TimerResource> getTimers() {
         synchronized (this.preferences) {
@@ -177,16 +52,16 @@ public class ApplicationPreferences {
             if (!isBlank(value)) {
                 final TimerResource ERROR = new TimerResource("<>");
                 return Arrays.stream(value.split("\\r?\\n"))
-                    .filter(m -> !isBlank(m))
-                    .map(m -> {
-                        try {
-                            return TimerResource.fromBase64(m.trim());
-                        } catch (IOException ex) {
-                            return ERROR;
-                        }
-                    })
-                    .filter(x -> x != ERROR)
-                    .collect(Collectors.toList());
+                        .filter(m -> !isBlank(m))
+                        .map(m -> {
+                            try {
+                                return TimerResource.fromBase64(m.trim());
+                            } catch (IOException ex) {
+                                return ERROR;
+                            }
+                        })
+                        .filter(x -> x != ERROR)
+                        .collect(Collectors.toList());
             } else {
                 return Collections.emptyList();
             }
@@ -200,16 +75,16 @@ public class ApplicationPreferences {
             if (!isBlank(value)) {
                 final StaticResource ERROR = new StaticResource("<>");
                 return Arrays.stream(value.split("\\r?\\n"))
-                    .filter(m -> !isBlank(m))
-                    .map(m -> {
-                        try {
-                            return StaticResource.fromBase64(m.trim());
-                        } catch (IOException ex) {
-                            return ERROR;
-                        }
-                    })
-                    .filter(x -> x != ERROR)
-                    .collect(Collectors.toList());
+                        .filter(m -> !isBlank(m))
+                        .map(m -> {
+                            try {
+                                return StaticResource.fromBase64(m.trim());
+                            } catch (IOException ex) {
+                                return ERROR;
+                            }
+                        })
+                        .filter(x -> x != ERROR)
+                        .collect(Collectors.toList());
             } else {
                 return Collections.emptyList();
             }
@@ -234,7 +109,6 @@ public class ApplicationPreferences {
             }
         }
     }
-
 
     public void setTimers(@Nullable final List<TimerResource> timers) {
         if (timers == null || timers.isEmpty()) {
@@ -337,13 +211,13 @@ public class ApplicationPreferences {
             return Duration.ofMillis(Math.max(1L, this.preferences.getLong(Option.JSON_REQUEST_TIMEOUT.getPropertyName(), 3000L)));
         }
     }
-    
+
     public void setJsonRequestTimeout(@NonNull final Duration duration) {
         synchronized (this.preferences) {
             this.preferences.putLong(Option.JSON_REQUEST_TIMEOUT.getPropertyName(), duration.toMillis());
         }
     }
-    
+
     public float getSoundOffset() {
         synchronized (this.preferences) {
             return this.preferences.getFloat(Option.SCREENCAST_SOUNDOFFSET.getPropertyName(), 0.0f);
@@ -408,12 +282,7 @@ public class ApplicationPreferences {
         }
     }
 
-    public static int getScaleUi(final Preferences preferences) {
-        synchronized (preferences) {
-            return preferences.getInt(Option.GENERAL_SCALE_UI.getPropertyName(), 1);
-        }
-    }
-    
+
     public int getScaleUi() {
         return getScaleUi(this.preferences);
     }
@@ -515,6 +384,60 @@ public class ApplicationPreferences {
         }
     }
 
+    public boolean isYoutubeForceDirectUrlSearch() {
+        synchronized (this.preferences) {
+            return this.preferences.getBoolean(Option.YOUTUBE_FORCE_DIRECT_URL_SEARCH.getPropertyName(), false);
+        }
+    }
+
+    public void setYoutubeForceUrlSearch(final boolean flag) {
+        synchronized (this.preferences) {
+            this.preferences.putBoolean(Option.YOUTUBE_FORCE_DIRECT_URL_SEARCH.getPropertyName(), flag);
+        }
+    }
+
+    public YtQuality getYoutubePreferredQuality() {
+        synchronized (this.preferences) {
+            final String value = this.preferences.get(Option.YOUTUBE_PREFERRED_QUALITY.getPropertyName(), YtQuality.p480.name());
+            try {
+                return YtQuality.valueOf(value);
+            } catch (IllegalArgumentException ex) {
+                return YtQuality.p480;
+            }
+        }
+    }
+
+    public void setYoutubePreferredQuality(final YtQuality quality) {
+        synchronized (this.preferences) {
+            if (quality == null || quality == YtQuality.UNKNOWN) {
+                this.preferences.remove(Option.YOUTUBE_PREFERRED_QUALITY.getPropertyName());
+            } else {
+                this.preferences.put(Option.YOUTUBE_PREFERRED_QUALITY.getPropertyName(), quality.name());
+            }
+        }
+    }
+
+    public YtVideoType getYoutubeRequiredFormat() {
+        synchronized (this.preferences) {
+            final String value = this.preferences.get(Option.YOUTUBE_REQUIRED_FORMAT.getPropertyName(), YtVideoType.MP4.name());
+            try {
+                return YtVideoType.valueOf(value);
+            } catch (IllegalArgumentException ex) {
+                return YtVideoType.MP4;
+            }
+        }
+    }
+
+    public void setYoutubeRequiredFormat(final YtVideoType type) {
+        synchronized (this.preferences) {
+            if (type == null || type == YtVideoType.UNKNOWN) {
+                this.preferences.remove(Option.YOUTUBE_REQUIRED_FORMAT.getPropertyName());
+            } else {
+                this.preferences.put(Option.YOUTUBE_REQUIRED_FORMAT.getPropertyName(), type.name());
+            }
+        }
+    }
+
     public void flush() {
         synchronized (this.preferences) {
             try {
@@ -546,7 +469,7 @@ public class ApplicationPreferences {
     public void setFfmpegPath(final String value) {
         synchronized (this.preferences) {
             this.preferences.put(Option.SCREENCAST_FFMPEG_PATH.getPropertyName(), value == null || value.trim().length() == 0
-                ? SystemUtils.IS_OS_WINDOWS ? "ffmpeg.exe" : "ffmpeg" : value);
+                    ? SystemUtils.IS_OS_WINDOWS ? "ffmpeg.exe" : "ffmpeg" : value);
         }
     }
 
@@ -559,6 +482,137 @@ public class ApplicationPreferences {
     public void setServerPort(final int port) {
         synchronized (this.preferences) {
             this.preferences.putInt(Option.SERVER_PORT.getPropertyName(), Math.max(0, port));
+        }
+    }
+    public enum SpeedProfile {
+        VERYSLOW("Very slow", "veryslow"),
+        SLOWER("Slower", "slower"),
+        SLOW("Slow", "slow"),
+        MEDIUM("Medium", "medium"),
+        FAST("Fast", "fast"),
+        FASTER("Faster", "faster"),
+        VERYFAST("Very-fast", "veryfast"),
+        SUPERFAST("Super-fast", "superfast"),
+        ULTRAFAST("Ultra-fast", "ultrafast");
+        
+        private final String viewName;
+        private final String ffmpegName;
+        
+        private SpeedProfile(final String viewName, final String ffmpegName) {
+            this.viewName = viewName;
+            this.ffmpegName = ffmpegName;
+        }
+        
+        @NonNull
+        public String getFfmpegName() {
+            return this.ffmpegName;
+        }
+        
+        @NonNull
+        public String getViewName() {
+            return this.viewName;
+        }
+        
+        @NonNull
+        public static SpeedProfile findForViewName(@NonNull final String name) {
+            return Stream.of(SpeedProfile.values())
+                    .filter(x -> x.viewName.equalsIgnoreCase(name))
+                    .findFirst()
+                    .orElse(FASTER);
+        }
+    }
+    public enum GrabberType {
+        AUTO,
+        ROBOT,
+        FFMPEG;
+        
+        @NonNull
+        public static GrabberType findForName(@Nullable final String name) {
+            return Stream.of(GrabberType.values())
+                    .filter(x -> x.name().equalsIgnoreCase(name))
+                    .findFirst()
+                    .orElse(AUTO);
+        }
+    }
+    public enum Quality {
+        MODE144P("144p", "-2:144", 144),
+        MODE240P("240p", "-2:240", 240),
+        MODE360P("360p", "-2:360", 360),
+        MODE480P("480p", "-2:480", 480),
+        MODE720P("720p", "-2:720", 720),
+        MODE1080P("1080p", "-2:1080", 1080);
+        
+        private final String viewName;
+        private final String ffmpegScale;
+        private final int height;
+        
+        private Quality(final String viewName, final String ffmpegScale, final int height) {
+            this.viewName = viewName;
+            this.ffmpegScale = ffmpegScale;
+            this.height = height;
+        }
+        
+        public int getHeight() {
+            return this.height;
+        }
+        
+        @NonNull
+        public String getViewName() {
+            return this.viewName;
+        }
+        
+        @NonNull
+        public String getFfmpegScale() {
+            return this.ffmpegScale;
+        }
+        
+        @NonNull
+        public static Quality findForViewName(@NonNull final String name) {
+            return Stream.of(Quality.values())
+                    .filter(x -> x.getViewName().equalsIgnoreCase(name))
+                    .findFirst()
+                    .orElse(MODE720P);
+        }
+    }
+    public enum Option {
+        SCREENCAST_THREADS("screencast.threads"),
+        SCREENCAST_SOUND_INPUT("screencast.sound.input"),
+        SCREENCAST_GRAB_CURSOR("screencast.grab.cursor"),
+        SCREENCAST_FFMPEG_PATH("screencast.ffmpeg.path"),
+        SCREENCAST_SNAPSPERSECOND("screencast.snaps.per.second"),
+        SCREENCAST_QUALITY("screencast.quality"),
+        SCREENCAST_BANDWIDTH("screencast.bandwidth"),
+        SCREENCAST_SOUNDOFFSET("screencast.sndoffset"),
+        SCREENCAST_CRF("screencast.crf"),
+        SCREENCAST_SPEED_PROFILE("screencast.speed.profile"),
+        SCREENCAST_GRABBER_TYPE("screencast.grabber.type"),
+        SERVER_PORT("server.port"),
+        SERVER_INTERFACE("server.interface"),
+        SERVER_SSL("server.ssl"),
+        FILE_ROOT("file.root"),
+        LANDF("lookandfeel.class"),
+        TIMERS("timers.list"),
+        STATIC_RESOURCES("static.resources.list"),
+        KODI_ADDRESS("kodi.address"),
+        KODI_PORT("kodi.port"),
+        KODI_NAME("kodi.name"),
+        KODI_SSL("kodi.ssl"),
+        KODI_PASSWORD("kodi.password"),
+        GENERAL_SCALE_UI("ui.scale"),
+        JSON_REQUEST_TIMEOUT("json.request.timeout"),
+        YOUTUBE_FORCE_DIRECT_URL_SEARCH("youtube.force.url.search"),
+        YOUTUBE_PREFERRED_QUALITY("youtube.preferred.quality"),
+        YOUTUBE_REQUIRED_FORMAT("youtube.required.format");
+        
+        private final String propertyName;
+        
+        private Option(final String propertyName) {
+            this.propertyName = propertyName;
+        }
+        
+        @NonNull
+        public String getPropertyName() {
+            return this.propertyName;
         }
     }
 

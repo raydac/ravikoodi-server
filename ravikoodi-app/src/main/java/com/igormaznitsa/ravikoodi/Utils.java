@@ -44,7 +44,7 @@ public final class Utils {
         
         if (lengthDiff <= 0) {
             return text;
-        } else if (lengthDiff > 8) {
+        } else if (lengthDiff < 16) {
             final int partLength = (text.length() - maxAllowedSize) / 2;
             return text.substring(0, partLength) + "..." + text.substring(text.length() - partLength);
         } else {
