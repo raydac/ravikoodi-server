@@ -456,6 +456,13 @@ public class OptionsPanel extends javax.swing.JPanel {
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
+        tabPanel = new javax.swing.JTabbedPane();
+        tabGeneral = new javax.swing.JPanel();
+        panelGeneral = new javax.swing.JPanel();
+        labelScaleUi = new javax.swing.JLabel();
+        spinnerScaleUi = new javax.swing.JSpinner();
+        filler1 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0), new java.awt.Dimension(32767, 0));
+        jLabel15 = new javax.swing.JLabel();
         panelServerOptions = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
@@ -478,6 +485,8 @@ public class OptionsPanel extends javax.swing.JPanel {
         checkKodiSsl = new javax.swing.JCheckBox();
         labelKodiRpcTimeout = new javax.swing.JLabel();
         spinnerRpcTimeout = new javax.swing.JSpinner();
+        filler3 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 32767));
+        tabScreencast = new javax.swing.JPanel();
         panelScreenCast = new javax.swing.JPanel();
         jLabel5 = new javax.swing.JLabel();
         textFieldFfmpeg = new javax.swing.JTextField();
@@ -501,13 +510,52 @@ public class OptionsPanel extends javax.swing.JPanel {
         spinnerGrabThreads = new javax.swing.JSpinner();
         jLabel16 = new javax.swing.JLabel();
         spinnerCrf = new javax.swing.JSpinner();
-        panelGeneral = new javax.swing.JPanel();
-        labelScaleUi = new javax.swing.JLabel();
-        spinnerScaleUi = new javax.swing.JSpinner();
-        filler1 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0), new java.awt.Dimension(32767, 0));
-        jLabel15 = new javax.swing.JLabel();
 
-        setLayout(new java.awt.GridBagLayout());
+        setLayout(new java.awt.BorderLayout());
+
+        tabGeneral.setLayout(new java.awt.GridBagLayout());
+
+        panelGeneral.setBorder(javax.swing.BorderFactory.createTitledBorder("UI"));
+        panelGeneral.setLayout(new java.awt.GridBagLayout());
+
+        labelScaleUi.setText("Scale UI: ");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        panelGeneral.add(labelScaleUi, gridBagConstraints);
+
+        spinnerScaleUi.setModel(new javax.swing.SpinnerNumberModel(1, 0, 5, 1));
+        spinnerScaleUi.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                spinnerScaleUiStateChanged(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        panelGeneral.add(spinnerScaleUi, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1111.0;
+        panelGeneral.add(filler1, gridBagConstraints);
+
+        jLabel15.setForeground(new java.awt.Color(255, 0, 0));
+        jLabel15.setText(" Requires restart ");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        panelGeneral.add(jLabel15, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        tabGeneral.add(panelGeneral, gridBagConstraints);
 
         panelServerOptions.setBorder(javax.swing.BorderFactory.createTitledBorder("Local server"));
         panelServerOptions.setLayout(new java.awt.GridBagLayout());
@@ -581,9 +629,10 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
-        add(panelServerOptions, gridBagConstraints);
+        tabGeneral.add(panelServerOptions, gridBagConstraints);
 
         panelKodiOptions.setBorder(javax.swing.BorderFactory.createTitledBorder("KODI HTTP control"));
         panelKodiOptions.setLayout(new java.awt.GridBagLayout());
@@ -712,8 +761,18 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        tabGeneral.add(panelKodiOptions, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
-        add(panelKodiOptions, gridBagConstraints);
+        gridBagConstraints.weighty = 1000.0;
+        tabGeneral.add(filler3, gridBagConstraints);
+
+        tabPanel.addTab("General", tabGeneral);
+
+        tabScreencast.setLayout(new java.awt.BorderLayout());
 
         panelScreenCast.setBorder(javax.swing.BorderFactory.createTitledBorder("Screencast"));
         panelScreenCast.setLayout(new java.awt.GridBagLayout());
@@ -944,54 +1003,11 @@ public class OptionsPanel extends javax.swing.JPanel {
         gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
         panelScreenCast.add(spinnerCrf, gridBagConstraints);
 
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        add(panelScreenCast, gridBagConstraints);
+        tabScreencast.add(panelScreenCast, java.awt.BorderLayout.NORTH);
 
-        panelGeneral.setBorder(javax.swing.BorderFactory.createTitledBorder("General"));
-        panelGeneral.setLayout(new java.awt.GridBagLayout());
+        tabPanel.addTab("Screencast", tabScreencast);
 
-        labelScaleUi.setText("Scale UI: ");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        panelGeneral.add(labelScaleUi, gridBagConstraints);
-
-        spinnerScaleUi.setModel(new javax.swing.SpinnerNumberModel(1, 0, 5, 1));
-        spinnerScaleUi.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                spinnerScaleUiStateChanged(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        panelGeneral.add(spinnerScaleUi, gridBagConstraints);
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 3;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1111.0;
-        panelGeneral.add(filler1, gridBagConstraints);
-
-        jLabel15.setForeground(new java.awt.Color(255, 0, 0));
-        jLabel15.setText(" Requires restart ");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 0;
-        panelGeneral.add(jLabel15, gridBagConstraints);
-
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        add(panelGeneral, gridBagConstraints);
+        add(tabPanel, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
 
 
@@ -1100,6 +1116,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     private javax.swing.JComboBox<String> comboSpeedProfile;
     private javax.swing.Box.Filler filler1;
     private javax.swing.Box.Filler filler2;
+    private javax.swing.Box.Filler filler3;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -1135,6 +1152,9 @@ public class OptionsPanel extends javax.swing.JPanel {
     private javax.swing.JSpinner spinnerServerPort;
     private javax.swing.JSpinner spinnerSnapsPerSecond;
     private javax.swing.JSpinner spinnerSoundOffset;
+    private javax.swing.JPanel tabGeneral;
+    private javax.swing.JTabbedPane tabPanel;
+    private javax.swing.JPanel tabScreencast;
     private javax.swing.JTextField textFieldFfmpeg;
     private javax.swing.JTextField textFieldKodiAddress;
     private javax.swing.JTextField textFieldKodiName;
