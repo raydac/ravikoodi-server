@@ -404,7 +404,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                             LOGGER.error("Can't extract file path from: {}", stringValue);
                         }
                     } else {
-                        LOGGER.warn("String non among transferable flawors: {}", transferable.getTransferDataFlavors());
+                        LOGGER.warn("String non among transferable flawors: {}", (Object)transferable.getTransferDataFlavors());
                     }
                 } else {
                     LOGGER.info("Detected drop action for file list: {}", files);
@@ -447,7 +447,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                     }
                 }
             } else {
-                LOGGER.info("Unsupported transferable object: {}", transferable.getTransferDataFlavors());
+                LOGGER.info("Unsupported transferable object: {}", (Object)transferable.getTransferDataFlavors());
                 event.rejectDrop();
             }
         } catch (final Exception ex) {

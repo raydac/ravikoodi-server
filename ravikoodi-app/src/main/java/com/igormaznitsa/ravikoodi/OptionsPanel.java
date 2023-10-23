@@ -536,6 +536,7 @@ public class OptionsPanel extends javax.swing.JPanel {
         panelGeneral.setLayout(new java.awt.GridBagLayout());
 
         labelScaleUi.setText("Scale UI: ");
+        labelScaleUi.setToolTipText("Zoom all interface elements");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -579,6 +580,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel1.setText("Host:");
+        jLabel1.setToolTipText("Network interface to listen incoming connections");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -587,6 +589,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel2.setText("Port:");
+        jLabel2.setToolTipText("Port to listen incoming connections");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
@@ -626,6 +629,7 @@ public class OptionsPanel extends javax.swing.JPanel {
         panelServerOptions.add(filler2, gridBagConstraints);
 
         jLabel3.setText("Use SSL:");
+        jLabel3.setToolTipText("If turned on then internal server will be working in SSL mode");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
@@ -656,6 +660,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         labelKodiAddress.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         labelKodiAddress.setText("Address:");
+        labelKodiAddress.setToolTipText("Network address of KODI device");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -664,6 +669,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         labelKodiPort.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         labelKodiPort.setText("Port:");
+        labelKodiPort.setToolTipText("Network port of KODI device");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
@@ -672,6 +678,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         labelKodiName.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         labelKodiName.setText("Name:");
+        labelKodiName.setToolTipText("Login for KODI device");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
@@ -680,6 +687,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         labelKodiPassword.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         labelKodiPassword.setText("Password:");
+        labelKodiPassword.setToolTipText("Password for KODI device");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 4;
@@ -736,6 +744,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         jLabel4.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel4.setText("Use SSL:");
+        jLabel4.setToolTipText("If turned on then all requests to KODI device will be through SSL");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 5;
@@ -757,6 +766,7 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         labelKodiRpcTimeout.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         labelKodiRpcTimeout.setText("RPC Timeout (ms):");
+        labelKodiRpcTimeout.setToolTipText("Timeout for network requests");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
@@ -1028,7 +1038,8 @@ public class OptionsPanel extends javax.swing.JPanel {
         tabYoutube.setLayout(new java.awt.GridBagLayout());
 
         jLabel17.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-        jLabel17.setText("Force search direct video URL: ");
+        jLabel17.setText("Force search direct video URL:");
+        jLabel17.setToolTipText("Open Youtube video through its direct URL link instead of KODI plugin");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -1036,7 +1047,8 @@ public class OptionsPanel extends javax.swing.JPanel {
         tabYoutube.add(jLabel17, gridBagConstraints);
 
         jLabel18.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-        jLabel18.setText("Preferred video quality: ");
+        jLabel18.setText("Preferred video quality:");
+        jLabel18.setToolTipText("Preferred quality of opened Youtube video through direct link");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
@@ -1044,7 +1056,8 @@ public class OptionsPanel extends javax.swing.JPanel {
         tabYoutube.add(jLabel18, gridBagConstraints);
 
         jLabel19.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-        jLabel19.setText("Required video format: ");
+        jLabel19.setText("Required video format:");
+        jLabel19.setToolTipText("Required video format to be opened through direct link");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
