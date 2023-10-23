@@ -1,16 +1,16 @@
 package com.igormaznitsa.ravikoodi;
 
-import com.igormaznitsa.ravikoodi.timers.TimerScheduler;
-import com.igormaznitsa.ravikoodi.prefs.TimerResource;
 import static com.igormaznitsa.ravikoodi.ContentTreeItem.CONTENT_ITEM_COMPARATOR;
 import com.igormaznitsa.ravikoodi.MimeTypes.ContentType;
 import static com.igormaznitsa.ravikoodi.Utils.isBlank;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ActivePlayerInfo;
 import com.igormaznitsa.ravikoodi.kodijsonapi.KodiService;
 import com.igormaznitsa.ravikoodi.prefs.StaticResource;
+import com.igormaznitsa.ravikoodi.prefs.TimerResource;
 import com.igormaznitsa.ravikoodi.screencast.FfmpegWrapper;
 import com.igormaznitsa.ravikoodi.screencast.JavaSoundAdapter;
 import com.igormaznitsa.ravikoodi.screencast.ScreenGrabber;
+import com.igormaznitsa.ravikoodi.timers.TimerScheduler;
 import com.igormaznitsa.ravikoodi.timers.TimersTable;
 import com.igormaznitsa.ravikoodi.ytloader.YtLinkExtractor;
 import com.igormaznitsa.ravikoodi.ytloader.YtQuality;
@@ -1194,9 +1194,41 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
             @NonNull final String youTubeVideoId,
             @NonNull final YtQuality preferredQuality,
             @NonNull final YtVideoType requiredFormat,
-            final boolean playListId) {
-        LOGGER.info("Opening youtube (playlist is {}) through direct link search, preffered quality is {}, required format is {}: {}", playListId, preferredQuality, requiredFormat, youTubeVideoId);
-        this.youTubeLinkExtractor.findUrlAsync(youTubeVideoId, preferredQuality, requiredFormat, this::onResolvedYoutubeUrlLink);
+            final boolean throughPlayList) {
+        LOGGER.info("Opening youtube (playlist flag is {}) through direct link search, preffered quality is {}, required format is {}: {}", throughPlayList, preferredQuality, requiredFormat, youTubeVideoId);
+        if (throughPlayList) {
+            this.youTubeLinkExtractor.findPlayListInfoAsync(youTubeVideoId, (playListId, playlistInfo, error) -> {
+                if (error == null) {
+                    if (playlistInfo.videos().isEmpty()) {
+                        SwingUtilities.invokeLater(() -> {
+                            JOptionPane.showMessageDialog(MainFrame.this, "Youtube playlist is empty!", "Info '" + playListId + '\'', JOptionPane.WARNING_MESSAGE);
+                        });
+                    } else {
+                        var firstVideo = playlistInfo.videos().stream()
+                                .filter(x -> x.isPlayable())
+                                .findFirst()
+                                .orElse(null);
+                        if (firstVideo == null) {
+                            LOGGER.info("Can't find any playable video in youtube playlist: {}", playListId);
+                            SwingUtilities.invokeLater(() -> {
+                                JOptionPane.showMessageDialog(MainFrame.this, "Youtube playlist doesn't have playable video!", "Info '" + playListId + '\'', JOptionPane.WARNING_MESSAGE);
+                            });
+                        } else {
+                        SwingUtilities.invokeLater(() -> {
+                            LOGGER.info("Opening first video in youtube playlist '{}': {} ({})", playListId, firstVideo.title(), firstVideo.videoId());
+                            this.youTubeLinkExtractor.findVideoUrlAsync(firstVideo.videoId(), preferredQuality, requiredFormat, this::onResolvedYoutubeUrlLink);
+                        });
+                        }
+                    }
+                } else {
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(MainFrame.this, error.getMessage(), "Error '" + youTubeLinkExtractor + '\'', JOptionPane.ERROR_MESSAGE);
+                    });
+                }
+            });
+        } else {
+            this.youTubeLinkExtractor.findVideoUrlAsync(youTubeVideoId, preferredQuality, requiredFormat, this::onResolvedYoutubeUrlLink);
+        }
     }
 
     private void onResolvedYoutubeUrlLink(@NonNull final String youTubeVideoId, @Nullable final String url, @Nullable final Throwable error) {
