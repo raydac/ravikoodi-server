@@ -74,7 +74,7 @@ public class YoutubeUtilsTest {
                     @Override
                     public void onFinished(VideoInfo videoInfo) {
                         System.out.println("Finished parsing: "+videoInfo);
-                        for(var s : videoInfo.videoFormats()) {
+                        for(var s : videoInfo.videoWithAudioFormats()) {
                             System.out.println("format: quality="+s.qualityLabel()+" type="+s.type()+" length "+s.contentLength()+ " mime="+s.mimeType()+"  url="+s.url());
                         }
                     }

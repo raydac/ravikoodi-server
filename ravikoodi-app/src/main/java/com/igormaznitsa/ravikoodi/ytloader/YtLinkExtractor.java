@@ -22,7 +22,9 @@ import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.util.TriConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +42,31 @@ public class YtLinkExtractor {
         this.executor = executor;
     }
 
+    @NonNull
+    private static Optional<Pair<VideoFormat, YtQuality>> findAppropriateVideoFormat(
+            @NonNull final List<? extends VideoFormat> formats, 
+            @NonNull final YtQuality preferredQuality,
+            @NonNull final YtVideoType requiredVideoType) {
+        VideoFormat found = null;
+        YtQuality foundQuality = YtQuality.UNKNOWN;
+        for (var format : formats) {
+            final YtQuality currentQuality = YtQuality.find(format.qualityLabel());
+            final YtVideoType type = YtVideoType.find(format.mimeType());
+
+            if (requiredVideoType == type) {
+                if (currentQuality == preferredQuality) {
+                    found = format;
+                    foundQuality = currentQuality;
+                    break;
+                } else if (foundQuality.ordinal() < currentQuality.ordinal() && currentQuality.ordinal() < preferredQuality.ordinal()) {
+                    found = format;
+                    foundQuality = currentQuality;
+                }
+            }
+        }
+        return found == null ? Optional.empty() : Optional.of(Pair.of(found, foundQuality));
+    }
+    
     public void findUrlAsync(
             @NonNull final String youTubeVideoId,
             @NonNull final YtQuality preferredQuality,
@@ -56,34 +83,21 @@ public class YtLinkExtractor {
                 .callback(new YoutubeCallback<VideoInfo>() {
                     @Override
                     public void onFinished(final VideoInfo videoInfo) {
-                        final List<VideoFormat> formats = videoInfo.videoFormats();
-                        LOGGER.info("Resolved video info for {}, found {} formats", youTubeVideoId, formats.size());
+                        final List<? extends VideoFormat> formatsWithSound = videoInfo.videoWithAudioFormats();
+                        final List<VideoFormat> formatsNoSound = videoInfo.videoFormats();
+                        LOGGER.info("Resolved video info for {}, found {} sounded formats, found {} no sound formats", youTubeVideoId, 
+                                formatsWithSound.size(), formatsNoSound.size());
 
-                        VideoFormat found = null;
-                        YtQuality foundQuality = YtQuality.UNKNOWN;
-                        for (var format : videoInfo.videoFormats()) {
-                            final YtQuality currentQuality = YtQuality.find(format.qualityLabel());
-                            final YtVideoType type = YtVideoType.find(format.mimeType());
-
-                            if (requiredVideoType == type) {
-                                if (currentQuality == preferredQuality) {
-                                    found = format;
-                                    foundQuality = currentQuality;
-                                    break;
-                                } else if (foundQuality.ordinal() < currentQuality.ordinal() && currentQuality.ordinal() < preferredQuality.ordinal()) {
-                                    found = format;
-                                    foundQuality = currentQuality;
-                                }
-                            }
-                        }
-
+                        final Pair<VideoFormat, YtQuality> found = findAppropriateVideoFormat(formatsWithSound, preferredQuality, requiredVideoType)
+                                .orElseGet(() -> findAppropriateVideoFormat(formatsNoSound, preferredQuality, requiredVideoType).orElse(null));
+                        
                         if (found == null) {
                             LOGGER.error("Can't find any format for '{}', for preferred quality {} and required type {}", youTubeVideoId, preferredQuality, requiredVideoType);
                             resultConsumer.accept(youTubeVideoId, null, new NoSuchElementException("Can't find required video format or resolution for '" + youTubeVideoId + '\''));
                         } else {
-                            final String url = found.url();
+                            final String url = found.getLeft().url();
                             if (url != null) {
-                                LOGGER.info("Detected URL for {}: {}", youTubeVideoId, found.url());
+                                LOGGER.info("Detected URL for {}: {}", youTubeVideoId, url);
                                 resultConsumer.accept(youTubeVideoId, url, null);
                             } else {
                                 LOGGER.error("URL for {} is null!", youTubeVideoId);
