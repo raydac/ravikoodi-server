@@ -95,7 +95,7 @@
                     <plugin>
                         <groupId>de.perdian.maven.plugins</groupId>
                         <artifactId>macosappbundler-maven-plugin</artifactId>
-                        <version>1.19.0</version>
+                        <version>1.20.0</version>
                         <configuration>
                             <plist>
                                 <CFBundleIconFile>appico.icns</CFBundleIconFile>
@@ -760,7 +760,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.1.5</version>
+                <version>${spring.boot.version}</version>
                 <configuration>
                     <finalName>${project.build.finalName}${final.ext}</finalName>
                     <executable>${executable.jar}</executable>
