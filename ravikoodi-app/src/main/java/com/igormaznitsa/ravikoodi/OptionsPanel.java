@@ -6,6 +6,7 @@ import com.igormaznitsa.ravikoodi.ApplicationPreferences.Quality;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences.SpeedProfile;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ApplicationProperties;
 import com.igormaznitsa.ravikoodi.kodijsonapi.KodiService;
+import com.igormaznitsa.ravikoodi.ytloader.YtMode;
 import com.igormaznitsa.ravikoodi.ytloader.YtQuality;
 import com.igormaznitsa.ravikoodi.ytloader.YtVideoType;
 import java.net.MalformedURLException;
@@ -59,12 +60,12 @@ public class OptionsPanel extends javax.swing.JPanel {
         private boolean kodiSsl;
         private float soundOffset;
         private long jsonRequestTimeout;
-        private boolean youtubeForceSearchDirectUrl;
+        private YtMode youtubeOpenUrlMode;
         private YtQuality youtubePreferredQuality;
         private YtVideoType youtubeRequiredFormat;
 
         public Data(@NonNull final ApplicationPreferences preferences) {
-            this.youtubeForceSearchDirectUrl = preferences.isYoutubeForceDirectUrlSearch();
+            this.youtubeOpenUrlMode = preferences.getYoutubeOpenUrlMode();
             this.youtubePreferredQuality = preferences.getYoutubePreferredQuality();
             this.youtubeRequiredFormat = preferences.getYoutubeRequiredFormat();
             this.threads = preferences.getThreads();
@@ -91,7 +92,7 @@ public class OptionsPanel extends javax.swing.JPanel {
         }
 
         public void save(@NonNull final ApplicationPreferences preferences) {
-            preferences.setYoutubeForceUrlSearch(this.youtubeForceSearchDirectUrl);
+            preferences.setYoutubeOpenUrlMode(this.youtubeOpenUrlMode);
             preferences.setYoutubePreferredQuality(this.youtubePreferredQuality);
             preferences.setYoutubeRequiredFormat(this.youtubeRequiredFormat);
 
@@ -125,12 +126,12 @@ public class OptionsPanel extends javax.swing.JPanel {
             preferences.flush();
         }
 
-        public boolean isYoutubeForceSearchDirectUrl() {
-            return this.youtubeForceSearchDirectUrl;
+        public YtMode getYoutubeOpenUrlMode() {
+            return this.youtubeOpenUrlMode;
         }
 
-        public void setYoutubeForceSearchDirectUrl(final boolean youtubeForceSearchDirectUrl) {
-            this.youtubeForceSearchDirectUrl = youtubeForceSearchDirectUrl;
+        public void setYoutubeOpenUrlMode(final YtMode mode) {
+            this.youtubeOpenUrlMode = mode;
         }
 
         @NonNull
@@ -435,12 +436,9 @@ public class OptionsPanel extends javax.swing.JPanel {
         this.checkServerSsl.setSelected(data.isServerSsl());
         this.checkKodiSsl.setSelected(data.isKodiSsl());
 
-        this.checkBoxYoutubeForceSearchUrl.setSelected(data.isYoutubeForceSearchDirectUrl());
+        this.comboBoxYoutubeMode.setSelectedItem(data.getYoutubeOpenUrlMode());
         this.comboBoxYoutubePreferredQuality.setSelectedItem(data.getYoutubePreferredQuality());
         this.comboBoxYoutubeRequiredFormat.setSelectedItem(data.getYoutubeRequiredFormat());
-        
-        this.comboBoxYoutubePreferredQuality.setEnabled(this.checkBoxYoutubeForceSearchUrl.isSelected());
-        this.comboBoxYoutubeRequiredFormat.setEnabled(this.checkBoxYoutubeForceSearchUrl.isSelected());
         
         this.spinnerRpcTimeout.setValue(data.jsonRequestTimeout);
 
@@ -448,8 +446,16 @@ public class OptionsPanel extends javax.swing.JPanel {
         DocumentWrapper.of(this.textFieldKodiAddress.getDocument(), x -> data.setKodiAddress(x));
         DocumentWrapper.of(this.textFieldKodiName.getDocument(), x -> data.setKodiName(x));
         DocumentWrapper.of(this.textFieldKodiPassword.getDocument(), x -> data.setKodiPassword(x));
+
+        this.onUpdatedYoutubeMode();
     }
 
+    private void onUpdatedYoutubeMode() {
+        final YtMode mode = (YtMode)this.comboBoxYoutubeMode.getSelectedItem();
+        this.comboBoxYoutubePreferredQuality.setEnabled(mode == YtMode.DIRECT_URL);
+        this.comboBoxYoutubeRequiredFormat.setEnabled(mode == YtMode.DIRECT_URL);
+    }
+    
     public Data getData() {
         return this.currentData;
     }
@@ -523,10 +529,10 @@ public class OptionsPanel extends javax.swing.JPanel {
         jLabel18 = new javax.swing.JLabel();
         jLabel19 = new javax.swing.JLabel();
         filler4 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 32767));
-        checkBoxYoutubeForceSearchUrl = new javax.swing.JCheckBox();
         comboBoxYoutubePreferredQuality = new javax.swing.JComboBox<>();
         comboBoxYoutubeRequiredFormat = new javax.swing.JComboBox<>();
         filler5 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0), new java.awt.Dimension(32767, 0));
+        comboBoxYoutubeMode = new javax.swing.JComboBox<>();
 
         setLayout(new java.awt.BorderLayout());
 
@@ -1038,8 +1044,8 @@ public class OptionsPanel extends javax.swing.JPanel {
         tabYoutube.setLayout(new java.awt.GridBagLayout());
 
         jLabel17.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-        jLabel17.setText("Force search direct video URL:");
-        jLabel17.setToolTipText("Open Youtube video through its direct URL link instead of KODI plugin");
+        jLabel17.setText("Youtube URL mode:");
+        jLabel17.setToolTipText("Mode to process Youtube URL");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -1068,18 +1074,6 @@ public class OptionsPanel extends javax.swing.JPanel {
         gridBagConstraints.gridy = 3;
         gridBagConstraints.weighty = 1000.0;
         tabYoutube.add(filler4, gridBagConstraints);
-
-        checkBoxYoutubeForceSearchUrl.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                checkBoxYoutubeForceSearchUrlActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        tabYoutube.add(checkBoxYoutubeForceSearchUrl, gridBagConstraints);
 
         comboBoxYoutubePreferredQuality.setModel(new DefaultComboBoxModel<>(Arrays.stream(YtQuality.values()).filter(x -> x!=YtQuality.UNKNOWN).toArray(x -> new YtQuality[x]))
         );
@@ -1113,6 +1107,19 @@ public class OptionsPanel extends javax.swing.JPanel {
         gridBagConstraints.gridy = 0;
         gridBagConstraints.weightx = 1000.0;
         tabYoutube.add(filler5, gridBagConstraints);
+
+        comboBoxYoutubeMode.setModel(new DefaultComboBoxModel<>(YtMode.values()));
+        comboBoxYoutubeMode.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                comboBoxYoutubeModeActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        tabYoutube.add(comboBoxYoutubeMode, gridBagConstraints);
 
         tabPanel.addTab("Youtube", tabYoutube);
 
@@ -1213,12 +1220,6 @@ public class OptionsPanel extends javax.swing.JPanel {
         this.currentData.setJsonRequestTimeout(((Number) this.spinnerRpcTimeout.getValue()).longValue());
     }//GEN-LAST:event_spinnerRpcTimeoutStateChanged
 
-    private void checkBoxYoutubeForceSearchUrlActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkBoxYoutubeForceSearchUrlActionPerformed
-        this.currentData.setYoutubeForceSearchDirectUrl(this.checkBoxYoutubeForceSearchUrl.isSelected());
-        this.comboBoxYoutubePreferredQuality.setEnabled(this.checkBoxYoutubeForceSearchUrl.isSelected());
-        this.comboBoxYoutubeRequiredFormat.setEnabled(this.checkBoxYoutubeForceSearchUrl.isSelected());
-    }//GEN-LAST:event_checkBoxYoutubeForceSearchUrlActionPerformed
-
     private void comboBoxYoutubePreferredQualityActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboBoxYoutubePreferredQualityActionPerformed
         this.currentData.setYoutubePreferredQuality((YtQuality)this.comboBoxYoutubePreferredQuality.getSelectedItem());
     }//GEN-LAST:event_comboBoxYoutubePreferredQualityActionPerformed
@@ -1227,12 +1228,17 @@ public class OptionsPanel extends javax.swing.JPanel {
         this.currentData.setYoutubeRequiredFormat((YtVideoType) this.comboBoxYoutubeRequiredFormat.getSelectedItem());
     }//GEN-LAST:event_comboBoxYoutubeRequiredFormatActionPerformed
 
+    private void comboBoxYoutubeModeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboBoxYoutubeModeActionPerformed
+        this.currentData.setYoutubeOpenUrlMode((YtMode)this.comboBoxYoutubeMode.getSelectedItem());
+        this.onUpdatedYoutubeMode();
+    }//GEN-LAST:event_comboBoxYoutubeModeActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton buttonTestKodiConnection;
-    private javax.swing.JCheckBox checkBoxYoutubeForceSearchUrl;
     private javax.swing.JCheckBox checkGrabCursor;
     private javax.swing.JCheckBox checkKodiSsl;
     private javax.swing.JCheckBox checkServerSsl;
+    private javax.swing.JComboBox<YtMode> comboBoxYoutubeMode;
     private javax.swing.JComboBox<YtQuality> comboBoxYoutubePreferredQuality;
     private javax.swing.JComboBox<YtVideoType> comboBoxYoutubeRequiredFormat;
     private javax.swing.JComboBox<String> comboGrabberType;

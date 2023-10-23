@@ -3,6 +3,7 @@ package com.igormaznitsa.ravikoodi;
 import com.igormaznitsa.ravikoodi.prefs.StaticResource;
 import com.igormaznitsa.ravikoodi.prefs.TimerResource;
 import static com.igormaznitsa.ravikoodi.Utils.isBlank;
+import com.igormaznitsa.ravikoodi.ytloader.YtMode;
 import com.igormaznitsa.ravikoodi.ytloader.YtQuality;
 import com.igormaznitsa.ravikoodi.ytloader.YtVideoType;
 import java.io.IOException;
@@ -384,15 +385,23 @@ public class ApplicationPreferences {
         }
     }
 
-    public boolean isYoutubeForceDirectUrlSearch() {
+    public YtMode getYoutubeOpenUrlMode() {
         synchronized (this.preferences) {
-            return this.preferences.getBoolean(Option.YOUTUBE_FORCE_DIRECT_URL_SEARCH.getPropertyName(), false);
+            try {
+                return YtMode.valueOf(this.preferences.get(Option.YOUTUBE_OPEN_URL_MODE.getPropertyName(), YtMode.KODI_PLUGIN.name()));
+            } catch (IllegalArgumentException ex) {
+                return YtMode.KODI_PLUGIN;
+            }
         }
     }
 
-    public void setYoutubeForceUrlSearch(final boolean flag) {
+    public void setYoutubeOpenUrlMode(final YtMode mode) {
         synchronized (this.preferences) {
-            this.preferences.putBoolean(Option.YOUTUBE_FORCE_DIRECT_URL_SEARCH.getPropertyName(), flag);
+            if (mode == null) {
+                this.preferences.remove(Option.YOUTUBE_OPEN_URL_MODE.getPropertyName());
+            } else {
+                this.preferences.put(Option.YOUTUBE_OPEN_URL_MODE.getPropertyName(), mode.name());
+            }
         }
     }
 
@@ -600,7 +609,7 @@ public class ApplicationPreferences {
         KODI_PASSWORD("kodi.password"),
         GENERAL_SCALE_UI("ui.scale"),
         JSON_REQUEST_TIMEOUT("json.request.timeout"),
-        YOUTUBE_FORCE_DIRECT_URL_SEARCH("youtube.force.url.search"),
+        YOUTUBE_OPEN_URL_MODE("youtube.open.url.mode"),
         YOUTUBE_PREFERRED_QUALITY("youtube.preferred.quality"),
         YOUTUBE_REQUIRED_FORMAT("youtube.required.format");
         

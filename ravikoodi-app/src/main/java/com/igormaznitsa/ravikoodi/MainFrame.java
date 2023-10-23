@@ -404,7 +404,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                             LOGGER.error("Can't extract file path from: {}", stringValue);
                         }
                     } else {
-                        LOGGER.warn("String non among transferable flawors: {}", (Object)transferable.getTransferDataFlavors());
+                        LOGGER.warn("String non among transferable flawors: {}", (Object) transferable.getTransferDataFlavors());
                     }
                 } else {
                     LOGGER.info("Detected drop action for file list: {}", files);
@@ -447,7 +447,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                     }
                 }
             } else {
-                LOGGER.info("Unsupported transferable object: {}", (Object)transferable.getTransferDataFlavors());
+                LOGGER.info("Unsupported transferable object: {}", (Object) transferable.getTransferDataFlavors());
                 event.rejectDrop();
             }
         } catch (final Exception ex) {
@@ -1191,7 +1191,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
     }
 
     private void openYoutubeThroughDirectLinkSearch(
-            @NonNull final String youTubeVideoId, 
+            @NonNull final String youTubeVideoId,
             @NonNull final YtQuality preferredQuality,
             @NonNull final YtVideoType requiredFormat,
             final boolean playListId) {
@@ -1210,34 +1210,42 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
     }
 
     private void openYoutubeLink(@NonNull final String youtubeLinkUrl) {
-        if (this.preferences.isYoutubeForceDirectUrlSearch()) {
-            final YtQuality preferredQuality = this.preferences.getYoutubePreferredQuality();
-            final YtVideoType requiredFormat = this.preferences.getYoutubeRequiredFormat();
-            String id = YoutubeUtils.extractYoutubeVideoId(youtubeLinkUrl).orElse(null);
-            if (id == null) {
-                id = YoutubeUtils.extractYoutubePlaylistId(youtubeLinkUrl).orElse(null);
+        String id = YoutubeUtils.extractYoutubeVideoId(youtubeLinkUrl).orElse(null);
+        switch (this.preferences.getYoutubeOpenUrlMode()) {
+            case DIRECT_URL: {
+                final YtQuality preferredQuality = this.preferences.getYoutubePreferredQuality();
+                final YtVideoType requiredFormat = this.preferences.getYoutubeRequiredFormat();
                 if (id == null) {
-                    this.openYoutubeThroughDirectLinkSearch(youtubeLinkUrl.trim(), 
-                            preferredQuality, requiredFormat, false);
+                    id = YoutubeUtils.extractYoutubePlaylistId(youtubeLinkUrl).orElse(null);
+                    if (id == null) {
+                        this.openYoutubeThroughDirectLinkSearch(youtubeLinkUrl.trim(),
+                                preferredQuality, requiredFormat, false);
+                    } else {
+                        this.openYoutubeThroughDirectLinkSearch(id,
+                                preferredQuality, requiredFormat, true);
+                    }
                 } else {
                     this.openYoutubeThroughDirectLinkSearch(id,
-                            preferredQuality, requiredFormat, true);
+                            preferredQuality, requiredFormat, false);
                 }
-            } else {
-                this.openYoutubeThroughDirectLinkSearch(id,
-                        preferredQuality, requiredFormat, false);
+
             }
-        } else {
-            String id = YoutubeUtils.extractYoutubeVideoId(youtubeLinkUrl).orElse(null);
-            if (id == null) {
-                id = YoutubeUtils.extractYoutubePlaylistId(youtubeLinkUrl).orElse(null);
+            break;
+            case KODI_PLUGIN: {
                 if (id == null) {
-                    openYoutubeVideoLinkWithKodiPlugin(youtubeLinkUrl.trim());
+                    id = YoutubeUtils.extractYoutubePlaylistId(youtubeLinkUrl).orElse(null);
+                    if (id == null) {
+                        openYoutubeVideoLinkWithKodiPlugin(youtubeLinkUrl.trim());
+                    } else {
+                        openYoutubePlaylistLinkWithKodiPlugin(id);
+                    }
                 } else {
-                    openYoutubePlaylistLinkWithKodiPlugin(id);
+                    openYoutubeVideoLinkWithKodiPlugin(id);
                 }
-            } else {
-                openYoutubeVideoLinkWithKodiPlugin(id);
+            }
+            break;
+            default: {
+                throw new IllegalArgumentException("Unexpected Youtube mode");
             }
         }
     }
