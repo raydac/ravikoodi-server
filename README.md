@@ -7,18 +7,18 @@
 
 # Changelog
 
+- __1.1.11 (25-oct-2023)__
+  - minor fixes
+  - added direct URL link open mode for Youtube links
+  - updated embedded JDK to 21.0.1+12
+  - updated Spring Boot to 3.1.5
+
 - __1.1.10 (05-jan-2023)__
   - minor fixes
   - added AppImage version
   - windows launcher moved from i386 to amd64
   - updated embedded JDK to 19.0.1+11
   - updated Spring Boot to 3.0.1
-
-- __1.1.9 (06-jun-2022)__
-  - added support of drag and drop link for Chrome under Windows
-  - minor bugfixing
-  - updated embedded JDK to 17.0.3.1+2
-  - updated Spring Boot to 2.7.0
 
 [Full changelog](changelog.txt)
 
@@ -28,24 +28,26 @@ At home I use [Raspberry PI 3](https://www.raspberrypi.org/products/raspberry-pi
 
 # How to load and start?
 
-## If you don't have installed Java or don't care about that
+## Pre-built versions
 
-It is a Java application so that in ideal it needs pre-installed Java 1.8+, but since 1.1.0 release Iprovide also pre-built versions with embedded JDK images, they can be started without installed Java:
- - [version for Linux with JDK image (TAR.GZ)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.10/ravikoodi-app-1.1.10-linux-jdk-amd64.tar.gz)
- - [version for Linux (AppImage)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.10/ravikoodi-app-1.1.10-x86_64.AppImage)
- - [version for Windows with JDK image (ZIP)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.10/ravikoodi-app-1.1.10-windows-jdk-amd64.zip)
- - [version for MacOS with JDK image (ZIP)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.10/ravikoodi-app-1.1.10-macos-jdk-amd64.zip)
- - [version for MacOS with JDK image (DMG)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.10/ravikoodi-app_1.1.10.dmg)
- - [version for MacOS (ARM64) with JDK image (ZIP)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.10/ravikoodi-app-1.1.10-macos-jdk-aarch64.zip)
+| OS                                           |  Download link                                                                                                                                                                                | 
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Windows](assets/icons/win64x64.png)        | __[Application for Windows amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.11/ravikoodi-app-1.1.11-windows-jdk-amd64.zip)__           |
+| ![OSX](assets/icons/macos64x64.png)          | __[Application for OSX amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.11/ravikoodi-app-1.1.11-macos-jdk-amd64.zip)__                 |
+| ![OSX Arm64](assets/icons/macosarm64x64.png) | __[Application for OSX aarch64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.11/ravikoodi-app-1.1.11-macos-jdk-aarch64.zip)__             |
+| ![Linux](assets/icons/linux64x64.png)        | __[Application TAR.GZ for Linux amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.11/ravikoodi-app-1.1.11-linux-jdk-amd64.tar.gz)__     |
+| ![Linux](assets/icons/appimage64x64.png)     | __[Application AppImage for Linux amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.11/ravikoodi-app-1.1.11-x86_64.AppImage)__          |
+| ![Java](assets/icons/java64x64.png)          | __[Application, cross-platform JAR file](https://github.com/raydac/ravikoodi-server/releases/download/1.1.11/ravikoodi-app-1.1.11.jar)__                                     | 
+
 
 You can just load needed archive, unpack in a folder and start its executable file.
 
 ## Requirements
 
 To be working well, the application requires:
- - max 100 Mb on hard-disk
+ - min 100 Mb on hard-disk
  - more or less powerful computer (especially for high bitrate screencasting)
- - pre-installed [Java 11+](https://bell-sw.com/) for versions without embedded JDK image
+ - pre-installed [Java 17+](https://bell-sw.com/pages/downloads/) for versions without embedded JDK image
  - pre-installed [FFmpeg](https://www.ffmpeg.org/) for screencasting
 
 ![screenshot with NIMBUS L&F](assets/screenshot.png)   
@@ -67,6 +69,14 @@ It is absolutely free and open-source application (under Apache 2.0 license), I 
 Select network settings ofyour KODI player (its appearance depends on version)   
 ![kodi http](assets/kodi_settings.png)   
 Enable __Allow remote control via HTTP__, select address, port and access credentials.
+
+## Processing of Youtube links
+There are several ways to open Youtube links.
+1. Just drag and drop a youtube link from browser to the application window.
+2. Open link through menu __File->Open Youtube__
+
+By default the aplication uses KODI Youtube plugin to open links but since 1.1.11 provided way to open Youtube links as direct URLs. The way can not be recognized as very stable because Youtube can change its API. To activate it, you should select it in __Options__ dialog.   
+![Youtube options](assets/youtube_options.png)
 
 ## Tune application server
 
