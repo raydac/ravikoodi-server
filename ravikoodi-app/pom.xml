@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.igormaznitsa</groupId>
         <artifactId>ravikoodi</artifactId>
-        <version>1.1.11</version>
+        <version>1.1.12-SNAPSHOT</version>
     </parent>
 
     <artifactId>ravikoodi-app</artifactId>
@@ -104,7 +104,7 @@
                                 <CFBundleURLTypes>
                                     <string>msa</string>
                                 </CFBundleURLTypes>
-                                <JVMVersion>11+</JVMVersion>
+                                <JVMVersion>17+</JVMVersion>
                                 <JVMMainClassName>com.igormaznitsa.ravikoodi.RaviKoodiServer</JVMMainClassName>
                             </plist>
                             <dmg>
@@ -141,8 +141,8 @@
                                 <mutexName>sciaretoeditor</mutexName>
                             </singleInstance>
                             <versionInfo>
-                                <fileVersion>1.1.11.0</fileVersion>
-                                <productVersion>1.1.11.0</productVersion>
+                                <fileVersion>1.1.12.0</fileVersion>
+                                <productVersion>1.1.12.0</productVersion>
                                 <txtFileVersion>${project.version}</txtFileVersion>
                                 <fileDescription>RaviKoodi communication server for Kodi player</fileDescription>
                                 <copyright>2018-2023 Igor Maznitsa</copyright>
@@ -163,7 +163,7 @@
                                 <configuration>
                                     <outfile>${project.build.directory}${file.separator}${app.name}.exe</outfile>
                                     <jre>
-                                        <minVersion>11</minVersion>
+                                        <minVersion>17</minVersion>
                                         <path>%VAR%</path>
                                     </jre>
                                 </configuration>

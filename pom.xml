@@ -5,7 +5,7 @@
 
     <groupId>com.igormaznitsa</groupId>
     <artifactId>ravikoodi</artifactId>
-    <version>1.1.11</version>
+    <version>1.1.12-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <description>Server to broadcast media content to KODI compatible media players</description>
@@ -15,9 +15,9 @@
     <inceptionYear>2018</inceptionYear>
 
     <properties>
-        <java.version>11</java.version>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <java.version>17</java.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
     <issueManagement>
