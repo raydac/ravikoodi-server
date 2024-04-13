@@ -1,3 +1,7 @@
+# __1.1.12 (SNAPSHOT)__
+  - updated embedded JDK to 22+37
+  - updated Spring Boot to 3.1.10
+
 # __1.1.11 (25-oct-2023)__
   - minor fixes
   - added direct URL link open mode for Youtube links
