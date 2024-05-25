@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Ravikoodi content server
+Exec=java -jar $SNAP/jar/ravikoodi-app.jar
+Version=1.1.11
+Comment=Small server to broadcast local media kontent to KODI Media Player
+Icon=dayon
+Type=Application
+Terminal=false
+StartupNotify=true
+Encoding=UTF-8
+Categories=Video

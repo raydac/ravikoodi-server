@@ -1,0 +1,54 @@
+name: ravikoodi
+title: Ravikoodi content server
+adopt-info: ravikoodi
+#version: 1.1.11
+summary: Small server to broadcast local media kontent to KODI Media Player
+description: Small server to broadcast local media kontent to KODI Media Player
+license: Apache-2.0
+grade: stable
+base: core24
+confinement: strict
+platforms:
+  amd64:
+  arm64:
+  armhf:
+  riscv64:
+
+lint:
+  ignore:
+    - library:
+        - usr/lib/jvm/java-*/lib/*.so
+
+apps:
+  ravikoodi:
+    environment:
+      JAVA_HOME: $SNAP/usr/lib/jvm/java-21-openjdk-$SNAP_ARCH
+      PATH: $JAVA_HOME/bin:$JAVA_HOME/jre/bin:$PATH
+      DISABLE_WAYLAND: 1
+    command: java -jar $SNAP/jar/ravikoodi.jar
+    desktop: ../parts/ravikoodi/build/ravikoodi.desktop
+    plugs:
+      [home, network, desktop]
+
+parts:
+  ravikoodi:
+    plugin: maven
+    source: https://github.com/skaba/ravikoodi-server.git
+    source-tag: snap
+    source-type: git
+    maven-parameters:
+      [-f ravikoodi-app/pom.xml -DskipTests]
+
+    override-pull: |
+     craftctl default
+     craftctl set version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | sed -n -e '/^\[.*\]/ !{ /^[0-9]/ { p; q } }')-$(git rev-parse --short HEAD)
+
+    build-packages:
+      [default-jdk, maven]
+
+    override-build: |
+      craftctl default
+      mv $CRAFT_PART_INSTALL/jar/ravikoodi-app-*.jar $CRAFT_PART_INSTALL/jar/ravikoodi.jar
+
+    stage-packages:
+      [default-jre]
