@@ -17,14 +17,22 @@ platforms:
 lint:
   ignore:
     - library:
-        - usr/lib/jvm/java-*/lib/*.so
+        - usr/lib/jvm/*java*-*/lib/*.so
+        - **/libXi.so.*
+
+package-repositories:
+  - type: apt
+    components: [main]
+    suites: [stable]
+    key-id: 99A5C88E3C5B1FA8B05A19D332E9750179FCEA62
+    url: https://apt.bell-sw.com/
 
 apps:
   ravikoodi:
     environment:
-      JAVA_HOME: $SNAP/usr/lib/jvm/java-21-openjdk-$SNAP_ARCH
-      PATH: $JAVA_HOME/bin:$JAVA_HOME/jre/bin:$PATH
-      DISABLE_WAYLAND: 1
+      #JAVA_HOME: $SNAP/usr/lib/jvm/java-21-openjdk-$SNAP_ARCH
+      #PATH: $JAVA_HOME/bin:$JAVA_HOME/jre/bin:$PATH
+      #DISABLE_WAYLAND: 1
     command: java -jar $SNAP/jar/ravikoodi.jar
     desktop: ../parts/ravikoodi/build/ravikoodi.desktop
     plugs:
@@ -44,11 +52,11 @@ parts:
      craftctl set version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | sed -n -e '/^\[.*\]/ !{ /^[0-9]/ { p; q } }')-$(git rev-parse --short HEAD)
 
     build-packages:
-      [default-jdk, maven]
+      [bellsoft-java21, maven]
 
     override-build: |
       craftctl default
       mv $CRAFT_PART_INSTALL/jar/ravikoodi-app-*.jar $CRAFT_PART_INSTALL/jar/ravikoodi.jar
 
     stage-packages:
-      [default-jre]
+      [bellsoft-java21-runtime]
