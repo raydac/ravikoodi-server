@@ -2,8 +2,8 @@ name: ravikoodi
 title: Ravikoodi content server
 adopt-info: ravikoodi
 #version: 1.1.11
-summary: Small server to broadcast local media kontent to KODI Media Player
-description: Small server to broadcast local media kontent to KODI Media Player
+summary: Small server to broadcast local media content to KODI Media Player
+description: Small server to broadcast local media content to KODI Media Player
 license: Apache-2.0
 grade: stable
 base: core24
@@ -18,7 +18,10 @@ lint:
   ignore:
     - library:
         - usr/lib/jvm/*java*-*/lib/*.so
-        - **/libXi.so.*
+        - '**/libX*.so.*'
+        - '**/libxcb.so.*'
+        - '**/libfontconfig.so.*'
+        - '**/liboss4-salsa.so.*'
 
 package-repositories:
   - type: apt
@@ -57,6 +60,7 @@ parts:
     override-build: |
       craftctl default
       mv $CRAFT_PART_INSTALL/jar/ravikoodi-app-*.jar $CRAFT_PART_INSTALL/jar/ravikoodi.jar
+      cp ravikoodi-logo-1024.png $CRAFT_PART_INSTALL/bin/ravikoodi.png
 
     stage-packages:
       [bellsoft-java21-runtime]
