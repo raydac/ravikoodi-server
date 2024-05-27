@@ -71,4 +71,4 @@ parts:
       cp ravikoodi-logo-1024.png $CRAFT_PART_INSTALL/
 
     stage-packages:
-      [openjdk-21-jre]
+      [openjdk-21-jre, ffmpeg]
