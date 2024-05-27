@@ -1,9 +1,9 @@
 name: ravikoodi
 title: Ravikoodi content server
 adopt-info: ravikoodi
-#version: 1.1.11
 summary: Small server to broadcast local media content to KODI Media Player
 description: Small server to broadcast local media content to KODI Media Player
+icon: ravikoodi-logo-256.png
 license: Apache-2.0
 grade: stable
 base: core24
@@ -13,15 +13,6 @@ platforms:
   arm64:
   armhf:
   riscv64:
-
-lint:
-  ignore:
-    - library:
-        - usr/lib/jvm/*java*-*/lib/*.so
-        - '**/libX*.so.*'
-        - '**/libxcb.so.*'
-        - '**/libfontconfig.so.*'
-        - '**/liboss4-salsa.so.*'
 
 package-repositories:
   - type: apt
@@ -33,23 +24,23 @@ package-repositories:
 apps:
   ravikoodi:
     environment:
-      JAVA_HOME: $SNAP/usr/lib/jvm/java-21-openjdk-$SNAP_ARCH
-      PATH: $JAVA_HOME/bin:$JAVA_HOME/jre/bin:$PATH
+      JAVA_HOME: $SNAP/usr/lib/jvm/bellsoft-java21-runtime-$SNAP_ARCH
+      PATH: $JAVA_HOME/bin:$PATH
+      ALSA_CONFIG_PATH: $SNAP/usr/share/alsa/alsa.conf
     command: usr/bin/ravikoodi
     desktop: ravikoodi.desktop
-    #extensions:
-    #  [gnome]
     plugs:
-      [home, network, network-bind, desktop, desktop-legacy, x11, audio-playback, audio-record, alsa, pulseaudio, hardware-observe]
+      - home
+      - network
+      - network-bind
+      - desktop
+      - desktop-legacy
+      - x11
+      - alsa
+      - audio-playback
+      - audio-record
 
 parts:
-  launcher:
-      plugin: dump
-      source: snap/bin
-      source-type: local
-      organize:
-        ravikoodi-launcher: usr/bin/ravikoodi
-
   ravikoodi:
     plugin: maven
     source: https://github.com/skaba/ravikoodi-server.git
@@ -63,13 +54,17 @@ parts:
      craftctl set version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | sed -n -e '/^\[.*\]/ !{ /^[0-9]/ { p; q } }')-$(git rev-parse --short HEAD)
 
     build-packages:
-      [openjdk-21-jdk, maven]
+      - bellsoft-java21
+      - maven
 
     override-build: |
       craftctl default
       mv $CRAFT_PART_INSTALL/jar/ravikoodi-app-*.jar $CRAFT_PART_INSTALL/jar/ravikoodi.jar
       cp ravikoodi.desktop $CRAFT_PART_INSTALL/
       cp ravikoodi-logo-1024.png $CRAFT_PART_INSTALL/
+      cp snap/bin/ravikoodi-launcher $CRAFT_PART_INSTALL/usr/bin/ravikoodi
 
     stage-packages:
-      [openjdk-21-jre, ffmpeg, alsa-utils]
+      - bellsoft-java21-runtime
+      - ffmpeg
+      - libasound2-data

@@ -1,3 +1,2 @@
 #!/bin/bash
-aplay -l
 exec "${SNAP}"/bin/java -Djava.util.prefs.userRoot="${SNAP_USER_DATA}" -jar "${SNAP}"/jar/ravikoodi.jar
