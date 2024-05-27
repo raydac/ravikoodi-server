@@ -33,11 +33,11 @@ package-repositories:
 apps:
   ravikoodi:
     environment:
-      JAVA_HOME: $SNAP/usr/lib/jvm/bellsoft-java21-runtime-$SNAP_ARCH
+      JAVA_HOME: $SNAP/usr/lib/jvm/java-21-openjdk-$SNAP_ARCH
       PATH: $JAVA_HOME/bin:$JAVA_HOME/jre/bin:$PATH
       DISABLE_WAYLAND: 1
-    command: java -jar $SNAP/jar/ravikoodi.jar
-    desktop: ../parts/ravikoodi/build/ravikoodi.desktop
+    command: $SNAP/usr/lib/jvm/java-21-openjdk-$SNAP_ARCH/java -jar $SNAP/jar/ravikoodi.jar
+    desktop: ravikoodi.desktop
     plugs:
       [home, network, desktop]
 
@@ -55,12 +55,13 @@ parts:
      craftctl set version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | sed -n -e '/^\[.*\]/ !{ /^[0-9]/ { p; q } }')-$(git rev-parse --short HEAD)
 
     build-packages:
-      [bellsoft-java21, maven]
+      [openjdk-21-jdk, maven]
 
     override-build: |
       craftctl default
       mv $CRAFT_PART_INSTALL/jar/ravikoodi-app-*.jar $CRAFT_PART_INSTALL/jar/ravikoodi.jar
+      cp ravikoodi.desktop $CRAFT_PART_INSTALL/
       cp ravikoodi-logo-1024.png $CRAFT_PART_INSTALL/
 
     stage-packages:
-      [bellsoft-java21-runtime]
+      [openjdk-21-jre]
