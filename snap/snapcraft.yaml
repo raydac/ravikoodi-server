@@ -24,7 +24,7 @@ package-repositories:
 apps:
   ravikoodi:
     environment:
-      JAVA_HOME: $SNAP/usr/lib/jvm/bellsoft-java21-runtime-$SNAP_ARCH
+      JAVA_HOME: $SNAP/usr/lib/jvm/bellsoft-java22-runtime-$SNAP_ARCH
       PATH: $JAVA_HOME/bin:$PATH
       ALSA_CONFIG_PATH: $SNAP/usr/share/alsa/alsa.conf
     command: usr/bin/ravikoodi
@@ -54,7 +54,7 @@ parts:
      craftctl set version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | sed -n -e '/^\[.*\]/ !{ /^[0-9]/ { p; q } }')-$(git rev-parse --short HEAD)
 
     build-packages:
-      - bellsoft-java21
+      - bellsoft-java22
       - maven
 
     override-build: |
@@ -65,6 +65,6 @@ parts:
       cp snap/bin/ravikoodi-launcher $CRAFT_PART_INSTALL/usr/bin/ravikoodi
 
     stage-packages:
-      - bellsoft-java21-runtime
+      - bellsoft-java22-runtime
       - ffmpeg
       - libasound2-data
