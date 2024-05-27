@@ -21,3 +21,4 @@ nbactions.xml
 /ravikoodi-app/nbproject/
 *.syso
 versioninfo.go
+*.snap

@@ -35,8 +35,8 @@ apps:
     environment:
       JAVA_HOME: $SNAP/usr/lib/jvm/java-21-openjdk-$SNAP_ARCH
       PATH: $JAVA_HOME/bin:$JAVA_HOME/jre/bin:$PATH
-      DISABLE_WAYLAND: 1
-    command: $SNAP/usr/lib/jvm/java-21-openjdk-$SNAP_ARCH/java -jar $SNAP/jar/ravikoodi.jar
+      #DISABLE_WAYLAND: 1
+    command: bin/ravikoodi-launcher
     desktop: ravikoodi.desktop
     plugs:
       [home, network, desktop]
@@ -62,6 +62,7 @@ parts:
       mv $CRAFT_PART_INSTALL/jar/ravikoodi-app-*.jar $CRAFT_PART_INSTALL/jar/ravikoodi.jar
       cp ravikoodi.desktop $CRAFT_PART_INSTALL/
       cp ravikoodi-logo-1024.png $CRAFT_PART_INSTALL/
+      cp snap/bin/ravikoodi-launcher $CRAFT_PART_INSTALL/bin
 
     stage-packages:
       [openjdk-21-jre]
