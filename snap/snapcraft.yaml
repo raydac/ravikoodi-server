@@ -39,7 +39,7 @@ apps:
     command: usr/bin/ravikoodi
     desktop: ravikoodi.desktop
     plugs:
-      [home, network, desktop]
+      [home, network, desktop, x11]
 
 parts:
   launcher:
