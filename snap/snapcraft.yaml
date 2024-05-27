@@ -33,12 +33,14 @@ package-repositories:
 apps:
   ravikoodi:
     environment:
-      JAVA_HOME: $SNAP/usr/lib/jvm/bellsoft-java21-runtime-$SNAP_ARCH
-      PATH: $JAVA_HOME/bin:$PATH
+      JAVA_HOME: $SNAP/usr/lib/jvm/java-21-openjdk-$SNAP_ARCH
+      PATH: $JAVA_HOME/bin:$JAVA_HOME/jre/bin:$PATH
     command: usr/bin/ravikoodi
     desktop: ravikoodi.desktop
+    #extensions:
+    #  [gnome]
     plugs:
-      [home, network, network-bind, desktop, desktop-legacy, x11]
+      [home, network, network-bind, desktop, desktop-legacy, x11, audio-playback, audio-record, alsa, pulseaudio, hardware-observe]
 
 parts:
   launcher:
@@ -61,7 +63,7 @@ parts:
      craftctl set version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | sed -n -e '/^\[.*\]/ !{ /^[0-9]/ { p; q } }')-$(git rev-parse --short HEAD)
 
     build-packages:
-      [bellsoft-java21, maven]
+      [openjdk-21-jdk, maven]
 
     override-build: |
       craftctl default
@@ -70,4 +72,4 @@ parts:
       cp ravikoodi-logo-1024.png $CRAFT_PART_INSTALL/
 
     stage-packages:
-      [bellsoft-java21-runtime, ffmpeg]
+      [openjdk-21-jre, ffmpeg, alsa-utils]
