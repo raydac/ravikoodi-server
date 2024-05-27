@@ -1,3 +1,2 @@
 #!/bin/bash
-
-exec "$SNAP"/bin/java "$SNAP"/jar/ravikoodi.jar
+exec $SNAP/bin/java -jar $SNAP/jar/ravikoodi.jar

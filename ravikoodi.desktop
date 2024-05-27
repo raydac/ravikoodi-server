@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Ravikoodi content server
-Exec=ravikoodi-launcher
+Exec=usr/bin/ravikoodi
 Version=1.1.11
 Comment=Small server to broadcast local media content to KODI Media Player
 Icon=ravikoodi-logo-1024.png
@@ -8,4 +8,4 @@ Type=Application
 Terminal=false
 StartupNotify=true
 Encoding=UTF-8
-Categories=Video
+Categories=AudioVideo;
