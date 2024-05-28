@@ -21,6 +21,10 @@ package-repositories:
     key-id: 99A5C88E3C5B1FA8B05A19D332E9750179FCEA62
     url: https://apt.bell-sw.com/
 
+layout:
+  /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/alsa-lib:
+    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/alsa-lib
+
 apps:
   ravikoodi:
     environment:
@@ -29,6 +33,8 @@ apps:
       ALSA_CONFIG_PATH: $SNAP/usr/share/alsa/alsa.conf
     command: usr/bin/ravikoodi
     desktop: ravikoodi.desktop
+    extensions:
+      - gnome
     plugs:
       - home
       - network
@@ -67,4 +73,5 @@ parts:
     stage-packages:
       - bellsoft-java22-runtime
       - ffmpeg
-      - libasound2-data
+      - pipewire
+      - pipewire-alsa
