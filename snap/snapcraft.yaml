@@ -49,7 +49,7 @@ apps:
 parts:
   ravikoodi:
     plugin: maven
-    source: https://github.com/skaba/ravikoodi-server.git
+    source: https://github.com/raydac/ravikoodi-server.git
     source-tag: snap
     source-type: git
     maven-parameters:
