@@ -1,0 +1,77 @@
+name: ravikoodi
+title: Ravikoodi content server
+adopt-info: ravikoodi
+summary: Small server to broadcast local media content to KODI Media Player
+description: Small server to broadcast local media content to KODI Media Player
+icon: ravikoodi-logo-256.png
+license: Apache-2.0
+grade: stable
+base: core24
+confinement: strict
+platforms:
+  amd64:
+  arm64:
+  armhf:
+  riscv64:
+
+package-repositories:
+  - type: apt
+    components: [main]
+    suites: [stable]
+    key-id: 99A5C88E3C5B1FA8B05A19D332E9750179FCEA62
+    url: https://apt.bell-sw.com/
+
+layout:
+  /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/alsa-lib:
+    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/alsa-lib
+
+apps:
+  ravikoodi:
+    environment:
+      JAVA_HOME: $SNAP/usr/lib/jvm/bellsoft-java22-runtime-$SNAP_ARCH
+      PATH: $JAVA_HOME/bin:$PATH
+      ALSA_CONFIG_PATH: $SNAP/usr/share/alsa/alsa.conf
+    command: usr/bin/ravikoodi
+    desktop: ravikoodi.desktop
+    extensions:
+      - gnome
+    plugs:
+      - home
+      - network
+      - network-bind
+      - desktop
+      - desktop-legacy
+      - x11
+      - alsa
+      - audio-playback
+      - audio-record
+
+parts:
+  ravikoodi:
+    plugin: maven
+    source: https://github.com/skaba/ravikoodi-server.git
+    source-tag: snap
+    source-type: git
+    maven-parameters:
+      [-f ravikoodi-app/pom.xml -DskipTests]
+
+    override-pull: |
+     craftctl default
+     craftctl set version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | sed -n -e '/^\[.*\]/ !{ /^[0-9]/ { p; q } }')-$(git rev-parse --short HEAD)
+
+    build-packages:
+      - bellsoft-java22
+      - maven
+
+    override-build: |
+      craftctl default
+      mv $CRAFT_PART_INSTALL/jar/ravikoodi-app-*.jar $CRAFT_PART_INSTALL/jar/ravikoodi.jar
+      cp ravikoodi.desktop $CRAFT_PART_INSTALL/
+      cp ravikoodi-logo-1024.png $CRAFT_PART_INSTALL/
+      cp snap/bin/ravikoodi-launcher $CRAFT_PART_INSTALL/usr/bin/ravikoodi
+
+    stage-packages:
+      - bellsoft-java22-runtime
+      - ffmpeg
+      - pipewire
+      - pipewire-alsa
