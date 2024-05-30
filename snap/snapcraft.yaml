@@ -50,7 +50,7 @@ parts:
   ravikoodi:
     plugin: maven
     source: https://github.com/raydac/ravikoodi-server.git
-    source-tag: snap
+    source-tag: master
     source-type: git
     maven-parameters:
       [-f ravikoodi-app/pom.xml -DskipTests]
