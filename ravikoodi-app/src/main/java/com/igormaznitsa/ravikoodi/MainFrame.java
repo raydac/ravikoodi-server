@@ -3,6 +3,7 @@ package com.igormaznitsa.ravikoodi;
 import com.github.kiulian.downloader.downloader.YoutubeCallback;
 import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
+import com.github.kiulian.downloader.model.videos.formats.AudioFormat;
 import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
 import static com.igormaznitsa.ravikoodi.ContentTreeItem.CONTENT_ITEM_COMPARATOR;
 import com.igormaznitsa.ravikoodi.MimeTypes.ContentType;
@@ -1344,6 +1345,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                     public void onFinished(final VideoInfo videoInfo) {
                         final List<? extends VideoFormat> formatsWithSound = videoInfo.videoWithAudioFormats();
                         final List<VideoFormat> formatsNoSound = videoInfo.videoFormats();
+                        final List<AudioFormat> formatsSound = videoInfo.audioFormats();
 
                         final StringBuilder buffer = new StringBuilder();
                         buffer.append("<html><body>");
@@ -1351,22 +1353,34 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                         buffer.append("<h2>With sound</h2><ul>");
 
                         formatsWithSound.forEach(x -> {
-                            buffer.append(String.format("<li>%s %s %s <a href=\"%s\">url</a></li>",
+                            buffer.append(String.format("<li>%s %s %s %s <a href=\"%s\">url</a></li>",
                                     StringEscapeUtils.escapeHtml3(x.type()),
+                                    StringEscapeUtils.escapeHtml3(x.mimeType()),
                                     StringEscapeUtils.escapeHtml3(x.qualityLabel()),
                                     StringEscapeUtils.escapeHtml3(x.videoQuality().name()),
                                     StringEscapeUtils.escapeHtml3(x.url())));
                         });
 
-                        buffer.append("</ul>");
-
-                        buffer.append("<h2>No sound</h2><ul>");
+                        buffer.append("</ul><h2>No sound</h2><ul>");
 
                         formatsNoSound.forEach(x -> {
-                            buffer.append(String.format("<li>%s %s %s <a href=\"%s\">url</a></li>",
+                            buffer.append(String.format("<li>%s %s %s %s <a href=\"%s\">url</a></li>",
                                     StringEscapeUtils.escapeHtml3(x.type()),
+                                    StringEscapeUtils.escapeHtml3(x.mimeType()),
                                     StringEscapeUtils.escapeHtml3(x.qualityLabel()),
                                     StringEscapeUtils.escapeHtml3(x.videoQuality().name()),
+                                    StringEscapeUtils.escapeHtml3(x.url())));
+                        });
+
+                        buffer.append("</ul><h2>Only sound</h2><ul>");
+
+                        formatsSound.forEach(x -> {
+                            buffer.append(String.format("<li>%s %s %s samplerate: %d bitrate:%d <a href=\"%s\">url</a></li>",
+                                    StringEscapeUtils.escapeHtml3(x.type()),
+                                    StringEscapeUtils.escapeHtml3(x.mimeType()),
+                                    StringEscapeUtils.escapeHtml3(x.audioQuality().name()),
+                                    x.audioSampleRate(),
+                                    x.averageBitrate(),
                                     StringEscapeUtils.escapeHtml3(x.url())));
                         });
 
