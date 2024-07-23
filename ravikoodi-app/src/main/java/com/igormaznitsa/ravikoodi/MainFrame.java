@@ -1,5 +1,9 @@
 package com.igormaznitsa.ravikoodi;
 
+import com.github.kiulian.downloader.downloader.YoutubeCallback;
+import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
+import com.github.kiulian.downloader.model.videos.VideoInfo;
+import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
 import static com.igormaznitsa.ravikoodi.ContentTreeItem.CONTENT_ITEM_COMPARATOR;
 import com.igormaznitsa.ravikoodi.MimeTypes.ContentType;
 import static com.igormaznitsa.ravikoodi.Utils.isBlank;
@@ -66,6 +70,7 @@ import javax.imageio.ImageIO;
 import javax.swing.ButtonGroup;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -76,6 +81,7 @@ import javax.swing.JTree;
 import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.TreeModelEvent;
 import javax.swing.event.TreeModelListener;
 import javax.swing.event.TreeSelectionEvent;
@@ -83,6 +89,7 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 import static javax.swing.tree.TreeSelectionModel.SINGLE_TREE_SELECTION;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -666,6 +673,8 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
         menuStaticContent = new javax.swing.JMenuItem();
         menuLookAndFeel = new javax.swing.JMenu();
         menuToolsOptions = new javax.swing.JMenuItem();
+        menuMisc = new javax.swing.JMenu();
+        menuMiscDecodeYoutubeUrl = new javax.swing.JMenuItem();
         menuHelp = new javax.swing.JMenu();
         menuHelpDonation = new javax.swing.JMenuItem();
         menuAbout = new javax.swing.JMenuItem();
@@ -860,6 +869,19 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
         menuTools.add(menuToolsOptions);
 
         menuMain.add(menuTools);
+
+        menuMisc.setText("Misc");
+
+        menuMiscDecodeYoutubeUrl.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_youtube.png"))); // NOI18N
+        menuMiscDecodeYoutubeUrl.setText("Decode Youtube URL");
+        menuMiscDecodeYoutubeUrl.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                menuMiscDecodeYoutubeUrlActionPerformed(evt);
+            }
+        });
+        menuMisc.add(menuMiscDecodeYoutubeUrl);
+
+        menuMain.add(menuMisc);
 
         menuHelp.setText("Help");
 
@@ -1214,10 +1236,10 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                                 JOptionPane.showMessageDialog(MainFrame.this, "Youtube playlist doesn't have playable video!", "Info '" + playListId + '\'', JOptionPane.WARNING_MESSAGE);
                             });
                         } else {
-                        SwingUtilities.invokeLater(() -> {
-                            LOGGER.info("Opening first video in youtube playlist '{}': {} ({})", playListId, firstVideo.title(), firstVideo.videoId());
-                            this.youTubeLinkExtractor.findVideoUrlAsync(firstVideo.videoId(), preferredQuality, requiredFormat, this::onResolvedYoutubeUrlLink);
-                        });
+                            SwingUtilities.invokeLater(() -> {
+                                LOGGER.info("Opening first video in youtube playlist '{}': {} ({})", playListId, firstVideo.title(), firstVideo.videoId());
+                                this.youTubeLinkExtractor.findVideoUrlAsync(firstVideo.videoId(), preferredQuality, requiredFormat, this::onResolvedYoutubeUrlLink);
+                            });
                         }
                     }
                 } else {
@@ -1302,6 +1324,78 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
             this.staticFileRegistry.refresh();
         }
     }//GEN-LAST:event_menuStaticContentActionPerformed
+
+    private void menuMiscDecodeYoutubeUrlActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuMiscDecodeYoutubeUrlActionPerformed
+        final String youtubeLinkUrl = JOptionPane.showInputDialog(this, "Enter Youtube URL", "");
+        if (youtubeLinkUrl == null || youtubeLinkUrl.isBlank()) {
+            return;
+        }
+
+        final String youTubeVideoId = YoutubeUtils.extractYoutubeVideoId(youtubeLinkUrl).orElse(null);
+
+        if (youTubeVideoId == null) {
+            JOptionPane.showMessageDialog(this, "Can't extract Youtube video ID", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        final RequestVideoInfo request = new RequestVideoInfo(youTubeVideoId)
+                .callback(new YoutubeCallback<VideoInfo>() {
+                    @Override
+                    public void onFinished(final VideoInfo videoInfo) {
+                        final List<? extends VideoFormat> formatsWithSound = videoInfo.videoWithAudioFormats();
+                        final List<VideoFormat> formatsNoSound = videoInfo.videoFormats();
+
+                        final StringBuilder buffer = new StringBuilder();
+                        buffer.append("<html><body>");
+
+                        buffer.append("<h2>With sound</h2><ul>");
+
+                        formatsWithSound.forEach(x -> {
+                            buffer.append(String.format("<li>%s %s %s <a href=\"%s\">url</a></li>",
+                                    StringEscapeUtils.escapeHtml3(x.type()),
+                                    StringEscapeUtils.escapeHtml3(x.qualityLabel()),
+                                    StringEscapeUtils.escapeHtml3(x.videoQuality().name()),
+                                    StringEscapeUtils.escapeHtml3(x.url())));
+                        });
+
+                        buffer.append("</ul>");
+
+                        buffer.append("<h2>No sound</h2><ul>");
+
+                        formatsNoSound.forEach(x -> {
+                            buffer.append(String.format("<li>%s %s %s <a href=\"%s\">url</a></li>",
+                                    StringEscapeUtils.escapeHtml3(x.type()),
+                                    StringEscapeUtils.escapeHtml3(x.qualityLabel()),
+                                    StringEscapeUtils.escapeHtml3(x.videoQuality().name()),
+                                    StringEscapeUtils.escapeHtml3(x.url())));
+                        });
+
+                        buffer.append("</ul></body></html>");
+
+                        SwingUtilities.invokeLater(() -> {
+                            final JEditorPane ed1tor = new JEditorPane("text/html", buffer.toString());
+                            ed1tor.addHyperlinkListener(e -> {
+                                if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+                                    Utils.showURLExternal(e.getURL());
+                                }
+                            });
+                            ed1tor.setEditable(false);
+                            JOptionPane.showMessageDialog(MainFrame.this, new JScrollPane(ed1tor), "Found Youtube links", JOptionPane.PLAIN_MESSAGE);
+                        });
+                    }
+
+                    @Override
+                    public void onError(final Throwable throwable) {
+                        LOGGER.error("Error during search video formats for youtube '{}'", youTubeVideoId, throwable);
+                        SwingUtilities.invokeLater(() -> {
+                            JOptionPane.showMessageDialog(MainFrame.this, "Error during search video formats for youtube: " + throwable.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                        });
+                    }
+                })
+                .async();
+        this.youTubeLinkExtractor.getYoutubeDownloader().getVideoInfo(request);
+
+    }//GEN-LAST:event_menuMiscDecodeYoutubeUrlActionPerformed
 
     public void startPlaying(@NonNull final ContentFile contentFile, @Nullable final byte[] data) {
         final Runnable run = () -> {
@@ -1425,6 +1519,8 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
     private javax.swing.JMenuItem menuHelpDonation;
     private javax.swing.JMenu menuLookAndFeel;
     private javax.swing.JMenuBar menuMain;
+    private javax.swing.JMenu menuMisc;
+    private javax.swing.JMenuItem menuMiscDecodeYoutubeUrl;
     private javax.swing.JMenuItem menuOpenFile;
     private javax.swing.JMenuItem menuOpenYoutubeLink;
     private javax.swing.JMenuItem menuSelectFolder;

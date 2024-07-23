@@ -98,6 +98,10 @@ public class YtLinkExtractor {
         }
     }
 
+    public YoutubeDownloader getYoutubeDownloader() {
+        return this.youtubeDownloader;
+    }
+    
     public void findVideoUrlAsync(
             @NonNull final String youTubeVideoId,
             @NonNull final YtQuality preferredQuality,
