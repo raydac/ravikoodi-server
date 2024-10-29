@@ -1,6 +1,7 @@
 # __1.1.12 (SNAPSHOT)__
-  - updated embedded JDK to 22+37
-  - updated Spring Boot to 3.1.10
+  - updated dependencies
+  - updated embedded JDK to 23.0.1+13
+  - updated Spring Boot to 3.1.12
 
 # __1.1.11 (25-oct-2023)__
   - minor fixes
