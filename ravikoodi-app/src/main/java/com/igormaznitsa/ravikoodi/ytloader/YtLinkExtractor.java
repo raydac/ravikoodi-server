@@ -17,6 +17,7 @@ package com.igormaznitsa.ravikoodi.ytloader;
 
 import com.github.kiulian.downloader.YoutubeDownloader;
 import com.github.kiulian.downloader.downloader.YoutubeCallback;
+import com.github.kiulian.downloader.downloader.client.ClientType;
 import com.github.kiulian.downloader.downloader.request.RequestPlaylistInfo;
 import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
 import com.github.kiulian.downloader.model.playlist.PlaylistInfo;
@@ -86,7 +87,8 @@ public class YtLinkExtractor {
                 try {
                     final PlaylistInfo playListInfo = this.youtubeDownloader.getPlaylistInfo(request).data();
                     LOGGER.info("Resolved Youtube playlist request {}, items {} ", youTubePlaylistId, playListInfo.videos().size());
-                    resultConsumer.accept(youTubePlaylistId, playListInfo, null);
+                    resultConsumer
+                            .accept(youTubePlaylistId, playListInfo, null);
                 } catch (Throwable error) {
                     LOGGER.error("Error during search youtube playlist '{}'", youTubePlaylistId, error);
                     resultConsumer.accept(youTubePlaylistId, null, error);
@@ -142,6 +144,8 @@ public class YtLinkExtractor {
                         resultConsumer.accept(youTubeVideoId, null, throwable);
                     }
                 })
+                .clientType(ClientType.WEB_PARENT_TOOLS)
+                .maxRetries(5)
                 .async();
         this.youtubeDownloader.getVideoInfo(request);
     }

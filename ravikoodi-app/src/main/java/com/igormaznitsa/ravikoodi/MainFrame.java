@@ -1,6 +1,7 @@
 package com.igormaznitsa.ravikoodi;
 
 import com.github.kiulian.downloader.downloader.YoutubeCallback;
+import com.github.kiulian.downloader.downloader.client.ClientType;
 import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.model.videos.formats.AudioFormat;
@@ -1406,6 +1407,8 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                         });
                     }
                 })
+                .clientType(ClientType.WEB_PARENT_TOOLS)
+                .maxRetries(5)
                 .async();
         this.youTubeLinkExtractor.getYoutubeDownloader().getVideoInfo(request);
 
