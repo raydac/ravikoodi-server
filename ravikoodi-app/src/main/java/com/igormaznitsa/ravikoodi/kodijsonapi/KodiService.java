@@ -189,14 +189,16 @@ public class KodiService {
     }
   }
 
-  public String doPlayerOpenPlaylist(final Playlist playlist, final Map<String, String>... options) throws Throwable {
+  @SafeVarargs
+  public final String doPlayerOpenPlaylist(final Playlist playlist,
+                                           final Map<String, String>... options) throws Throwable {
       try {
           final Map<String, String> collectedOptions = Arrays.stream(options).flatMap(x -> x.entrySet().stream()).collect(Collectors.toMap(
               Map.Entry::getKey, Map.Entry::getValue));
           return makeJsonRpcClient().invoke("Player.Open", new PlayerOpenPlaylistReq(playlist, collectedOptions), String.class);
       } catch (Exception e) {
           if (e.getMessage().contains("no response body")) {
-              LOGGER.warn("Can't get response body");
+              LOGGER.warn("Can't get response body for play list open");
               return "OK";
           } else {
               LOGGER.error("Error during Player.Open", e);

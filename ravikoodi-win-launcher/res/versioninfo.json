@@ -1,0 +1,43 @@
+{
+  "FixedFileInfo": {
+    "FileVersion": {
+      "Major": 1,
+      "Minor": 1,
+      "Patch": 12,
+      "Build": 0
+    },
+    "ProductVersion": {
+      "Major": 1,
+      "Minor": 1,
+      "Patch": 12,
+      "Build": 0
+    },
+    "FileFlagsMask": "3f",
+    "FileFlags ": "00",
+    "FileOS": "040004",
+    "FileType": "01",
+    "FileSubType": "00"
+  },
+  "StringFileInfo": {
+    "Comments": "RaviKoodi media server.",
+    "CompanyName": "Igor Maznitsa",
+    "FileDescription": "RaviKoodi launcher",
+    "FileVersion": "v1.1.12.0",
+    "InternalName": "ravikoodi.exe",
+    "LegalCopyright": "Copyright (c) 2018-2025 Igor Maznitsa",
+    "LegalTrademarks": "",
+    "OriginalFilename": "ravikoodi.exe",
+    "PrivateBuild": "",
+    "ProductName": "RaviKoodi launcher",
+    "ProductVersion": "v1.1.12.0",
+    "SpecialBuild": ""
+  },
+  "VarFileInfo": {
+    "Translation": {
+      "LangID": "0409",
+      "CharsetID": "04B0"
+    }
+  },
+  "IconPath": "../../logo.ico",
+  "ManifestPath": ""
+}

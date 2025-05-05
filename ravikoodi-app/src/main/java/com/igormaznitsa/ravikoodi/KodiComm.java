@@ -190,8 +190,11 @@ public class KodiComm {
         }
     }
 
+    @SafeVarargs
     @NonNull
-    public Optional<String> openFileThroughRegistry(@NonNull final Path path, @Nullable final byte[] data, @NonNull final Map<String,String>... options) throws Throwable {
+    public final Optional<String> openFileThroughRegistry(@NonNull final Path path,
+                                                          @Nullable final byte[] data, @NonNull
+                                                          final Map<String, String>... options) throws Throwable {
         final String uid = UUID.randomUUID().toString();
         final UploadFileRecord record = this.fileRegstry.registerFile(uid, path, data);
         final AtomicReference<Throwable> error = new AtomicReference<>();
@@ -200,13 +203,16 @@ public class KodiComm {
         return Optional.ofNullable(this.doPlayerOpenFile(fileUrl, options) ? uid : null);
     }
 
+    @SafeVarargs
     @NonNull
-    public Optional<Pair<Playlist,String>> openFileAsPlaylistThroughRegistry(@NonNull final Path path, @Nullable final byte[] data, @NonNull final Map<String,String>... options) throws Throwable {
+    public final Optional<Pair<Playlist,String>> openFileAsPlaylistThroughRegistry(
+        @NonNull final Path path, @Nullable final byte[] data,
+        @NonNull final Map<String, String>... options) throws Throwable {
         final String uid = UUID.randomUUID().toString();
         final UploadFileRecord record = this.fileRegstry.registerFile(uid, path, data);
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final String fileUrl = this.internalServer.makeUrlFor(record);
-        LOGGER.info("Opening file {} as {} through playlist, uuid={}", path, fileUrl, uid);
+        LOGGER.info("Opening file as playlist {} as {} through playlist, uuid={}", path, fileUrl, uid);
 
         final MimeTypes.MimeRecord foundMimeRecord = this.mimeTypes.getMimeRecord(path);
 
@@ -230,7 +236,7 @@ public class KodiComm {
 
         Optional<Playlist> foundTargetList = Stream.of(foundLists).filter(x -> playListType.equalsIgnoreCase(x.getType()))
             .findFirst();
-        if (!foundTargetList.isPresent()){
+        if (foundTargetList.isEmpty()){
             foundTargetList = Stream.of(foundLists).filter(x -> playListType.equalsIgnoreCase("unknown")).findFirst();
         }
         

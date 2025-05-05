@@ -1,54 +1,36 @@
 package com.igormaznitsa.ravikoodi;
 
 import com.igormaznitsa.ravikoodi.screencast.PreemptiveBuffer;
+import com.sun.net.httpserver.Headers;
+import com.sun.net.httpserver.HttpHandler;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
-import java.security.KeyStore;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
 public class InternalServer {
 
+  public static final String PATH_RESOURCES = "res";
+  public static final String PATH_VFILES = "vfile";
   private static final Logger LOGGER = LoggerFactory.getLogger(InternalServer.class);
-
-  private final AtomicReference<Server> serverRef = new AtomicReference<>();
-
+  private final AtomicReference<JavaServer> serverRef = new AtomicReference<>();
   private final UploadingFileRegistry fileRegistry;
   private final StaticFileRegistry staticFileRegistry;
   private final Map<String, UploadFileRecord> removedFileRecords = new ConcurrentHashMap<>();
@@ -56,17 +38,29 @@ public class InternalServer {
   private final PreemptiveBuffer screencastBuffer = new PreemptiveBuffer(4);
   private final List<InternalServerListener> listeners = new CopyOnWriteArrayList<>();
   private final AtomicBoolean screencastActive = new AtomicBoolean();
-
   private final AtomicReference<Throwable> lastStartServerError = new AtomicReference<>();
   
-  public static final String PATH_RESOURCES = "res";
-  public static final String PATH_VFILES = "vfile";
-  
-  public interface InternalServerListener {
+  @Autowired
+  public InternalServer(
+          final UploadingFileRegistry fileRegistry,
+          final StaticFileRegistry staticFileRegistry,
+          final ApplicationPreferences options
+  ) {
+    this.staticFileRegistry = staticFileRegistry;
+    this.fileRegistry = fileRegistry;
+    this.options = options;
+    this.fileRegistry.setRemovedRecordsStore(this.removedFileRecords);
+  }
 
-    void onScreencastStarted(@NonNull InternalServer source); 
-
-    void onScreencastEnded(@NonNull InternalServer source);
+  private static void stopServer(final JavaServer server) {
+    if (server != null) {
+      try {
+        LOGGER.info("Stopping server");
+        server.close();
+      } catch (Exception ex) {
+        LOGGER.error("Error during server stop", ex);
+      }
+    }
   }
 
   public void addListener(@NonNull final InternalServerListener listener) {
@@ -77,25 +71,13 @@ public class InternalServer {
     this.listeners.remove(listener);
   }
 
-  @Autowired
-  public InternalServer(
-          final UploadingFileRegistry fileRegistry,
-          final StaticFileRegistry staticFileRegistry,
-          final ApplicationPreferences options
-  ) {
-    this.staticFileRegistry = staticFileRegistry;  
-    this.fileRegistry = fileRegistry;
-    this.options = options;
-    this.fileRegistry.setRemovedRecordsStore(this.removedFileRecords);
-  }
-
   public PreemptiveBuffer getScreencastDataBuffer() {
     return this.screencastBuffer;
   }
 
   public boolean isStarted() {
-    final Server theServer = this.serverRef.get();
-    return theServer != null && theServer.isStarted();
+    final JavaServer theServer = this.serverRef.get();
+    return theServer != null;
   }
 
   @NonNull
@@ -128,64 +110,208 @@ public class InternalServer {
     }
   }
 
-  private void addStandardHeaders(final HttpServletResponse response, final UploadFileRecord record, final boolean head) {
-    response.setContentType(record.getMimeType());
-    response.setContentLengthLong(record.getFile().toFile().length());
-    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-    response.setHeader("Pragma", "no-cache");
-    response.setHeader("Content-Transfer-Encoding", "binary");
-    response.setHeader("Expires", "0");
+  private void addStandardHeaders(final Headers headers, final UploadFileRecord record, final boolean head) {
+    headers.set("Content-Type", record.getMimeType());
+    headers.set("Content-Length", Long.toString(record.getFile().toFile().length()));
+    headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+    headers.set("Pragma", "no-cache");
+    headers.set("Content-Transfer-Encoding", "binary");
+    headers.set("Expires", "0");
     if (!head) {
-      response.setHeader("Connection", "Keep-Alive");
-      response.setHeader("Keep-Alive", "max");
+      headers.set("Connection", "Keep-Alive");
+      headers.set("Keep-Alive", "max");
     }
-    response.setHeader("Accept-Ranges", "bytes");
+    headers.set("Accept-Ranges", "bytes");
   }
 
-  private void addScreenCastHeaders(final HttpServletResponse response, final boolean head) {
-    response.setContentType("video/MP2T");
-    response.setHeader("Cache-Control", "no-cache, no-store");
-    response.setHeader("Pragma", "no-cache");
-    response.setHeader("Transfer-Encoding", "chunked");
-    response.setHeader("Content-Transfer-Encoding", "binary");
-    response.setHeader("Expires", "0");
+  private void addScreenCastHeaders(final Headers response, final boolean head) {
+    response.set("Content-Type","video/MP2T");
+    response.set("Cache-Control", "no-cache, no-store");
+    response.set("Pragma", "no-cache");
+    response.set("Transfer-Encoding", "chunked");
+    response.set("Content-Transfer-Encoding", "binary");
+    response.set("Expires", "0");
     if (!head) {
-      response.setHeader("Connection", "Keep-Alive");
-      response.setHeader("Keep-Alive", "max");
+      response.set("Connection", "Keep-Alive");
+      response.set("Keep-Alive", "max");
     }
-    response.setHeader("Accept-Ranges", "none");
+    response.set("Accept-Ranges", "none");
   }
 
   public boolean isScreencastFlowActive() {
     return this.screencastActive.get();
   }
 
-  
+  private HttpHandler makeHandler() {
+    return exchange -> {
+        LOGGER.info("Incoming request {} {}", exchange.getRequestMethod(), exchange.getRequestURI().toString());
+
+        String preparedTarget = exchange.getRequestURI().toString();
+        if (preparedTarget.contains("?")) {
+          preparedTarget = preparedTarget.substring(0, preparedTarget.indexOf("?"));
+        }
+
+        final List<String> path = Stream.of(preparedTarget.split("\\/")).toList();
+        final String pathLast = !path.isEmpty() ? path.get(path.size()-1) : null;
+        final String pathPreLast = path.size() > 1 ? path.get(path.size()-2) : null;
+        final String pathPrePreLast = path.size() > 2 ? path.get(path.size()-3) : null;
+
+        if ("screen-cast.ts".equals(pathLast)) {
+          if ("head".equalsIgnoreCase(exchange.getRequestMethod())) {
+            addScreenCastHeaders(exchange.getResponseHeaders(), true);
+            exchange.sendResponseHeaders(200, -1);
+          } else if ("get".equalsIgnoreCase(exchange.getRequestMethod())) {
+            addScreenCastHeaders(exchange.getResponseHeaders(), false);
+            LOGGER.info("Starting screen cast retranslation");
+            exchange.sendResponseHeaders(200, -1);
+            final OutputStream out = exchange.getResponseBody();
+            boolean waitDataEndDetected = false;
+            try {
+              screencastActive.set(true);
+              screencastBuffer.clear();
+              screencastBuffer.start();
+              final long MAX_WAIT_DATA_MS = 15000;
+              long waitDataEnd = System.currentTimeMillis() + MAX_WAIT_DATA_MS;
+              while (!Thread.currentThread().isInterrupted()) {
+                final byte[] next = screencastBuffer.next();
+                if (next == null) {
+                  if (waitDataEnd < System.currentTimeMillis()) {
+                    LOGGER.warn("There is no screen cast data longer than " + (MAX_WAIT_DATA_MS / 1000L) + " sec, stopping");
+                    waitDataEndDetected = true;
+                    break;
+                  }
+                } else {
+                  screencastActive.set(true);
+                  if (next.length > 0) {
+                    try {
+                      out.write(next);
+                      out.flush();
+                    } catch (IOException ex) {
+                      break;
+                    } finally {
+                      waitDataEnd = System.currentTimeMillis() + MAX_WAIT_DATA_MS;
+                    }
+                  }
+                }
+              }
+            } finally {
+              screencastActive.set(false);
+              LOGGER.info("Screen cast retranslation ended, waitDataEnd={}, thread interrupted = {}", waitDataEndDetected, Thread.currentThread().isInterrupted());
+              listeners.forEach(x -> x.onScreencastEnded(InternalServer.this));
+            }
+          }
+        } else if (PATH_VFILES.equals(pathPrePreLast) || PATH_RESOURCES.equals(pathPreLast)) {
+
+          final boolean staticResource = PATH_RESOURCES.equals(pathPreLast);
+          final String uid = staticResource ? pathLast : pathPreLast;
+
+          final UploadFileRecord record;
+
+          if (staticResource) {
+            LOGGER.info("Request for static file resource: {}", uid);
+            record = staticFileRegistry.findFile(uid).orElse(null);
+          } else {
+            UploadFileRecord rec = fileRegistry.find(uid);
+            if (rec == null) {
+              final UploadFileRecord removedRecord = removedFileRecords.remove(uid);
+              if (removedRecord != null) {
+                LOGGER.info("found among removed streams, restoring: {}", uid);
+                rec = fileRegistry.restoreRecord(removedRecord);
+              }
+            }
+            record = rec;
+          }
+
+          if (record == null) {
+            LOGGER.warn("Request for non-registered file {}", uid);
+            exchange.sendResponseHeaders(404, -1);
+          } else {
+            record.incUploadsCounter();
+            try {
+              if ("head".equalsIgnoreCase(exchange.getRequestMethod())) {
+                addStandardHeaders(exchange.getResponseHeaders(), record, true);
+                exchange.sendResponseHeaders(200, -1);
+              } else if ("get".equalsIgnoreCase(exchange.getRequestMethod())) {
+
+                final long fileSize = record.getPredefinedData().isPresent() ? record.getPredefinedData().get().length : Files.size(record.getFile());
+                final HttpRange range = new HttpRange(exchange.getRequestHeaders().getFirst("Range"), fileSize);
+
+                addStandardHeaders(exchange.getResponseHeaders(), record, false);
+
+                if (range.getStart() > fileSize || range.getStart() > range.getEnd() || range.getEnd() > fileSize) {
+                  exchange.sendResponseHeaders(416,  -1);
+                  return;
+                } else if (range.getStart() > 0 || range.getEnd() < (fileSize - 1)) {
+                  LOGGER.info("Request for {}, range {}", uid, range);
+                  exchange.getResponseHeaders().set("Content-Range", range.toStringForHeader());
+                  exchange.sendResponseHeaders(206,range.getLength());
+                } else {
+                  exchange.sendResponseHeaders(200, fileSize);
+                }
+
+                final OutputStream out = exchange.getResponseBody();
+                final byte[] buffer = new byte[64 * 1024];
+
+                try (final InputStream in = record.getAsInputStream()) {
+                  long pos = range.getStart();
+
+                  if (pos != in.skip(pos)) {
+                    exchange.sendResponseHeaders(500, -1);
+                    LOGGER.error("Can't skip {} bytes in file", pos);
+                    return;
+                  }
+
+                  LOGGER.info("Start sending data for {} ({}) to device, requested range = {}, expected length = {} bytes", uid, record.getFile(), range, range.getLength());
+
+                  while (pos <= range.getEnd() && !Thread.currentThread().isInterrupted()) {
+                    final long rangeEndPos = range.getEnd() - pos + 1;
+                    final int read = in.read(buffer, 0, Math.min(rangeEndPos > (long)Integer.MAX_VALUE ? buffer.length : (int) rangeEndPos, buffer.length));
+                    if (read < 0) {
+                      break;
+                    }
+                    out.write(buffer, 0, read);
+                    out.flush();
+                    pos += read;
+                  }
+                }
+                LOGGER.info("Complete '{}' writing in range {}", uid, range);
+              } else {
+                LOGGER.warn("Bad request : {}", exchange.getRequestURI());
+                exchange.sendResponseHeaders(400, -1);
+              }
+            } finally {
+              record.decUploadsCounter();
+            }
+          }
+        } else {
+          LOGGER.warn("Unsupported request {}", exchange.getRequestURI());
+          exchange.sendResponseHeaders(405, -1);
+        }
+    };
+  }
   
   @NonNull
   public String getHost() {
     String result = "";
-    final Server currentServer = this.serverRef.get();
+    final JavaServer currentServer = this.serverRef.get();
     if (currentServer != null) {
-      final Optional<ServerConnector> serverConnector = Stream.of(currentServer.getConnectors()).filter(x -> x instanceof ServerConnector).map(x -> (ServerConnector)x).findFirst();
-      result = serverConnector.isPresent()? serverConnector.get().getHost() : "<server_inactive>";
+      result = currentServer.getHost();
     }
     return result;
   }
   
   public int getPort() {
     int result = -1;
-    final Server currentServer = this.serverRef.get();
+    final JavaServer currentServer = this.serverRef.get();
     if (currentServer != null) {
-      final Optional<ServerConnector> serverConnector = Stream.of(currentServer.getConnectors()).filter(x -> x instanceof ServerConnector).map(x -> (ServerConnector) x).findFirst();
-      result = serverConnector.isPresent() ? serverConnector.get().getLocalPort() : -1;
+      result = currentServer.getPort();
     }
     return result;
   }
   
   @PostConstruct
   public void restartServer() {
-    Server theServer = this.serverRef.getAndSet(null);
+    JavaServer theServer = this.serverRef.getAndSet(null);
     stopServer(theServer);
 
     this.fileRegistry.clear();
@@ -195,215 +321,8 @@ public class InternalServer {
 
     LOGGER.info("Starting server on {}:{}", host, port);
 
-    theServer = new Server(new QueuedThreadPool(8, 2, 30000));
-
-    final HttpConfiguration httpConfiguration = new HttpConfiguration();
-    final SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer();
-    secureRequestCustomizer.setSniHostCheck(false);
-    httpConfiguration.addCustomizer(secureRequestCustomizer);
-    
-    final ServerConnector connector;
-    if (this.options.isServerSsl()) {
-      final SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-      sslContextFactory.setSniRequired(false);
-      sslContextFactory.setTrustAll(true);
-      sslContextFactory.setExcludeCipherSuites("");
-      
-      try (final InputStream keyStoreStream = Objects.requireNonNull(new ClassPathResource("jks/selfsigned.jks").getInputStream())) {
-          LOGGER.info("Loading certificate store");
-          final String key = "someSecretKey";
-
-          final KeyStore keyStore = KeyStore.getInstance("JKS");
-          keyStore.load(keyStoreStream, key.toCharArray());
-
-          sslContextFactory.setKeyStore(keyStore);
-          sslContextFactory.setTrustStore(keyStore);
-          sslContextFactory.setKeyManagerPassword(key);
-          sslContextFactory.setKeyStorePassword(key);
-          sslContextFactory.setTrustStorePassword(key);
-          sslContextFactory.setCertAlias("jetty");
-
-          LOGGER.info("Certificate store has been loaded from internal JKS store");
-      } catch (Exception ex) {
-          LOGGER.error("Can't generate self-signed certificate, see log!", ex);
-      }
-
-      connector = new ServerConnector(theServer, 
-              new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()), 
-              new HttpConnectionFactory(httpConfiguration));
-    } else {
-      connector = new ServerConnector(theServer, new HttpConnectionFactory(httpConfiguration));
-    }
-
-    connector.setHost(host);
-    connector.setPort(port);
-    theServer.addConnector(connector);
-
-    final Handler handler = new DefaultHandler() {
-      @Override
-      public void handle(
-              String target,
-              Request baseRequest,
-              HttpServletRequest request,
-              HttpServletResponse response
-      ) throws IOException, ServletException {
-        try {
-          LOGGER.info("Incoming request {} {}", request.getMethod(), target);
-          response.setBufferSize(32 * 1024);
-          
-          String preparedTarget = target;
-          if (target.contains("?")) {
-              preparedTarget = target.substring(0, target.indexOf("?"));
-          }
-          
-          final List<String> path = Stream.of(preparedTarget.split("\\/")).collect(Collectors.toList());
-          final String pathLast = path.size() > 0 ? path.get(path.size()-1) : null;
-          final String pathPreLast = path.size() > 1 ? path.get(path.size()-2) : null;
-          final String pathPrePreLast = path.size() > 2 ? path.get(path.size()-3) : null;
-          
-          if ("screen-cast.ts".equals(pathLast)) {
-            if ("head".equalsIgnoreCase(request.getMethod())) {
-              addScreenCastHeaders(response, true);
-              response.setStatus(HttpServletResponse.SC_OK);
-            } else if ("get".equalsIgnoreCase(request.getMethod())) {
-              addScreenCastHeaders(response, false);
-              LOGGER.info("Starting screen cast retranslation");
-              response.setStatus(HttpServletResponse.SC_OK);
-              final OutputStream out = response.getOutputStream();
-              boolean waitDataEndDetected = false;
-              try {
-                screencastActive.set(true);
-                screencastBuffer.clear();
-                screencastBuffer.start();
-                final long MAX_WAIT_DATA_MS = 15000;
-                long waitDataEnd = System.currentTimeMillis() + MAX_WAIT_DATA_MS;
-                while (!Thread.currentThread().isInterrupted()) {
-                  final byte[] next = screencastBuffer.next();
-                  if (next == null) {
-                    if (waitDataEnd < System.currentTimeMillis()) {
-                      LOGGER.warn("There is no screen cast data longer than " + (MAX_WAIT_DATA_MS / 1000L) + " sec, stopping");
-                      waitDataEndDetected = true;
-                      break;
-                    }
-                  } else {
-                    screencastActive.set(true);
-                    if (next.length > 0) {
-                      try {
-                        out.write(next);
-                        out.flush();
-                      } catch (IOException ex) {
-                        break;
-                      } finally {
-                        waitDataEnd = System.currentTimeMillis() + MAX_WAIT_DATA_MS;
-                      }
-                    }
-                  }
-                }
-              } finally {
-                screencastActive.set(false);
-                LOGGER.info("Screen cast retranslation ended, waiDatdEnd={}, thread interrupted = {}", waitDataEndDetected, Thread.currentThread().isInterrupted());
-                listeners.forEach(x -> x.onScreencastEnded(InternalServer.this));
-              }
-            }
-          } else if (PATH_VFILES.equals(pathPrePreLast) || PATH_RESOURCES.equals(pathPreLast)) {
-
-            final boolean staticResiource = PATH_RESOURCES.equals(pathPreLast);  
-            final String uid = staticResiource ? pathLast : pathPreLast;
-            
-            final UploadFileRecord record;
-            
-            if (staticResiource) {
-                LOGGER.info("Request for static file resource: {}", uid);
-                record = staticFileRegistry.findFile(uid).orElse(null);
-            } else {
-                UploadFileRecord rec = fileRegistry.find(uid);
-                if (rec == null) {
-                    final UploadFileRecord removedRecord = removedFileRecords.remove(uid);
-                    if (removedRecord != null) {
-                        LOGGER.info("found among removed streams, restoring: {}", uid);
-                        rec = fileRegistry.restoreRecord(removedRecord);
-                    }
-                }
-                record = rec;
-            }
-
-            if (record == null) {
-              LOGGER.warn("Request for non-registered file {}", uid);
-              response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            } else {
-              record.incUploadsCounter();
-              try {
-                if ("head".equalsIgnoreCase(request.getMethod())) {
-                  addStandardHeaders(response, record, true);
-                  response.setStatus(HttpServletResponse.SC_OK);
-                } else if ("get".equalsIgnoreCase(request.getMethod())) {
-
-                  final long fileSize = record.getPredefinedData().isPresent() ? record.getPredefinedData().get().length : Files.size(record.getFile());
-                  final HttpRange range = new HttpRange(request.getHeader("Range"), fileSize);
-
-                  addStandardHeaders(response, record, false);
-
-                  if (range.getStart() > fileSize || range.getStart() > range.getEnd() || range.getEnd() > fileSize) {
-                    response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
-                    return;
-                  } else if (range.getStart() > 0 || range.getEnd() < (fileSize - 1)) {
-                    LOGGER.info("Request for {}, range {}", uid, range);
-                    response.setContentLengthLong(range.getLength());
-                    response.setHeader("Content-Range", range.toStringForHeader());
-                    response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-                  } else {
-                    response.setContentLengthLong(fileSize);
-                    response.setStatus(HttpServletResponse.SC_OK);
-                  }
-
-                  final OutputStream out = response.getOutputStream();
-
-                  final byte[] buffer = new byte[64 * 1024];
-
-                  try (final InputStream in = record.getAsInputStream()) {
-                    long pos = range.getStart();
-
-                    if (pos != in.skip(pos)) {
-                      response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                      LOGGER.error("Can't skip {} bytes in file", pos);
-                      return;
-                    }
-
-                    LOGGER.info("Start sending data for {} ({}) to device, requested range = {}, expected length = {} bytes", uid, record.getFile(), range, range.getLength());
-
-                    while (pos <= range.getEnd() && !Thread.currentThread().isInterrupted()) {
-                      final long rangeEndPos = range.getEnd() - pos + 1;
-                      final int read = in.read(buffer, 0, Math.min(rangeEndPos > (long)Integer.MAX_VALUE ? buffer.length : (int) rangeEndPos, buffer.length));
-                      if (read < 0) {
-                        break;
-                      }
-                      out.write(buffer, 0, read);
-                      out.flush();
-                      pos += read;
-                    }
-                  }
-                  LOGGER.info("Complete '{}' writing in range {}", uid, range);
-                } else {
-                  LOGGER.warn("Bad request : {}", request);
-                  response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                }
-              } finally {
-                record.decUploadsCounter();
-              }
-            }
-          } else {
-            LOGGER.warn("Unsupported request {}", target);
-            response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-          }
-        } finally {
-          baseRequest.setHandled(true);
-        }
-      }
-    };
-
-    theServer.setHandler(handler);
-
     try {
+      theServer = new JavaServer(this.options.getServerHost(), this.options.getServerPort(), this.options.isServerSsl(), makeHandler());
       this.lastStartServerError.set(null);
       if (this.serverRef.compareAndSet(null, theServer)) {
         theServer.start();
@@ -424,25 +343,21 @@ public class InternalServer {
     return this.lastStartServerError.get();
   }
   
-  private static void stopServer(final Server server) {
-    if (server != null) {
-      try {
-        LOGGER.info("Stopping server");
-        server.stop();
-      } catch (Exception ex) {
-        LOGGER.error("Error during server stop", ex);
-      }
-    }
-  }
-
   @PreDestroy
   public void preDestroy() throws Exception {
     LOGGER.info("Destroying server");
-    final Server theServer = this.serverRef.getAndSet(null);
+    final JavaServer theServer = this.serverRef.getAndSet(null);
     if (theServer == null) {
       LOGGER.info("Server was not started");
     } else {
-      theServer.stop();
+      theServer.close();
     }
+  }
+
+  public interface InternalServerListener {
+
+    void onScreencastStarted(@NonNull InternalServer source);
+
+    void onScreencastEnded(@NonNull InternalServer source);
   }
 }
