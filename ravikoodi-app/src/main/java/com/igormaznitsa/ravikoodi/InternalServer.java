@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,7 +152,7 @@ public class InternalServer {
           preparedTarget = preparedTarget.substring(0, preparedTarget.indexOf("?"));
         }
 
-        final List<String> path = Stream.of(preparedTarget.split("\\/")).toList();
+        final List<String> path = Stream.of(preparedTarget.split("\\/")).collect(Collectors.toList());
         final String pathLast = !path.isEmpty() ? path.get(path.size()-1) : null;
         final String pathPreLast = path.size() > 1 ? path.get(path.size()-2) : null;
         final String pathPrePreLast = path.size() > 2 ? path.get(path.size()-3) : null;
