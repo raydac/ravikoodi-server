@@ -74,10 +74,29 @@
                             <rules>
                                 <dependencyConvergence/>
                                 <banDuplicatePomDependencyVersions/>
+                                <banCircularDependencies/>
+                                <reactorModuleConvergence/>
+                                <enforceBytecodeVersion>
+                                    <maxJdkVersion>${maven.compiler.release}</maxJdkVersion>
+                                    <ignoredScopes>
+                                        <ignoredScope>test</ignoredScope>
+                                        <ignoredScope>system</ignoredScope>
+                                    </ignoredScopes>
+                                </enforceBytecodeVersion>
+                                <requireJavaVersion>
+                                    <version>${maven.compiler.target}</version>
+                                </requireJavaVersion>
                             </rules>
                         </configuration>
                     </execution>
                 </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>extra-enforcer-rules</artifactId>
+                        <version>1.9.0</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>    
     </build>    
