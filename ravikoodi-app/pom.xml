@@ -163,7 +163,7 @@
                                 <configuration>
                                     <outfile>${project.build.directory}${file.separator}${app.name}.exe</outfile>
                                     <jre>
-                                        <minVersion>19</minVersion>
+                                        <minVersion>17</minVersion>
                                         <jdkPreference>preferJdk</jdkPreference>
                                     </jre>
                                 </configuration>
