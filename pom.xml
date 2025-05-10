@@ -5,7 +5,7 @@
 
     <groupId>com.igormaznitsa</groupId>
     <artifactId>ravikoodi</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.2.0</version>
     <packaging>pom</packaging>
 
     <description>Server to broadcast media content to KODI compatible media players</description>

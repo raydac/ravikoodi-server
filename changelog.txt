@@ -1,4 +1,4 @@
-# __1.2.0 (SNAPSHOT)__
+# __1.2.0 (10-may-2025)__
   - minimal required Java lifted up to 17
   - Jetty server replaced by embedded Java HTTP server
   - updated Spring Boot to 3.4.5

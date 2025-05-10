@@ -6,19 +6,18 @@
 [![YooMoney donation](https://img.shields.io/badge/donation-Yoo.money-blue.svg)](https://yoomoney.ru/to/41001158080699)
 
 # Changelog
+- __1.2.0 (10-may-2025)__
+  - minimal required Java lifted up to 17
+  - Jetty server replaced by embedded Java HTTP server
+  - updated Spring Boot to 3.4.5
+  - updated dependencies
+  - updated embedded JDK to 24.0.1+11
 
 - __1.1.11 (25-oct-2023)__
   - minor fixes
   - added direct URL link open mode for Youtube links
   - updated embedded JDK to 21.0.1+12
   - updated Spring Boot to 3.1.5
-
-- __1.1.10 (05-jan-2023)__
-  - minor fixes
-  - added AppImage version
-  - windows launcher moved from i386 to amd64
-  - updated embedded JDK to 19.0.1+11
-  - updated Spring Boot to 3.0.1
 
 [Full changelog](changelog.txt)
 
@@ -30,14 +29,14 @@ At home I use [Raspberry PI 3](https://www.raspberrypi.org/products/raspberry-pi
 
 ## Pre-built versions
 
-| OS                                           |  Download link                                                                                                                                                                                | 
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![Windows](assets/icons/win64x64.png)        | __[Application for Windows amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.11/ravikoodi-app-1.1.11-windows-jdk-amd64.zip)__           |
-| ![OSX](assets/icons/macos64x64.png)          | __[Application for OSX amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.11/ravikoodi-app-1.1.11-macos-jdk-amd64.zip)__                 |
-| ![OSX Arm64](assets/icons/macosarm64x64.png) | __[Application for OSX aarch64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.11/ravikoodi-app-1.1.11-macos-jdk-aarch64.zip)__             |
-| ![Linux](assets/icons/linux64x64.png)        | __[Application TAR.GZ for Linux amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.11/ravikoodi-app-1.1.11-linux-jdk-amd64.tar.gz)__     |
-| ![Linux](assets/icons/appimage64x64.png)     | __[Application AppImage for Linux amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.1.11/ravikoodi-app-1.1.11-x86_64.AppImage)__          |
-| ![Java](assets/icons/java64x64.png)          | __[Application, cross-platform JAR file](https://github.com/raydac/ravikoodi-server/releases/download/1.1.11/ravikoodi-app-1.1.11.jar)__                                     | 
+| OS                                           | Download link                                                                                                                                                          | 
+| -------------------------------------------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ![Windows](assets/icons/win64x64.png)        | __[Application for Windows amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.2.0/ravikoodi-app-1.2.0-windows-jdk-amd64.zip)__       |
+| ![OSX](assets/icons/macos64x64.png)          | __[Application for OSX amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.2.0/ravikoodi-app-1.2.0-macos-jdk-amd64.zip)__             |
+| ![OSX Arm64](assets/icons/macosarm64x64.png) | __[Application for OSX aarch64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.2.0/ravikoodi-app-1.2.0-macos-jdk-aarch64.zip)__         |
+| ![Linux](assets/icons/linux64x64.png)        | __[Application TAR.GZ for Linux amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.2.0/ravikoodi-app-1.2.0-linux-jdk-amd64.tar.gz)__ |
+| ![Linux](assets/icons/appimage64x64.png)     | __[Application AppImage for Linux amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.2.0/ravikoodi-app-1.2.0-x86_64.AppImage)__      |
+| ![Java](assets/icons/java64x64.png)          | __[Application, cross-platform JAR file](https://github.com/raydac/ravikoodi-server/releases/download/1.2.0/ravikoodi-app-1.2.0.jar)__                                 | 
 
 
 You can just load needed archive, unpack in a folder and start its executable file.

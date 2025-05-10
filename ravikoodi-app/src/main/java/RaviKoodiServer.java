@@ -1,6 +1,3 @@
-package com.igormaznitsa.ravikoodi;
-
-
 import com.igormaznitsa.ravikoodi.ApplicationPreferences;
 import java.io.PrintStream;
 import org.springframework.boot.WebApplicationType;
