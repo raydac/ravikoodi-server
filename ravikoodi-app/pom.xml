@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.igormaznitsa</groupId>
         <artifactId>ravikoodi</artifactId>
-        <version>1.2.0</version>
+        <version>1.2.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>ravikoodi-app</artifactId>
@@ -141,8 +141,8 @@
                                 <mutexName>ravikoodi</mutexName>
                             </singleInstance>
                             <versionInfo>
-                                <fileVersion>1.2.0.0</fileVersion>
-                                <productVersion>1.2.0.0</productVersion>
+                                <fileVersion>1.2.1.0</fileVersion>
+                                <productVersion>1.2.1.0</productVersion>
                                 <txtFileVersion>${project.version}</txtFileVersion>
                                 <fileDescription>RaviKoodi communication server for Kodi player</fileDescription>
                                 <copyright>2018-2025 Igor Maznitsa</copyright>
