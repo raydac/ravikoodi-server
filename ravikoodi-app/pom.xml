@@ -666,7 +666,7 @@
         <dependency>
             <groupId>com.github.sealedtx</groupId>
             <artifactId>java-youtube-downloader</artifactId>
-            <version>3.3.0</version>
+            <version>3.3.1</version>
         </dependency>
 
         <dependency>
