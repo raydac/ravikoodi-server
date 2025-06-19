@@ -1,5 +1,5 @@
 # __1.2.1 (SNAPSHOT)__
-  -
+  - improved Youtube video ID extractor
 
 # __1.2.0 (10-may-2025)__
   - minimal required Java lifted up to 17

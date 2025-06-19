@@ -6,6 +6,10 @@
 [![YooMoney donation](https://img.shields.io/badge/donation-Yoo.money-blue.svg)](https://yoomoney.ru/to/41001158080699)
 
 # Changelog
+
+- __1.2.1 (SNAPSHOT)__
+  - improved Youtube video ID extraction
+
 - __1.2.0 (10-may-2025)__
   - minimal required Java lifted up to 17
   - Jetty server replaced by embedded Java HTTP server
