@@ -9,6 +9,8 @@
 
 - __1.2.1 (SNAPSHOT)__
   - improved Youtube video ID extraction
+  - updated Spring Boot to 3.5.6
+  - updated embedded JDK to 25+37
 
 - __1.2.0 (10-may-2025)__
   - minimal required Java lifted up to 17
@@ -16,12 +18,6 @@
   - updated Spring Boot to 3.4.5
   - updated dependencies
   - updated embedded JDK to 24.0.1+11
-
-- __1.1.11 (25-oct-2023)__
-  - minor fixes
-  - added direct URL link open mode for Youtube links
-  - updated embedded JDK to 21.0.1+12
-  - updated Spring Boot to 3.1.5
 
 [Full changelog](changelog.txt)
 
