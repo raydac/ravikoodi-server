@@ -29,8 +29,8 @@ public class DonationController {
   private final Logger LOGGER = LoggerFactory.getLogger(DonationController.class);
   
   public enum Provider {
-    PAYPAL("https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=AHWJHJFBAWGL2"),
-    YOO_MONEY("https://img.shields.io/badge/donation-Yoo.money-blue.svg)](https://yoomoney.ru/to/41001158080699");
+    PAYPAL("https://www.arthursacresanimalsanctuary.org/donate"),
+    YOO_MONEY("https://www.arthursacresanimalsanctuary.org/donate");
 
     private final URL url;
 
