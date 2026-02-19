@@ -22,3 +22,4 @@ nbactions.xml
 *.syso
 versioninfo.go
 *.snap
+ravikoodi-win-launcher/.build/

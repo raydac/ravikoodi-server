@@ -30,8 +30,8 @@
     <properties>
         <embedded.jdk.provider>BELLSOFT</embedded.jdk.provider>
         <embedded.jdk.type>jdk</embedded.jdk.type>
-        <embedded.jdk.version>25+37</embedded.jdk.version>
-        <spring.boot.version>3.5.6</spring.boot.version>
+        <embedded.jdk.version>25.0.2+12</embedded.jdk.version>
+        <spring.boot.version>4.0.2</spring.boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <app.name>${project.build.finalName}</app.name>
@@ -95,7 +95,7 @@
                     <plugin>
                         <groupId>de.perdian.maven.plugins</groupId>
                         <artifactId>macosappbundler-maven-plugin</artifactId>
-                        <version>1.21.1</version>
+                        <version>1.21.2</version>
                         <configuration>
                             <plist>
                                 <CFBundleIconFile>appico.icns</CFBundleIconFile>
@@ -125,7 +125,7 @@
                     <plugin>
                         <groupId>com.akathist.maven.plugins.launch4j</groupId>
                         <artifactId>launch4j-maven-plugin</artifactId>
-                        <version>2.6.0</version>
+                        <version>2.7.0</version>
                         <configuration>
                             <headerType>gui</headerType>
                             <outfile>${project.build.directory}/${app.name}.exe</outfile>
@@ -145,7 +145,7 @@
                                 <productVersion>1.2.1.0</productVersion>
                                 <txtFileVersion>${project.version}</txtFileVersion>
                                 <fileDescription>RaviKoodi communication server for Kodi player</fileDescription>
-                                <copyright>2018-2025 Igor Maznitsa</copyright>
+                                <copyright>2018-2026 Igor Maznitsa</copyright>
                                 <txtProductVersion>${project.version}</txtProductVersion>
                                 <productName>${project.name}</productName>
                                 <companyName>igormaznitsa.com</companyName>
@@ -173,7 +173,7 @@
                     <plugin>
                         <groupId>com.igormaznitsa</groupId>
                         <artifactId>mvn-jlink-wrapper</artifactId>
-                        <version>1.2.4</version>
+                        <version>1.2.5</version>
                         <executions>
                             <execution>
                                 <id>cache-work-jdk</id>
@@ -681,6 +681,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-jackson2</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
         </dependency>
@@ -691,7 +696,7 @@
         <dependency>
             <groupId>com.github.briandilley.jsonrpc4j</groupId>
             <artifactId>jsonrpc4j</artifactId>
-            <version>1.6</version>
+            <version>1.7</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -738,7 +743,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>3.14.1</version>
             </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -746,7 +751,6 @@
                 <version>${spring.boot.version}</version>
                 <configuration>
                     <finalName>${project.build.finalName}${final.ext}</finalName>
-                    <executable>${executable.jar}</executable>
                 </configuration>
                 <executions>
                     <execution>

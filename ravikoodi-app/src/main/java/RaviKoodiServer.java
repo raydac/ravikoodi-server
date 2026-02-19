@@ -3,9 +3,11 @@ import java.io.PrintStream;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.env.Environment;
 import org.springframework.lang.NonNull;
 
+@ComponentScan(basePackages = "com.igormaznitsa.ravikoodi")
 @SpringBootApplication
 public class RaviKoodiServer {
 

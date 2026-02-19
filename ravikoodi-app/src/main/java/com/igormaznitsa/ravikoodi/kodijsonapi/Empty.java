@@ -1,7 +1,7 @@
 package com.igormaznitsa.ravikoodi.kodijsonapi;
 
 import lombok.NoArgsConstructor;
-import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson2.JsonComponent;
 
 @JsonComponent
 @NoArgsConstructor(force = true)
