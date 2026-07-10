@@ -6,17 +6,15 @@
 
 # Changelog
 
+- __1.2.2 (SNAPSHOT)__
+  - updated embedded JDK to 26.0.1+10
+  - updated Spring Boot to 4.1.0
+  - updated dependencies
+
 - __1.2.1 (19-feb-2026)__
   - improved Youtube video ID extraction
   - updated Spring Boot to 4.0.2
   - updated embedded JDK to 25.0.2+12
-
-- __1.2.0 (10-may-2025)__
-  - minimal required Java lifted up to 17
-  - Jetty server replaced by embedded Java HTTP server
-  - updated Spring Boot to 3.4.5
-  - updated dependencies
-  - updated embedded JDK to 24.0.1+11
 
 [Full changelog](changelog.txt)
 

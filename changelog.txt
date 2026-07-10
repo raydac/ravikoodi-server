@@ -1,4 +1,9 @@
-# __1.2.1 (SNAPSHOT)__
+# __1.2.2 (SNAPSHOT)__
+  - updated embedded JDK to 26.0.1+10
+  - updated Spring Boot to 4.1.0
+  - updated dependencies
+
+# __1.2.1 (19-feb-2026)__
   - improved Youtube video ID extractor
   - updated embedded JDK to 25+37
   - updated Spring Boot to 3.5.6
