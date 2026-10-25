@@ -1,14 +1,16 @@
 package com.igormaznitsa.ravikoodi;
 
+import static com.igormaznitsa.ravikoodi.ContentTreeItem.CONTENT_ITEM_COMPARATOR;
+import static com.igormaznitsa.ravikoodi.Utils.isBlank;
+import static javax.swing.tree.TreeSelectionModel.SINGLE_TREE_SELECTION;
+
 import com.github.kiulian.downloader.downloader.YoutubeCallback;
 import com.github.kiulian.downloader.downloader.client.ClientType;
 import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.model.videos.formats.AudioFormat;
 import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
-import static com.igormaznitsa.ravikoodi.ContentTreeItem.CONTENT_ITEM_COMPARATOR;
 import com.igormaznitsa.ravikoodi.MimeTypes.ContentType;
-import static com.igormaznitsa.ravikoodi.Utils.isBlank;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ActivePlayerInfo;
 import com.igormaznitsa.ravikoodi.kodijsonapi.KodiService;
 import com.igormaznitsa.ravikoodi.prefs.StaticResource;
@@ -36,7 +38,6 @@ import java.awt.datatransfer.FlavorListener;
 import java.awt.datatransfer.Transferable;
 import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetAdapter;
 import java.awt.dnd.DropTargetDropEvent;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
@@ -58,6 +59,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -65,8 +67,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import javax.swing.ButtonGroup;
@@ -90,7 +90,6 @@ import javax.swing.event.TreeSelectionEvent;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
-import static javax.swing.tree.TreeSelectionModel.SINGLE_TREE_SELECTION;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
@@ -377,90 +376,105 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
                 }
             });
 
-            final DropTarget dropTarget = new DropTarget(this.panelMain, new DropTargetAdapter() {
-                @Override
-                public void drop(final DropTargetDropEvent dtde) {
-                    onMainPanelDropEvent(dtde);
-                }
-            });
-            this.panelMain.setDropTarget(dropTarget);
+            DroppedLink.registerBrowserFlavors();
+            this.installDropTarget(this.panelMain);
+            this.installDropTarget(this);
         });
+    }
+
+    private void installDropTarget(final Component component) {
+        new DropTarget(component, DnDConstants.ACTION_COPY_OR_MOVE,
+            DroppedLink.listener(this::onMainPanelDropEvent), true);
     }
 
     private void onMainPanelDropEvent(@NonNull final DropTargetDropEvent event) {
         final Transferable transferable = event.getTransferable();
-
+        boolean completed = false;
         try {
-            if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-                event.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
-                final List<File> files = (List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
-                if (files.isEmpty()) {
-                    LOGGER.warn("File list is empty, check for string");
-                    if (transferable.isDataFlavorSupported(DataFlavor.stringFlavor)) {
-                        final String stringValue = (String) transferable.getTransferData(DataFlavor.stringFlavor);
-                        LOGGER.info("Extracted string from transferable: {}", stringValue);
-                        final Pattern filePattern = Pattern.compile("\\s*([\\S]+)\\s*.*");
-                        final Matcher matcher = filePattern.matcher(stringValue);
-                        if (matcher.find()) {
-                            String filePath = matcher.group(1);
-                            if (filePath.toLowerCase(Locale.ENGLISH).startsWith("smb://") && filePath.contains("%")) {
-                                LOGGER.info("Decoding SAMBA path: {}", filePath);
-                                filePath = URLDecoder.decode(filePath, StandardCharsets.UTF_8);
-                            }
-                            LOGGER.info("Opening file path as URI: {}", filePath);
-                            this.openUrlLink(filePath);
-                        } else {
-                            LOGGER.error("Can't extract file path from: {}", stringValue);
-                        }
-                    } else {
-                        LOGGER.warn("String non among transferable flawors: {}", (Object) transferable.getTransferDataFlavors());
-                    }
-                } else {
-                    LOGGER.info("Detected drop action for file list: {}", files);
-                    final File fileToOpen = files.get(0);
-                    if (fileToOpen.isFile()) {
-                        final URI uri = extractUrlLinkFromFile(fileToOpen);
-                        if (uri == null) {
-                            LOGGER.info("Opening file: {}", fileToOpen);
-                            startPlaying(new ContentFile(fileToOpen.toPath(), ContentType.findType(fileToOpen)), null);
-                        } else {
-                            final String link = uri.toASCIIString();
-                            final String lowerCased = link.toLowerCase(Locale.ENGLISH);
-                            LOGGER.info("Detected URI to be opened: {}", link);
-                            if (lowerCased.contains("youtu.be") || lowerCased.contains("youtube")) {
-                                LOGGER.info("Dropped URI recognized as Youtube one: {}", link);
-                                this.openYoutubeLink(link);
-                            } else {
-                                LOGGER.info("Dropped URI recognized as regular one: {}", link);
-                                this.openUrlLink(uri.toASCIIString());
-                            }
-                        }
-                    }
-                }
-            } else if (transferable.isDataFlavorSupported(DataFlavor.stringFlavor)) {
-                event.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
-                final String droppedLink = ((String) transferable.getTransferData(DataFlavor.stringFlavor)).trim();
+            final int action = event.getDropAction() == DnDConstants.ACTION_NONE
+                ? DnDConstants.ACTION_COPY
+                : event.getDropAction();
+            event.acceptDrop(action);
 
-                LOGGER.info("Detected dropped string: {}", droppedLink);
-
-                final String lowerCased = droppedLink.toLowerCase(Locale.ENGLISH);
-                if (lowerCased.contains("youtu.be") || lowerCased.contains("youtube")) {
-                    LOGGER.info("Dropped string recognized as Youtube one: {}", droppedLink);
-                    this.openYoutubeLink(droppedLink);
+            final File fileToOpen = this.droppedFile(transferable);
+            if (fileToOpen != null) {
+                final URI uri = extractUrlLinkFromFile(fileToOpen);
+                if (uri == null) {
+                    LOGGER.info("Opening file: {}", fileToOpen);
+                    this.startPlaying(
+                        new ContentFile(fileToOpen.toPath(), ContentType.findType(fileToOpen)),
+                        null);
                 } else {
-                    LOGGER.info("Dropped string recognized as just URL: {}", droppedLink);
-                    if (droppedLink.contains("://")) {
-                        this.openUrlLink(droppedLink);
-                    } else {
-                        this.openUrlLink("https://" + droppedLink);
-                    }
+                    LOGGER.info("Detected URI to be opened: {}", uri);
+                    this.openDroppedLink(uri.toASCIIString());
                 }
-            } else {
-                LOGGER.info("Unsupported transferable object: {}", (Object) transferable.getTransferDataFlavors());
-                event.rejectDrop();
+                event.dropComplete(true);
+                completed = true;
+                return;
             }
+
+            final Optional<String> url = DroppedLink.findUrl(transferable);
+            if (url.isPresent()) {
+                LOGGER.info("Detected dropped link: {}", url.get());
+                this.openDroppedLink(url.get());
+                event.dropComplete(true);
+                completed = true;
+                return;
+            }
+
+            LOGGER.info("Unsupported drop flavors: {}",
+                (Object) transferable.getTransferDataFlavors());
+            event.dropComplete(false);
+            completed = true;
         } catch (final Exception ex) {
             LOGGER.error("Error during process transferable object", ex);
+        } finally {
+            if (!completed) {
+                try {
+                    event.dropComplete(false);
+                } catch (final Exception ex) {
+                    LOGGER.debug("Drop already completed: {}", ex.toString());
+                }
+            }
+        }
+    }
+
+    private File droppedFile(final Transferable transferable) {
+        if (!transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+            return null;
+        }
+        try {
+            final List<?> files =
+                (List<?>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
+            LOGGER.info("Detected drop action for file list: {}", files);
+            for (final Object item : files) {
+                if (item instanceof File file && file.isFile()) {
+                    return file;
+                }
+            }
+        } catch (final Exception ex) {
+            LOGGER.info("File list in the drop can't be read: {}", ex.toString());
+        }
+        return null;
+    }
+
+    private void openDroppedLink(final String droppedLink) {
+        String link = droppedLink.strip();
+        if (link.toLowerCase(Locale.ENGLISH).startsWith("smb://") && link.contains("%")) {
+            try {
+                link = URLDecoder.decode(link, StandardCharsets.UTF_8);
+            } catch (final IllegalArgumentException ex) {
+                LOGGER.info("SAMBA path is not percent-encoded: {}", droppedLink);
+            }
+        }
+        final String lowerCased = link.toLowerCase(Locale.ENGLISH);
+        if (lowerCased.contains("youtu.be") || lowerCased.contains("youtube")) {
+            LOGGER.info("Dropped link recognized as Youtube one: {}", link);
+            this.openYoutubeLink(link);
+        } else if (link.contains("://")) {
+            this.openUrlLink(link);
+        } else {
+            this.openUrlLink("https://" + link);
         }
     }
 

@@ -1,4 +1,5 @@
 # __1.2.2 (SNAPSHOT)__
+  - links dragged from Chrome and Chromium on Linux can be dropped onto the window
   - player panel shows the newly opened link instead of the previous item
   - fixed seeking inside a served file when the player requests a byte range
   - updated embedded JDK to 26.0.1+10
