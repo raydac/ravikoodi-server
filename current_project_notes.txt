@@ -1,14 +1,15 @@
 ## 1. Implementation Progress
 - SpotBugs `verify` findings are fixed in code. `spotbugs-exclude.xml` keeps only shared collaborators, Swing editors, and live capture objects.
-- Chrome/Chromium link drops on Linux: the window accepts the drag (`XdndStatus`) and reads `text/uri-list`, `text/x-moz-url`, `text/html`, and `text/plain;charset=utf-8`. `text/uri-list` alone is a file list in the JDK, so http(s) links were discarded.
+- Chrome/Chromium link drops on Linux: the content window's `XdndProxy` points at the shell, which already has `XdndAware`. The drop reads `text/uri-list`, `text/x-moz-url`, `text/html`, and `text/plain;charset=utf-8`. `text/uri-list` alone is a file list in the JDK, so http(s) links were discarded.
 - Player panel reloads title, duration, and streams when the Kodi item identity (file, label, type) changes, including a new link dropped onto an already playing item. Follow-up reads run at 400 ms and 1200 ms after open.
 - HTTP byte-range serving for `/vfile` and `/res` now follows RFC 9110 positioning: open ranges, suffix ranges, end past EOF clamped, unsatisfiable ranges return 416 with `Content-Range: bytes */size`.
 - Playback reads start at the requested offset through `FileChannel` (or the in-memory payload), and `Content-Length` is the selected slice, including HEAD and clipboard/in-memory payloads.
 - Covered by `HttpRangeTest` and `InternalServerRangeTest`.
 
 ## 2. Architecture & Technical Discoveries
-- Linux X11: Chrome sends `XdndPosition` with action 0. Java then answers `XdndStatus` with accept 0, so Chrome never sends `XdndDrop`. `dragEnter`/`dragOver` must `acceptDrag(ACTION_COPY)`.
-- JDK flavormap maps `text/uri-list` only to `javaFileListFlavor`. Non-file URIs are dropped, so a Chrome http link arrives as an empty file list. Read `text/uri-list`, `text/html`, and `text/x-moz-url` (UTF-16) as bytes. This session is X11; a native Wayland Chrome talking to an X11 JVM still will not deliver a drop.
+- Linux X11: Chromium's `FindWindowFor` checks `XdndAware` only on the window under the pointer and does not walk parents. Swing draws into a child named "Content window" that has no `XdndAware`, so Chromium never sends `XdndEnter`. `XdndProxy` on that child and on the shell (both set to the shell, type `WINDOW`) makes Chromium deliver the drag to the shell Java already registered. Firefox already walks up to that shell.
+- Chrome can send `XdndPosition` with action 0. Java then answers `XdndStatus` with accept 0 unless `dragEnter`/`dragOver` calls `acceptDrag(ACTION_COPY)`.
+- JDK flavormap maps `text/uri-list` only to `javaFileListFlavor`. Non-file URIs are dropped, so a Chrome http link arrives as an empty file list. Read `text/uri-list`, `text/html`, and `text/x-moz-url` (UTF-16) as bytes. A native Wayland Chromium talking to an X11 JVM still will not deliver a drop. The running copy in `~/Programs/ravikoodi` is a packaged jar; it does not pick up workspace changes until it is rebuilt.
 - Kodi keeps the same player id when a new file replaces the current one. The panel must compare `Player.GetItem` file/label/type; a one-shot full refresh can observe the previous item and then never update the title.
 - A slower full refresh used to be discarded when a faster progress refresh painted first (`updateStatusCounter`).
 - Kodi seeks by sending `Range: bytes=<offset>-` (sometimes a closed or overshot end) to the embedded `com.sun.net.httpserver` handler in `InternalServer`.
@@ -23,7 +24,7 @@
 
 ## 4. Current Work In Progress
 - SpotBugs check is clean after the fixes. `mvn22 -pl ravikoodi-app -am verify`.
-- Chrome/Chromium drop support is in the working tree. Parsing is covered by `DroppedLinkTest`. A live drag from the browser was not exercised here.
+- Chromium drops fail on the packaged app because the content window is not an XDnD target. The workspace now publishes `XdndProxy` after the frame is shown. Parser covered by `LinuxBrowserDropSiteTest`. A live Chromium drag still has to be tried on a rebuilt launch.
 - Player-panel refresh after a new link is in the working tree. Not committed.
 - Byte-range positioning fix is in the working tree and tested. Not committed.
 

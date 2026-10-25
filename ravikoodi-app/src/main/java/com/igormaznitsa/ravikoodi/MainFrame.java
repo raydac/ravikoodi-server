@@ -494,6 +494,7 @@ public final class MainFrame extends javax.swing.JFrame
                     UIManager.setLookAndFeel(info.getClassName());
                     preferences.setLookAndFeelClassName(info.getClassName());
                     SwingUtilities.updateComponentTreeUI(MainFrame.this);
+                    LinuxBrowserDropSite.publish(MainFrame.this);
                     this.treeVideoFiles.repaint();
                 } catch (Exception ex) {
                     LOGGER.error("Can't change LF", ex); //NOI18N
@@ -525,6 +526,7 @@ public final class MainFrame extends javax.swing.JFrame
             this.setExtendedState(this.getExtendedState() | MAXIMIZED_BOTH);
 
             this.setVisible(true);
+            LinuxBrowserDropSite.publish(this);
             this.executorService.scheduleAtFixedRate(this::updatePlayers, 1000L, 1500L, TimeUnit.MILLISECONDS);
             this.setFileRoot(this.preferences.getFileRoot());
 
