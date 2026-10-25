@@ -2,10 +2,10 @@ package com.igormaznitsa.ravikoodi;
 
 import com.igormaznitsa.ravikoodi.kodijsonapi.ActivePlayerInfo;
 import com.igormaznitsa.ravikoodi.kodijsonapi.AudioStream;
-import com.igormaznitsa.ravikoodi.kodijsonapi.KodiService;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerItem;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerProperties;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerSeekResult;
+import com.igormaznitsa.ravikoodi.kodijsonapi.PlaylistFileItem;
 import com.igormaznitsa.ravikoodi.kodijsonapi.Subtitle;
 import com.igormaznitsa.ravikoodi.kodijsonapi.Time;
 import java.awt.Font;
@@ -42,7 +42,29 @@ public final class PlayerPanel extends javax.swing.JPanel {
   private final ActivePlayerInfo playerInfo;
   private final ScheduledExecutorService executors;
 
+  private static final String[] DETAIL_PROPERTIES = {
+      "percentage",
+      "time",
+      "totaltime",
+      "speed",
+      "audiostreams",
+      "currentaudiostream",
+      "subtitles",
+      "currentsubtitle",
+      "subtitleenabled"
+  };
+
+  private static final String[] PROGRESS_PROPERTIES = {
+      "percentage",
+      "time",
+      "totaltime",
+      "speed",
+      "subtitleenabled"
+  };
+
   private final AtomicBoolean fullPlayerDataRefresh = new AtomicBoolean(true);
+  private final AtomicLong refreshSeq = new AtomicLong();
+  private final AtomicReference<String> displayedItemKey = new AtomicReference<>("");
 
   private final AtomicLong speed = new AtomicLong();
 
@@ -164,118 +186,170 @@ public final class PlayerPanel extends javax.swing.JPanel {
     this.comboAudio.setSelectedItem(audioStream);
   }
 
+  static String playingItemKey(final PlaylistFileItem item) {
+    if (item == null) {
+      return "";
+    }
+    return String.join("\u0000", text(item.getFile()), text(item.getLabel()), text(item.getType()));
+  }
+
+  static String playingItemTitle(final PlaylistFileItem item) {
+    if (item == null) {
+      return "......";
+    }
+    if (!text(item.getLabel()).isBlank()) {
+      return item.getLabel();
+    }
+    final String file = text(item.getFile());
+    final int slash = Math.max(file.lastIndexOf('/'), file.lastIndexOf('\\'));
+    final String name = slash >= 0 && slash < file.length() - 1 ? file.substring(slash + 1) : file;
+    return name.isBlank() ? "......" : name;
+  }
+
+  private static String text(final String value) {
+    return value == null ? "" : value;
+  }
+
   public void refresh() {
-    if (this.ignoreRefresh) {
+    if (this.ignoreRefresh || this.executors.isShutdown()) {
       return;
     }
 
-    final long counterValue = this.updateStatusCounter.get();
-    if (this.executors.isShutdown()) {
-      return;
-    }
-    this.executors.submit(() -> {
-      try {
-        final PlayerProperties properties;
-        final String title;
-
-        if (this.fullPlayerDataRefresh.compareAndSet(true, false)) {
-          properties = this.kodiComm.getPlayerProperties(this.playerInfo,
-                  "percentage",
-                  "time",
-                  "totaltime",
-                  "speed",
-                  "audiostreams",
-                  "currentaudiostream",
-                  "subtitles",
-                  "currentsubtitle",
-                  "subtitleenabled");
-
-          final PlayerItem playerItem = this.kodiComm.getPlayerItem(this.playerInfo);
-          title = playerItem.getItem().getLabel();
-
-          SwingUtilities.invokeLater(() -> {
-            this.comboAudio.setModel(new DefaultComboBoxModel<>(properties.getAudiostreams()));
-            this.comboSubtitle.setModel(new DefaultComboBoxModel<>(properties.getSubtitles()));
-
-            this.comboSubtitle.setEnabled(this.comboSubtitle.getModel().getSize() > 1);
-            this.checkboxSubtitleEabled.setEnabled(this.comboSubtitle.getModel().getSize() > 0);
-            this.comboAudio.setEnabled(this.comboAudio.getModel().getSize() > 1);
-
-            this.lastDetectedAudiostream.set(properties.getCurrentaudiostream());
-            this.lastDetectedSubtitle.set(properties.getCurrentsubtitle());
-
-            focusSelectedAudiostream(properties.getCurrentaudiostream());
-            focusSelectedSubtitle(properties.getCurrentsubtitle(), properties.isSubtitleenabled());
-
-            this.labelStartTime.setText("00:00:00.000");
-            this.labelEndTime.setText(properties.getTotaltime().toString());
-          });
-        } else {
-
-          if (this.updateStatusCounter.get() != counterValue) {
-            return;
-          }
-
-          title = null;
-          properties = this.kodiComm.getPlayerProperties(this.playerInfo,
-                  "percentage",
-                  "time",
-                  "totaltime",
-                  "speed",
-                  "subtitleenabled"
-          );
-        }
-
-        this.lastProperties.set(properties);
-
-        final double percentage = properties.getPercentage();
-        final Time time = properties.getTime();
-        final Time totalTime = properties.getTotaltime();
-
-        final long speed = properties.getSpeed();
-        this.paused.set(speed == 0L);
-        this.lastSubtitleEnabled.set(properties.isSubtitleenabled());
-
-        SwingUtilities.invokeLater(() -> {
-          if (this.updateStatusCounter.getAndIncrement() == counterValue) {
-            this.enableListeners = false;
-            try {
-              this.speed.set(speed);
-              if (title != null) {
-                this.labelTitle.setText(title);
-              }
-              if (totalTime.isZero()) {
-                this.progressTime.setIndeterminate(true);
-                this.progressTime.setStringPainted(false);
-                this.labelEndTime.setText("..:..:......");
-                this.labelStartTime.setText("..:..:......");
-              } else {
-                this.progressTime.setIndeterminate(false);
-                this.progressTime.setStringPainted(true);
-
-                this.labelStartTime.setText("00:00:00.000");
-                this.labelEndTime.setText(properties.getTotaltime().toString());
-              }
-              this.progressTime.setValue((int) Math.round(percentage * 100d));
-              this.progressTime.setString(title);
-
-              this.progressTime.setString(time.toString());
-              this.checkboxSubtitleEabled.setSelected(properties.isSubtitleenabled());
-              this.buttonPausePlay.setIcon(speed == 0 ? ICO_BIG_PLAY : ICO_BIG_PAUSE);
-              this.labelSpeed.setText("<html><b>Speed: " + speed + "</b></html>");
-            } finally {
-              this.enableListeners = true;
-            }
-          }
-        });
-      } catch (Throwable thr) {
-        LOGGER.error("Error during player update", thr);
-      }
-    });
+    final long generation = this.updateStatusCounter.get();
+    final long seq = this.refreshSeq.incrementAndGet();
+    this.executors.submit(() -> this.loadPlayerState(generation, seq));
   }
 
   public void notifyFullDataRefresh() {
     this.fullPlayerDataRefresh.set(true);
+    this.refresh();
+    if (!this.executors.isShutdown()) {
+      this.executors.schedule(this::refresh, 400L, TimeUnit.MILLISECONDS);
+      this.executors.schedule(this::refresh, 1200L, TimeUnit.MILLISECONDS);
+    }
+  }
+
+  private void loadPlayerState(final long generation, final long seq) {
+    final boolean requestedDetails = this.fullPlayerDataRefresh.compareAndSet(true, false);
+    try {
+      if (this.refreshSeq.get() != seq) {
+        this.restoreDetailsRequest(requestedDetails);
+        return;
+      }
+
+      final PlaylistFileItem item = this.currentItem();
+      final String itemKey = playingItemKey(item);
+      final boolean itemChanged = !itemKey.equals(this.displayedItemKey.get());
+      final boolean loadDetails = itemChanged || requestedDetails;
+      final PlayerProperties properties = this.kodiComm.getPlayerProperties(
+          this.playerInfo,
+          loadDetails ? DETAIL_PROPERTIES : PROGRESS_PROPERTIES);
+
+      if (this.refreshSeq.get() != seq) {
+        this.restoreDetailsRequest(requestedDetails);
+        return;
+      }
+
+      this.lastProperties.set(properties);
+      this.paused.set(properties.getSpeed() == 0L);
+      this.lastSubtitleEnabled.set(properties.isSubtitleenabled());
+
+      SwingUtilities.invokeLater(() -> this.showPlayerState(
+          generation,
+          seq,
+          requestedDetails,
+          loadDetails,
+          itemKey,
+          playingItemTitle(item),
+          properties));
+    } catch (Throwable thr) {
+      this.restoreDetailsRequest(requestedDetails);
+      LOGGER.error("Error during player update", thr);
+    }
+  }
+
+  private void showPlayerState(
+      final long generation,
+      final long seq,
+      final boolean requestedDetails,
+      final boolean loadDetails,
+      final String itemKey,
+      final String title,
+      final PlayerProperties properties) {
+    if (this.refreshSeq.get() != seq) {
+      this.restoreDetailsRequest(requestedDetails);
+      return;
+    }
+
+    this.enableListeners = false;
+    try {
+      if (loadDetails) {
+        this.applyItemDetails(itemKey, title, properties);
+      }
+      if (this.updateStatusCounter.get() == generation) {
+        this.updateStatusCounter.incrementAndGet();
+        this.applyPlaybackPosition(properties);
+      }
+    } finally {
+      this.enableListeners = true;
+    }
+  }
+
+  private void applyItemDetails(final String itemKey, final String title,
+                                final PlayerProperties properties) {
+    if (!itemKey.equals(this.displayedItemKey.getAndSet(itemKey))) {
+      LOGGER.info("Player {} is now playing '{}'", this.playerInfo.getPlayerid(), title);
+    }
+
+    this.labelTitle.setText(title);
+    final AudioStream[] audioStreams =
+        properties.getAudiostreams() == null ? new AudioStream[0] : properties.getAudiostreams();
+    final Subtitle[] subtitles =
+        properties.getSubtitles() == null ? new Subtitle[0] : properties.getSubtitles();
+    this.comboAudio.setModel(new DefaultComboBoxModel<>(audioStreams));
+    this.comboSubtitle.setModel(new DefaultComboBoxModel<>(subtitles));
+    this.comboSubtitle.setEnabled(this.comboSubtitle.getModel().getSize() > 1);
+    this.checkboxSubtitleEabled.setEnabled(this.comboSubtitle.getModel().getSize() > 0);
+    this.comboAudio.setEnabled(this.comboAudio.getModel().getSize() > 1);
+    this.lastDetectedAudiostream.set(properties.getCurrentaudiostream());
+    this.lastDetectedSubtitle.set(properties.getCurrentsubtitle());
+    this.focusSelectedAudiostream(properties.getCurrentaudiostream());
+    this.focusSelectedSubtitle(properties.getCurrentsubtitle(), properties.isSubtitleenabled());
+    this.revalidate();
+    this.repaint();
+  }
+
+  private void applyPlaybackPosition(final PlayerProperties properties) {
+    final Time totalTime = properties.getTotaltime();
+    final long speed = properties.getSpeed();
+    this.speed.set(speed);
+    if (totalTime.isZero()) {
+      this.progressTime.setIndeterminate(true);
+      this.progressTime.setStringPainted(false);
+      this.labelEndTime.setText("..:..:......");
+      this.labelStartTime.setText("..:..:......");
+    } else {
+      this.progressTime.setIndeterminate(false);
+      this.progressTime.setStringPainted(true);
+      this.labelStartTime.setText("00:00:00.000");
+      this.labelEndTime.setText(totalTime.toString());
+    }
+    this.progressTime.setValue((int) Math.round(properties.getPercentage() * 100d));
+    this.progressTime.setString(properties.getTime().toString());
+    this.checkboxSubtitleEabled.setSelected(properties.isSubtitleenabled());
+    this.buttonPausePlay.setIcon(speed == 0 ? this.ICO_BIG_PLAY : this.ICO_BIG_PAUSE);
+    this.labelSpeed.setText("<html><b>Speed: " + speed + "</b></html>");
+  }
+
+  private PlaylistFileItem currentItem() throws Throwable {
+    final PlayerItem playerItem = this.kodiComm.getPlayerItem(this.playerInfo);
+    return playerItem == null ? null : playerItem.getItem();
+  }
+
+  private void restoreDetailsRequest(final boolean requestedDetails) {
+    if (requestedDetails) {
+      this.fullPlayerDataRefresh.set(true);
+    }
   }
   
   /**

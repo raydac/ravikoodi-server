@@ -1,9 +1,12 @@
 ## 1. Implementation Progress
+- Player panel reloads title, duration, and streams when the Kodi item identity (file, label, type) changes, including a new link dropped onto an already playing item. Follow-up reads run at 400 ms and 1200 ms after open.
 - HTTP byte-range serving for `/vfile` and `/res` now follows RFC 9110 positioning: open ranges, suffix ranges, end past EOF clamped, unsatisfiable ranges return 416 with `Content-Range: bytes */size`.
 - Playback reads start at the requested offset through `FileChannel` (or the in-memory payload), and `Content-Length` is the selected slice, including HEAD and clipboard/in-memory payloads.
 - Covered by `HttpRangeTest` and `InternalServerRangeTest`.
 
 ## 2. Architecture & Technical Discoveries
+- Kodi keeps the same player id when a new file replaces the current one. The panel must compare `Player.GetItem` file/label/type; a one-shot full refresh can observe the previous item and then never update the title.
+- A slower full refresh used to be discarded when a faster progress refresh painted first (`updateStatusCounter`).
 - Kodi seeks by sending `Range: bytes=<offset>-` (sometimes a closed or overshot end) to the embedded `com.sun.net.httpserver` handler in `InternalServer`.
 - `sendResponseHeaders(status, length)` overwrites `Content-Length` on GET. HEAD does not: the header must be set to the selected length and the length argument must be `-1`. Passing `0` selects chunked encoding.
 - In-memory payloads (`UploadFileRecord.predefinedData`, used for the clipboard screenshot) are the body. `File.length()` on the placeholder path is not the size.
@@ -15,6 +18,7 @@
 - File-handler path parsing is still string-split on the raw request URI.
 
 ## 4. Current Work In Progress
+- Player-panel refresh after a new link is in the working tree. Not committed.
 - Byte-range positioning fix is in the working tree and tested. Not committed.
 
 ## 5. Known Issues & Limitations
