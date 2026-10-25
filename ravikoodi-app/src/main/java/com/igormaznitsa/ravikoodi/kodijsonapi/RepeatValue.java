@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.kodijsonapi;
 
 public enum RepeatValue {
-    OFF,
-    CYCLE,
-    ONE,
-    ALL
+  OFF,
+  CYCLE,
+  ONE,
+  ALL
 }

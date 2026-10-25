@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.screencast;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public final class PreemptiveBuffer {
 
   private final List<byte[]> list;
   private final int max;
   private volatile boolean started = false;
-  
+
   public PreemptiveBuffer(final int max) {
     this.max = max;
     this.list = new ArrayList<>(max);
@@ -33,15 +34,15 @@ public final class PreemptiveBuffer {
   public boolean isStarted() {
     return this.started;
   }
-  
+
   public void start() {
-      this.started = true;
+    this.started = true;
   }
-  
+
   public void suspend() {
-      this.started = false;
+    this.started = false;
   }
-  
+
   public int size() {
     synchronized (this.list) {
       return this.list.size();
@@ -65,7 +66,7 @@ public final class PreemptiveBuffer {
     synchronized (this.list) {
       if (this.started) {
         if (this.list.size() == this.max) {
-          this.list.set(this.max-1, data);
+          this.list.set(this.max - 1, data);
         } else {
           this.list.add(data);
         }

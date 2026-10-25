@@ -13,18 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.kodijsonapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 
 @EqualsAndHashCode(callSuper = true)
 public class PlayerRepeatReq extends PlayerIdReq {
     @JsonProperty("repeat")
     protected String repeat;
 
-    public PlayerRepeatReq(@NonNull final ActivePlayerInfo playerInfo, @NonNull final String repeat) {
+    public PlayerRepeatReq(@NonNull final ActivePlayerInfo playerInfo,
+                           @NonNull final String repeat) {
         super(playerInfo);
         this.repeat = repeat;
     }

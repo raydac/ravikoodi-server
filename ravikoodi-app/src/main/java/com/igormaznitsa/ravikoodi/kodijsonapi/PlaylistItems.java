@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PlaylistItems {
   @JsonProperty(value = "items", required = true)
-  private final PlaylistFileItem [] items;
+  private final PlaylistFileItem[] items;
   @JsonProperty(value = "limits", required = true)
   private final ListLimitsReturned limits;
 }

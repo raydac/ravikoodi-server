@@ -13,22 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi;
 
 import java.awt.Font;
 import java.util.Objects;
 import javax.swing.JButton;
 import javax.swing.UIManager;
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 
 public class TableLookupButton extends JButton {
-    
-    public TableLookupButton(@NonNull final String text) {
-        super(Objects.requireNonNull(text));
-        this.setFont(UIManager.getFont("Button.font").deriveFont(Font.BOLD));
-        this.setFocusable(false);
-        this.setBackground(UIManager.getColor("ComboBox.buttonBackground"));
-        this.setBorder(UIManager.getBorder("ComboBox[button].border"));
-    }
-    
+
+  public TableLookupButton(@NonNull final String text) {
+    super(Objects.requireNonNull(text));
+    this.setFont(UIManager.getFont("Button.font").deriveFont(Font.BOLD));
+    this.setFocusable(false);
+    this.setBackground(UIManager.getColor("ComboBox.buttonBackground"));
+    this.setBorder(UIManager.getBorder("ComboBox[button].border"));
+  }
+
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.screencast;
 
 import ch.qos.logback.core.util.CloseUtil;
@@ -28,9 +29,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
 
 public final class LoopbackTcpReader extends NetConnection {
 
@@ -48,15 +49,11 @@ public final class LoopbackTcpReader extends NetConnection {
   private final Supplier<Boolean> active;
 
   public LoopbackTcpReader(
-          @NonNull
-          final String id,
-          @NonNull
-          final Duration dataFlowTimeout,
-          final int readBufferSize,
-          @NonNull
-          final BiConsumer<Integer, byte[]> consumer,
-          @NonNull
-          final Supplier<Boolean> active
+      @NonNull final String id,
+      @NonNull final Duration dataFlowTimeout,
+      final int readBufferSize,
+      @NonNull final BiConsumer<Integer, byte[]> consumer,
+      @NonNull final Supplier<Boolean> active
   ) throws IOException {
     super(Objects.requireNonNull(id, "id"),
         Objects.requireNonNull(dataFlowTimeout, "dataFlowTimeout"));

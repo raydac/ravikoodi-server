@@ -12,7 +12,7 @@ public class Subtitle implements Comparable<Subtitle> {
   private final String name;
 
   @Override
-  public boolean equals(final Object o){
+  public boolean equals(final Object o) {
     if (o == this) {
       return true;
     }
@@ -27,7 +27,7 @@ public class Subtitle implements Comparable<Subtitle> {
   @Override
   public int hashCode() {
     int hash = 7;
-    hash = 83 * hash + (int) (this.index ^ (this.index >>> 32));
+    hash = 83 * hash + Long.hashCode(this.index);
     return hash;
   }
 

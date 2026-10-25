@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi;
 
 import java.awt.Window;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import org.jspecify.annotations.NonNull;
 import org.springframework.context.ApplicationContext;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -38,25 +39,23 @@ public class DialogNotifier implements GuiMessager {
     @Override
     public void showErrorMessage(@NonNull final String title, @NonNull final String message) {
         final Window window = this.findApplicationWindow();
-        SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(window, message, title, JOptionPane.ERROR_MESSAGE);
-        });
+        SwingUtilities.invokeLater(
+            () -> JOptionPane.showMessageDialog(window, message, title, JOptionPane.ERROR_MESSAGE));
     }
 
     @Override
     public void showWarningMessage(@NonNull final String title, @NonNull final String message) {
         final Window window = this.findApplicationWindow();
-        SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(window, message, title, JOptionPane.WARNING_MESSAGE);
-        });
+        SwingUtilities.invokeLater(
+            () -> JOptionPane.showMessageDialog(window, message, title,
+                JOptionPane.WARNING_MESSAGE));
     }
 
     @Override
     public void showInfoMessage(@NonNull final String title, @NonNull final String message) {
         final Window window = this.findApplicationWindow();
-        SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(window, message, title, JOptionPane.INFORMATION_MESSAGE);
-        });
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(window, message, title,
+            JOptionPane.INFORMATION_MESSAGE));
     }
 
 }

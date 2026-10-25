@@ -7,6 +7,7 @@ import static javax.swing.tree.TreeSelectionModel.SINGLE_TREE_SELECTION;
 import com.github.kiulian.downloader.downloader.YoutubeCallback;
 import com.github.kiulian.downloader.downloader.client.ClientType;
 import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
+import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.model.videos.formats.AudioFormat;
 import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
@@ -92,14 +93,14 @@ import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.SystemUtils;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.ApplicationContext;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 @org.springframework.stereotype.Component
 public final class MainFrame extends javax.swing.JFrame
@@ -108,11 +109,15 @@ public final class MainFrame extends javax.swing.JFrame
     private static final Logger LOGGER = LoggerFactory.getLogger(MainFrame.class);
 
     private static final int STR_CUT_LEN = 48;
-
-    private Path currentRootFolder;
-
     private final List<TreeModelListener> treeListeners = new CopyOnWriteArrayList<>();
-
+    private final AtomicReference<OpeningFileInfoPanel> openingFileInfoPanel =
+        new AtomicReference<>();
+    private final AtomicReference<ApplicationStatusPanel> applicationStatusPanel =
+        new AtomicReference<>();
+    private final AtomicReference<ScreenGrabber> currentScreenGrabber = new AtomicReference<>();
+    private final AtomicLong timeWhenEndScreencastFlowEnable = new AtomicLong();
+    private final List<ContentTreeItem> videoFiles = new ArrayList<>();
+    private Path currentRootFolder;
     @Autowired
     private DonationController donationController;
     @Autowired
@@ -139,66 +144,142 @@ public final class MainFrame extends javax.swing.JFrame
     private KodiComm kodiComm;
     @Autowired
     private YtLinkExtractor youTubeLinkExtractor;
-
     private File lastSelectedFileFolder = null;
-    private final AtomicReference<OpeningFileInfoPanel> openingFileInfoPanel = new AtomicReference<>();
-
-    private final AtomicReference<ApplicationStatusPanel> applicationStatusPanel = new AtomicReference<>();
-
-    private final AtomicReference<ScreenGrabber> currentScreenGrabber = new AtomicReference<>();
-
-    private final AtomicLong timeWhenEndScreencastFlowEnable = new AtomicLong();
-
     private WeakReference<FfmpegWrapper> lastFFmpegWrapper;
+    private javax.swing.JButton buttonImageFromClipboard;
+    private javax.swing.JButton buttonOpenSelectedFileInSystem;
+    private javax.swing.JButton buttonPlaySelected;
+    private javax.swing.JButton buttonRefreshFolder;
+    private javax.swing.JButton buttonSelectFolder;
+    private javax.swing.JScrollPane fileTreeScrollPane;
+    private javax.swing.JPopupMenu.Separator jSeparator1;
+    private javax.swing.JToolBar jToolBar1;
+    private javax.swing.JSplitPane mainPanelSplit;
+    private javax.swing.JMenuItem menuAbout;
+    private javax.swing.JMenuItem menuExit;
+    private javax.swing.JMenu menuFile;
+    private javax.swing.JMenuItem menuFileOpenURL;
+    private javax.swing.JMenu menuHelp;
+    private javax.swing.JMenuItem menuHelpDonation;
+    private javax.swing.JMenu menuLookAndFeel;
+    private javax.swing.JMenuBar menuMain;
+    private javax.swing.JMenu menuMisc;
+    private javax.swing.JMenuItem menuMiscDecodeYoutubeUrl;
+    private javax.swing.JMenuItem menuOpenFile;
+    private javax.swing.JMenuItem menuOpenYoutubeLink;
+    private javax.swing.JMenuItem menuSelectFolder;
+    private javax.swing.JMenuItem menuStaticContent;
+    private javax.swing.JMenuItem menuTimers;
+    private javax.swing.JMenu menuTools;
+    private javax.swing.JMenuItem menuToolsOptions;
+    private javax.swing.JPanel panelFileTree;
+    private javax.swing.JPanel panelMain;
+    private javax.swing.JPanel panelPlayers;
+    private javax.swing.JToggleButton toggleButtonScreencast;
+    private javax.swing.JTree treeVideoFiles;
 
-    private static class FileTreeRenderer extends DefaultTreeCellRenderer {
+    public MainFrame() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            initComponents();
+            this.setTitle("Ravikoodi content server");
 
-        private static final Icon ICON_UNKNOWN = new ImageIcon(Utils.loadImage("tree/mask.png"));
-        private static final Icon ICON_AUDIO = new ImageIcon(Utils.loadImage("tree/music.png"));
-        private static final Icon ICON_VIDEO = new ImageIcon(Utils.loadImage("tree/movies.png"));
-        private static final Icon ICON_PICTURE = new ImageIcon(Utils.loadImage("tree/picture.png"));
-        private static final Icon ICON_FOLDER = new ImageIcon(Utils.loadImage("tree/folder.png"));
-        private static final Icon ICON_FOLDER_OPEN = new ImageIcon(Utils.loadImage("tree/folder_blue.png"));
+            final Image icon = Utils.loadImage("ravikoodi-logo-256.png");
+            this.setIconImage(icon);
+            this.setIconImages(List.of(icon));
+            if (Taskbar.isTaskbarSupported()) {
+                try {
+                    Taskbar.getTaskbar().setIconImage(icon);
+                } catch (final Exception ex) {
+                    LOGGER.error("Can't set taskbar icon for error", ex);
+                }
+            }
 
-        public FileTreeRenderer() {
-            super();
+            this.treeVideoFiles.setCellRenderer(new FileTreeRenderer());
+
+            Toolkit.getDefaultToolkit().getSystemClipboard().addFlavorListener(this);
+            this.flavorsChanged(new FlavorEvent(Toolkit.getDefaultToolkit().getSystemClipboard()));
+            this.treeVideoFiles.getSelectionModel().setSelectionMode(SINGLE_TREE_SELECTION);
+            this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+
+            this.treeVideoFiles.getSelectionModel().addTreeSelectionListener(
+                (@NonNull final TreeSelectionEvent e) -> this.updateToolButtons());
+
+            this.treeVideoFiles.setModel(this);
+            this.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowActivated(WindowEvent e) {
+                    panelMain.invalidate();
+                    panelMain.repaint();
+                }
+
+                @Override
+                public void windowDeiconified(WindowEvent e) {
+                    panelMain.invalidate();
+                    panelMain.repaint();
         }
 
         @Override
-        public Component getTreeCellRendererComponent(
-                final JTree tree,
-                final Object value,
-                final boolean selected,
-                final boolean expanded,
-                final boolean leaf,
-                final int row,
-                final boolean hasFocus
-        ) {
-            DefaultTreeCellRenderer result = (DefaultTreeCellRenderer) super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
-            if (leaf) {
-                if (value instanceof ContentFile) {
-                    switch (((ContentFile) value).getContentType()) {
-                        case AUDIO:
-                            result.setIcon(ICON_AUDIO);
-                            break;
-                        case VIDEO:
-                            result.setIcon(ICON_VIDEO);
-                            break;
-                        case PICTURE:
-                            result.setIcon(ICON_PICTURE);
-                            break;
-                        case UNKNOWN:
-                            result.setIcon(ICON_UNKNOWN);
-                            break;
-                    }
-                } else {
-                    result.setIcon(null);
-                }
-            } else {
-                result.setIcon(expanded ? ICON_FOLDER_OPEN : ICON_FOLDER);
+        public void windowClosing(WindowEvent e) {
+            LOGGER.info("Closing main window");
+            if (!fileRegstry.hasActiveUploads() || JOptionPane.showConfirmDialog(MainFrame.this,
+                "There are uploading files, do you rally want close application?", "Confirmation",
+                JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                LOGGER.info("Activate exit");
+                stopScreenCast();
+                SwingUtilities.invokeLater(()
+                    -> SpringApplication.exit(context, () -> 0));
             }
-            return result;
         }
+            });
+
+            DroppedLink.registerBrowserFlavors();
+            this.installDropTarget(this.panelMain);
+            this.installDropTarget(this);
+        });
+    }
+
+    public static void openInSystem(@NonNull final ContentFile file) {
+        LOGGER.info("Opening '{}' in system viewer", file.getFilePathAsString());
+        if (Desktop.isDesktopSupported()) {
+            final Desktop desktop = Desktop.getDesktop();
+            if (desktop.isSupported(Desktop.Action.OPEN)) {
+                try {
+                    desktop.open(file.getFilePath().toFile());
+                } catch (Exception x) {
+                    LOGGER.error("Can't open file in Desktop", x);
+                }
+            } else if (SystemUtils.IS_OS_LINUX) {
+                final Runtime runtime = Runtime.getRuntime();
+                try {
+                    runtime.exec("xdg-open \"" + file.getFilePathAsString() + "\"");
+                } catch (IOException e) {
+                    LOGGER.error("Can't open file under Linux", e);
+                }
+            } else if (SystemUtils.IS_OS_MAC) {
+                final Runtime runtime = Runtime.getRuntime();
+                try {
+                    runtime.exec("open \"" + file.getFilePathAsString() + "\"");
+                } catch (IOException e) {
+                    LOGGER.error("Can't open file on MAC", e);
+                }
+            }
+        }
+    }
+
+    public static URI extractUrlLinkFromFile(final File file) {
+        URI result = null;
+        if (file.isFile()) {
+            if (file.getName().endsWith(".url") ||
+                (SystemUtils.IS_OS_WINDOWS && file.length() < 1024)) {
+                try {
+                    final String uri = new UrlFile(file).getURL();
+                    result = uri == null ? null : new URI(uri);
+                } catch (URISyntaxException | IOException ex) {
+                    result = null;
+                }
+            }
+        }
+        return result;
     }
 
     @Override
@@ -206,18 +287,19 @@ public final class MainFrame extends javax.swing.JFrame
         this.updateToolButtons();
     }
 
-    private final List<ContentTreeItem> videoFiles = new ArrayList<>();
-
     private void updateToolButtons() {
         final TreePath treePath = this.treeVideoFiles.getSelectionPath();
-        final boolean contentFileFocused = treePath != null && treePath.getLastPathComponent() instanceof ContentFile;
+        final boolean contentFileFocused =
+            treePath != null && treePath.getLastPathComponent() instanceof ContentFile;
         if (this.toggleButtonScreencast.isSelected()) {
             buttonPlaySelected.setEnabled(false);
             buttonImageFromClipboard.setEnabled(false);
         } else {
             buttonPlaySelected.setEnabled(contentFileFocused);
             try {
-                this.buttonImageFromClipboard.setEnabled(Toolkit.getDefaultToolkit().getSystemClipboard().isDataFlavorAvailable(DataFlavor.imageFlavor));
+                this.buttonImageFromClipboard.setEnabled(
+                    Toolkit.getDefaultToolkit().getSystemClipboard()
+                        .isDataFlavorAvailable(DataFlavor.imageFlavor));
             } catch (Exception ex) {
                 this.buttonImageFromClipboard.setEnabled(false);
             }
@@ -232,17 +314,17 @@ public final class MainFrame extends javax.swing.JFrame
         if (lastServerError != null) {
             LOGGER.error("Detected error during server start", lastServerError);
             SwingUtilities.invokeLater(() -> {
-                final String[] options = new String[]{"Options", "Continue", "Exit"};
+                final String[] options = new String[] {"Options", "Continue", "Exit"};
 
                 final int result = JOptionPane.showOptionDialog(
-                        this,
-                        "Can't start embedded server: " + lastServerError.getMessage(),
-                        "Error",
-                        JOptionPane.YES_NO_CANCEL_OPTION,
-                        JOptionPane.ERROR_MESSAGE,
-                        null,
-                        options,
-                        options[0]
+                    this,
+                    "Can't start embedded server: " + lastServerError.getMessage(),
+                    "Error",
+                    JOptionPane.YES_NO_CANCEL_OPTION,
+                    JOptionPane.ERROR_MESSAGE,
+                    null,
+                    options,
+                    options[0]
                 );
 
                 switch (result) {
@@ -252,7 +334,11 @@ public final class MainFrame extends javax.swing.JFrame
                     break;
                     case JOptionPane.YES_OPTION: {
                         final OptionsPanel.Data container = new OptionsPanel.Data(this.preferences);
-                        if (JOptionPane.showConfirmDialog(this, Utils.makeOwningDialogResizable(new JScrollPane(new OptionsPanel(container, this.soundAdapter))), "Options", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+                        if (JOptionPane.showConfirmDialog(this, Utils.makeOwningDialogResizable(
+                                new JScrollPane(new OptionsPanel(container, this.soundAdapter))),
+                            "Options",
+                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) ==
+                            JOptionPane.OK_OPTION) {
                             container.save(this.preferences);
                             this.server.restartServer();
                         } else {
@@ -293,7 +379,8 @@ public final class MainFrame extends javax.swing.JFrame
                 final int imageWidth = logo.getWidth(null);
                 final int imageHeight = logo.getHeight(null);
                 if (rect.width >= imageWidth && rect.height >= imageHeight) {
-                    g.drawImage(logo, (rect.width - imageWidth) / 2, (rect.height - imageHeight) / 2, null);
+                    g.drawImage(logo, (rect.width - imageWidth) / 2,
+                        (rect.height - imageHeight) / 2, null);
                 }
                 super.paintChildren(g);
             }
@@ -314,73 +401,10 @@ public final class MainFrame extends javax.swing.JFrame
     }
 
     @Override
-    public void onScreencastStarted(final InternalServer source) {
-    }
-
-    @Override
-    public void onScreencastEnded(final InternalServer source) {
+    public void onScreencastEnded(final @NonNull InternalServer source) {
         if (this.timeWhenEndScreencastFlowEnable.get() < System.currentTimeMillis()) {
             this.stopScreenCast();
         }
-    }
-
-    public MainFrame() throws Exception {
-        SwingUtilities.invokeAndWait(() -> {
-            initComponents();
-            this.setTitle("Ravikoodi content server");
-
-            final Image icon = Utils.loadImage("ravikoodi-logo-256.png");
-            this.setIconImage(icon);
-            this.setIconImages(List.of(icon));
-            if (Taskbar.isTaskbarSupported()) {
-                try {
-                    Taskbar.getTaskbar().setIconImage(icon);
-                } catch (final Exception ex) {
-                    LOGGER.error("Can't set taskbar icon for error", ex);
-                }
-            }
-
-            this.treeVideoFiles.setCellRenderer(new FileTreeRenderer());
-
-            Toolkit.getDefaultToolkit().getSystemClipboard().addFlavorListener(this);
-            this.flavorsChanged(new FlavorEvent(Toolkit.getDefaultToolkit().getSystemClipboard()));
-            this.treeVideoFiles.getSelectionModel().setSelectionMode(SINGLE_TREE_SELECTION);
-            this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-
-            this.treeVideoFiles.getSelectionModel().addTreeSelectionListener((@NonNull final TreeSelectionEvent e) -> {
-                this.updateToolButtons();
-            });
-
-            this.treeVideoFiles.setModel(this);
-            this.addWindowListener(new WindowAdapter() {
-                @Override
-                public void windowActivated(WindowEvent e) {
-                    panelMain.invalidate();
-                    panelMain.repaint();
-                }
-
-                @Override
-                public void windowDeiconified(WindowEvent e) {
-                    panelMain.invalidate();
-                    panelMain.repaint();
-                }
-
-                @Override
-                public void windowClosing(WindowEvent e) {
-                    LOGGER.info("Closing main window");
-                    if (!fileRegstry.hasActiveUploads() || JOptionPane.showConfirmDialog(MainFrame.this, "There are uploading files, do you rally want close application?", "Confirmation", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-                        LOGGER.info("Activate exit");
-                        stopScreenCast();
-                        SwingUtilities.invokeLater(()
-                                -> SpringApplication.exit(context, () -> 0));
-                    }
-                }
-            });
-
-            DroppedLink.registerBrowserFlavors();
-            this.installDropTarget(this.panelMain);
-            this.installDropTarget(this);
-        });
     }
 
     private void installDropTarget(final Component component) {
@@ -497,7 +521,7 @@ public final class MainFrame extends javax.swing.JFrame
                     LinuxBrowserDropSite.publish(MainFrame.this);
                     this.treeVideoFiles.repaint();
                 } catch (Exception ex) {
-                    LOGGER.error("Can't change LF", ex); //NOI18N
+                    LOGGER.error("Can't change LF", ex);
                 }
             });
             this.menuLookAndFeel.add(menuItem);
@@ -506,7 +530,7 @@ public final class MainFrame extends javax.swing.JFrame
 
     @PreDestroy
     public void preDestroy() {
-        SwingUtilities.invokeLater(() -> this.dispose());
+        SwingUtilities.invokeLater(this::dispose);
     }
 
     @PostConstruct
@@ -527,10 +551,12 @@ public final class MainFrame extends javax.swing.JFrame
 
             this.setVisible(true);
             LinuxBrowserDropSite.publish(this);
-            this.executorService.scheduleAtFixedRate(this::updatePlayers, 1000L, 1500L, TimeUnit.MILLISECONDS);
+            this.executorService.scheduleAtFixedRate(this::updatePlayers, 1000L, 1500L,
+                TimeUnit.MILLISECONDS);
             this.setFileRoot(this.preferences.getFileRoot());
 
-            this.applicationStatusPanel.set(new ApplicationStatusPanel(this, executorService, preferences));
+            this.applicationStatusPanel.set(
+                new ApplicationStatusPanel(this, executorService, preferences));
             this.panelPlayers.add(this.applicationStatusPanel.get());
         });
         this.timerScheduler.reloadTimers();
@@ -540,8 +566,7 @@ public final class MainFrame extends javax.swing.JFrame
         boolean result = false;
 
         for (final Component c : this.panelPlayers.getComponents()) {
-            if (c instanceof PlayerPanel) {
-                final PlayerPanel panel = (PlayerPanel) c;
+            if (c instanceof PlayerPanel panel) {
                 if (panel.getPlayerId() == player.getPlayerid()) {
                     result = true;
                     break;
@@ -553,13 +578,13 @@ public final class MainFrame extends javax.swing.JFrame
     }
 
     private boolean removeNonListedPlayers(@NonNull final List<ActivePlayerInfo> players) {
-        final Set<Long> playerId = players.stream().map(x -> x.getPlayerid()).collect(Collectors.toSet());
+        final Set<Long> playerId =
+            players.stream().map(ActivePlayerInfo::getPlayerid).collect(Collectors.toSet());
 
         boolean result = false;
 
         for (final Component c : this.panelPlayers.getComponents()) {
-            if (c instanceof PlayerPanel) {
-                final PlayerPanel panel = (PlayerPanel) c;
+            if (c instanceof PlayerPanel panel) {
                 if (!playerId.contains(panel.getPlayerId())) {
                     LOGGER.info("Removed player panel '{}'", panel);
                     this.panelPlayers.remove(c);
@@ -580,7 +605,8 @@ public final class MainFrame extends javax.swing.JFrame
 
                 for (final ActivePlayerInfo p : players) {
                     if (!doesContainPlayer(p)) {
-                        final PlayerPanel panel = new PlayerPanel(MainFrame.this, p, executorService, this.kodiComm);
+                        final PlayerPanel panel =
+                            new PlayerPanel(MainFrame.this, p, executorService, this.kodiComm);
                         panelPlayers.add(panel);
                         LOGGER.info("Added player panel '{}'", panel);
                         changed = true;
@@ -595,8 +621,7 @@ public final class MainFrame extends javax.swing.JFrame
                 int pausedCounter = 0;
 
                 for (final Component c : panelPlayers.getComponents()) {
-                    if (c instanceof PlayerPanel) {
-                        final PlayerPanel player = (PlayerPanel) c;
+                    if (c instanceof PlayerPanel player) {
                         player.refresh();
                         if (player.isPaused()) {
                             pausedCounter++;
@@ -626,44 +651,37 @@ public final class MainFrame extends javax.swing.JFrame
                 final File theFilePath = new File(fileRootFolder);
 
                 if (!theFilePath.isDirectory()) {
-                    JOptionPane.showMessageDialog(this, "Can't find folder '" + fileRootFolder + "\'", "Can't fild folder", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Can't find folder '" + fileRootFolder +
+                        "'", "Can't fild folder", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
                 this.currentRootFolder = theFilePath.toPath();
 
-                Files.list(this.currentRootFolder).filter(f -> {
-                    return Files.isReadable(f)
-                            && (Files.isDirectory(f) || ContentType.findType(f) != ContentType.UNKNOWN);
-                }).forEach(f -> {
-                    if (Files.isDirectory(f)) {
-                        try {
-                            this.videoFiles.add(new ContentFolder(f));
-                        } catch (IOException ex) {
-                            LOGGER.error("Can't read folder {}", f, ex);
+                Files.list(this.currentRootFolder).filter(f -> Files.isReadable(f)
+                        && (Files.isDirectory(f) || ContentType.findType(f) != ContentType.UNKNOWN))
+                    .forEach(f -> {
+                        if (Files.isDirectory(f)) {
+                            try {
+                                this.videoFiles.add(new ContentFolder(f));
+                            } catch (IOException ex) {
+                                LOGGER.error("Can't read folder {}", f, ex);
+                            }
+                        } else {
+                            this.videoFiles.add(new ContentFile(f, ContentType.findType(f)));
                         }
-                    } else {
-                        this.videoFiles.add(new ContentFile(f, ContentType.findType(f)));
-                    }
-                });
+                    });
 
-                Collections.sort(this.videoFiles, CONTENT_ITEM_COMPARATOR);
+                this.videoFiles.sort(CONTENT_ITEM_COMPARATOR);
             }
         } catch (IOException ex) {
             LOGGER.error("Can't set file root", ex);
         } finally {
-            this.treeListeners.forEach((l) -> {
-                l.treeStructureChanged(new TreeModelEvent(this, new TreePath(new Object[]{this})));
-            });
+            this.treeListeners.forEach((l) -> l.treeStructureChanged(
+                new TreeModelEvent(this, new TreePath(new Object[] {this}))));
         }
     }
 
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
     @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         mainPanelSplit = new javax.swing.JSplitPane();
@@ -716,79 +734,63 @@ public final class MainFrame extends javax.swing.JFrame
         jToolBar1.setFloatable(false);
         jToolBar1.setRollover(true);
 
-        buttonSelectFolder.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/folders_explorer.png"))); // NOI18N
+        buttonSelectFolder.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/folders_explorer.png")));
         buttonSelectFolder.setToolTipText("Select root content folder");
         buttonSelectFolder.setFocusable(false);
         buttonSelectFolder.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         buttonSelectFolder.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        buttonSelectFolder.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                buttonSelectFolderActionPerformed(evt);
-            }
-        });
+        buttonSelectFolder.addActionListener(this::buttonSelectFolderActionPerformed);
         jToolBar1.add(buttonSelectFolder);
 
-        buttonRefreshFolder.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/arrow_refresh.png"))); // NOI18N
+        buttonRefreshFolder.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/arrow_refresh.png")));
         buttonRefreshFolder.setToolTipText("Refresh folder");
         buttonRefreshFolder.setFocusable(false);
         buttonRefreshFolder.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         buttonRefreshFolder.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        buttonRefreshFolder.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                buttonRefreshFolderActionPerformed(evt);
-            }
-        });
+        buttonRefreshFolder.addActionListener(this::buttonRefreshFolderActionPerformed);
         jToolBar1.add(buttonRefreshFolder);
 
-        buttonOpenSelectedFileInSystem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/32_vlc.png"))); // NOI18N
+        buttonOpenSelectedFileInSystem.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/32_vlc.png")));
         buttonOpenSelectedFileInSystem.setToolTipText("Open selected file in system");
         buttonOpenSelectedFileInSystem.setEnabled(false);
         buttonOpenSelectedFileInSystem.setFocusable(false);
         buttonOpenSelectedFileInSystem.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         buttonOpenSelectedFileInSystem.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        buttonOpenSelectedFileInSystem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                buttonOpenSelectedFileInSystemActionPerformed(evt);
-            }
-        });
+        buttonOpenSelectedFileInSystem.addActionListener(
+            this::buttonOpenSelectedFileInSystemActionPerformed);
         jToolBar1.add(buttonOpenSelectedFileInSystem);
 
-        buttonImageFromClipboard.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/picture_insert.png"))); // NOI18N
+        buttonImageFromClipboard.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/picture_insert.png")));
         buttonImageFromClipboard.setToolTipText("Send clipboard image to KODI");
         buttonImageFromClipboard.setEnabled(false);
         buttonImageFromClipboard.setFocusable(false);
         buttonImageFromClipboard.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         buttonImageFromClipboard.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        buttonImageFromClipboard.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                buttonImageFromClipboardActionPerformed(evt);
-            }
-        });
+        buttonImageFromClipboard.addActionListener(
+            this::buttonImageFromClipboardActionPerformed);
         jToolBar1.add(buttonImageFromClipboard);
 
-        buttonPlaySelected.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/control_play_blue.png"))); // NOI18N
+        buttonPlaySelected.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/control_play_blue.png")));
         buttonPlaySelected.setToolTipText("Play selected item on KODI");
         buttonPlaySelected.setEnabled(false);
         buttonPlaySelected.setFocusable(false);
         buttonPlaySelected.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         buttonPlaySelected.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        buttonPlaySelected.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                buttonPlaySelectedActionPerformed(evt);
-            }
-        });
+        buttonPlaySelected.addActionListener(this::buttonPlaySelectedActionPerformed);
         jToolBar1.add(buttonPlaySelected);
 
-        toggleButtonScreencast.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/videodisplay.png"))); // NOI18N
+        toggleButtonScreencast.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/videodisplay.png")));
         toggleButtonScreencast.setToolTipText("Stream screen to KODI");
         toggleButtonScreencast.setFocusable(false);
         toggleButtonScreencast.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         toggleButtonScreencast.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        toggleButtonScreencast.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                toggleButtonScreencastActionPerformed(evt);
-            }
-        });
+        toggleButtonScreencast.addActionListener(this::toggleButtonScreencastActionPerformed);
         jToolBar1.add(toggleButtonScreencast);
 
         panelFileTree.add(jToolBar1, java.awt.BorderLayout.NORTH);
@@ -797,7 +799,8 @@ public final class MainFrame extends javax.swing.JFrame
 
         panelMain.setLayout(new java.awt.BorderLayout());
 
-        panelPlayers.setLayout(new javax.swing.BoxLayout(panelPlayers, javax.swing.BoxLayout.Y_AXIS));
+        panelPlayers.setLayout(
+            new javax.swing.BoxLayout(panelPlayers, javax.swing.BoxLayout.Y_AXIS));
         panelMain.add(panelPlayers, java.awt.BorderLayout.PAGE_START);
 
         mainPanelSplit.setRightComponent(panelMain);
@@ -806,121 +809,90 @@ public final class MainFrame extends javax.swing.JFrame
 
         menuFile.setText("File");
 
-        menuSelectFolder.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_folders_explorer.png"))); // NOI18N
+        menuSelectFolder.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/16_folders_explorer.png")));
         menuSelectFolder.setText("Select folder");
-        menuSelectFolder.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuSelectFolderActionPerformed(evt);
-            }
-        });
+        menuSelectFolder.addActionListener(this::menuSelectFolderActionPerformed);
         menuFile.add(menuSelectFolder);
 
-        menuFileOpenURL.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_world_link.png"))); // NOI18N
+        menuFileOpenURL.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/16_world_link.png")));
         menuFileOpenURL.setText("Open URL");
-        menuFileOpenURL.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuFileOpenURLActionPerformed(evt);
-            }
-        });
+        menuFileOpenURL.addActionListener(this::menuFileOpenURLActionPerformed);
         menuFile.add(menuFileOpenURL);
 
-        menuOpenFile.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_file_extension_cda.png"))); // NOI18N
+        menuOpenFile.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/16_file_extension_cda.png")));
         menuOpenFile.setText("Open file");
-        menuOpenFile.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuOpenFileActionPerformed(evt);
-            }
-        });
+        menuOpenFile.addActionListener(this::menuOpenFileActionPerformed);
         menuFile.add(menuOpenFile);
 
-        menuOpenYoutubeLink.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_youtube.png"))); // NOI18N
+        menuOpenYoutubeLink.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/16_youtube.png")));
         menuOpenYoutubeLink.setText("Open Youtube");
-        menuOpenYoutubeLink.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuOpenYoutubeLinkActionPerformed(evt);
-            }
-        });
+        menuOpenYoutubeLink.addActionListener(this::menuOpenYoutubeLinkActionPerformed);
         menuFile.add(menuOpenYoutubeLink);
         menuFile.add(jSeparator1);
 
-        menuExit.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_door_in.png"))); // NOI18N
+        menuExit.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/16_door_in.png")));
         menuExit.setText("Exit");
-        menuExit.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuExitActionPerformed(evt);
-            }
-        });
+        menuExit.addActionListener(this::menuExitActionPerformed);
         menuFile.add(menuExit);
 
         menuMain.add(menuFile);
 
         menuTools.setText("Tools");
 
-        menuTimers.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_time.png"))); // NOI18N
+        menuTimers.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_time.png")));
         menuTimers.setText("Timers");
-        menuTimers.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuTimersActionPerformed(evt);
-            }
-        });
+        menuTimers.addActionListener(this::menuTimersActionPerformed);
         menuTools.add(menuTimers);
 
-        menuStaticContent.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_file_publish_sharepoint.png"))); // NOI18N
+        menuStaticContent.setIcon(
+            new javax.swing.ImageIcon(
+                getClass().getResource("/icons/16_file_publish_sharepoint.png")));
         menuStaticContent.setText("Published files");
-        menuStaticContent.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuStaticContentActionPerformed(evt);
-            }
-        });
+        menuStaticContent.addActionListener(this::menuStaticContentActionPerformed);
         menuTools.add(menuStaticContent);
 
-        menuLookAndFeel.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_eye.png"))); // NOI18N
+        menuLookAndFeel.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/16_eye.png")));
         menuLookAndFeel.setText("Look and Feel");
         menuTools.add(menuLookAndFeel);
 
-        menuToolsOptions.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_setting_tools.png"))); // NOI18N
+        menuToolsOptions.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/16_setting_tools.png")));
         menuToolsOptions.setText("Options");
-        menuToolsOptions.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuToolsOptionsActionPerformed(evt);
-            }
-        });
+        menuToolsOptions.addActionListener(this::menuToolsOptionsActionPerformed);
         menuTools.add(menuToolsOptions);
 
         menuMain.add(menuTools);
 
         menuMisc.setText("Misc");
 
-        menuMiscDecodeYoutubeUrl.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_youtube.png"))); // NOI18N
+        menuMiscDecodeYoutubeUrl.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/16_youtube.png")));
         menuMiscDecodeYoutubeUrl.setText("Decode Youtube URL");
-        menuMiscDecodeYoutubeUrl.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuMiscDecodeYoutubeUrlActionPerformed(evt);
-            }
-        });
+        menuMiscDecodeYoutubeUrl.addActionListener(
+            this::menuMiscDecodeYoutubeUrlActionPerformed);
         menuMisc.add(menuMiscDecodeYoutubeUrl);
 
         menuMain.add(menuMisc);
 
         menuHelp.setText("Help");
 
-        menuHelpDonation.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_coins.png"))); // NOI18N
+        menuHelpDonation.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/16_coins.png")));
         menuHelpDonation.setText("Make donation");
         menuHelpDonation.setToolTipText("Make donation to the author of the application");
-        menuHelpDonation.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuHelpDonationActionPerformed(evt);
-            }
-        });
+        menuHelpDonation.addActionListener(this::menuHelpDonationActionPerformed);
         menuHelp.add(menuHelpDonation);
 
-        menuAbout.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_information.png"))); // NOI18N
+        menuAbout.setIcon(
+            new javax.swing.ImageIcon(getClass().getResource("/icons/16_information.png")));
         menuAbout.setText("About");
-        menuAbout.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuAboutActionPerformed(evt);
-            }
-        });
+        menuAbout.addActionListener(this::menuAboutActionPerformed);
         menuHelp.add(menuAbout);
 
         menuMain.add(menuHelp);
@@ -928,158 +900,179 @@ public final class MainFrame extends javax.swing.JFrame
         setJMenuBar(menuMain);
 
         pack();
-    }// </editor-fold>//GEN-END:initComponents
+    }
 
-  private void buttonSelectFolderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonSelectFolderActionPerformed
-      final JFileChooser chooser = new JFileChooser();
-      chooser.setCurrentDirectory(new File(System.getProperty("user.home")));
-      chooser.setDialogTitle("Select video folder");
-      chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-      chooser.setAcceptAllFileFilterUsed(false);
-      if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-          final File folder = chooser.getSelectedFile();
-          setFileRoot(folder.getAbsolutePath());
-          this.preferences.setFileRoot(folder.getAbsolutePath());
-          this.preferences.flush();
-      }
-  }//GEN-LAST:event_buttonSelectFolderActionPerformed
+    private void buttonSelectFolderActionPerformed(java.awt.event.ActionEvent evt) {
+        final JFileChooser chooser = new JFileChooser();
+        chooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+        chooser.setDialogTitle("Select video folder");
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        chooser.setAcceptAllFileFilterUsed(false);
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            final File folder = chooser.getSelectedFile();
+            setFileRoot(folder.getAbsolutePath());
+            this.preferences.setFileRoot(folder.getAbsolutePath());
+            this.preferences.flush();
+        }
+    }
 
-  private void menuToolsOptionsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuToolsOptionsActionPerformed
-      final OptionsPanel.Data container = new OptionsPanel.Data(this.preferences);
-      if (JOptionPane.showConfirmDialog(this, Utils.makeOwningDialogResizable(new JScrollPane(new OptionsPanel(container, this.soundAdapter))), "Options", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
-          container.save(this.preferences);
-          this.server.restartServer();
-      }
-  }//GEN-LAST:event_menuToolsOptionsActionPerformed
+    private void menuToolsOptionsActionPerformed(java.awt.event.ActionEvent evt) {
+        final OptionsPanel.Data container = new OptionsPanel.Data(this.preferences);
+        if (JOptionPane.showConfirmDialog(this, Utils.makeOwningDialogResizable(
+                new JScrollPane(new OptionsPanel(container, this.soundAdapter))), "Options",
+            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+            container.save(this.preferences);
+            this.server.restartServer();
+        }
+    }
 
-  private void treeVideoFilesMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_treeVideoFilesMouseClicked
-      if (!evt.isPopupTrigger() && evt.getClickCount() > 1) {
-          final TreePath path = this.treeVideoFiles.getSelectionPath();
-          if (path != null) {
-              final Object last = path.getLastPathComponent();
-              if (last instanceof ContentFile) {
-                  openInSystem((ContentFile) last);
-              }
-          }
-      }
-  }//GEN-LAST:event_treeVideoFilesMouseClicked
+    private void treeVideoFilesMouseClicked(java.awt.event.MouseEvent evt) {
+        if (!evt.isPopupTrigger() && evt.getClickCount() > 1) {
+            final TreePath path = this.treeVideoFiles.getSelectionPath();
+            if (path != null) {
+                final Object last = path.getLastPathComponent();
+                if (last instanceof ContentFile) {
+                    openInSystem((ContentFile) last);
+                }
+            }
+        }
+    }
 
-  private void buttonPlaySelectedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonPlaySelectedActionPerformed
-      final TreePath selected = this.treeVideoFiles.getSelectionPath();
-      if (selected != null && selected.getLastPathComponent() instanceof ContentFile) {
-          final ContentFile videoFile = (ContentFile) selected.getLastPathComponent();
-          if (this.fileRegstry.isFileAtPlay(videoFile.getFilePath())) {
-              JOptionPane.showMessageDialog(this, "The File is already playing", "File is playing", JOptionPane.WARNING_MESSAGE);
-          } else {
-              this.startPlaying(videoFile, null);
-          }
-      }
-  }//GEN-LAST:event_buttonPlaySelectedActionPerformed
+    private void buttonPlaySelectedActionPerformed(java.awt.event.ActionEvent evt) {
+        final TreePath selected = this.treeVideoFiles.getSelectionPath();
+        if (selected != null && selected.getLastPathComponent() instanceof ContentFile videoFile) {
+            if (this.fileRegstry.isFileAtPlay(videoFile.getFilePath())) {
+                JOptionPane.showMessageDialog(this, "The File is already playing",
+                    "File is playing",
+                    JOptionPane.WARNING_MESSAGE);
+            } else {
+                this.startPlaying(videoFile, null);
+            }
+        }
+    }
 
-  private void buttonOpenSelectedFileInSystemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonOpenSelectedFileInSystemActionPerformed
-      final TreePath path = this.treeVideoFiles.getSelectionPath();
-      if (path.getLastPathComponent() instanceof ContentFile) {
-          openInSystem((ContentFile) path.getLastPathComponent());
-      }
-  }//GEN-LAST:event_buttonOpenSelectedFileInSystemActionPerformed
+    private void buttonOpenSelectedFileInSystemActionPerformed(java.awt.event.ActionEvent evt) {
+        final TreePath path = this.treeVideoFiles.getSelectionPath();
+        if (path.getLastPathComponent() instanceof ContentFile) {
+            openInSystem((ContentFile) path.getLastPathComponent());
+        }
+    }
 
-  private void menuExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuExitActionPerformed
-      this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
-  }//GEN-LAST:event_menuExitActionPerformed
+    private void menuExitActionPerformed(java.awt.event.ActionEvent evt) {
+        this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+    }
 
-  private void menuSelectFolderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuSelectFolderActionPerformed
-      this.buttonSelectFolder.doClick();
-  }//GEN-LAST:event_menuSelectFolderActionPerformed
+    private void menuSelectFolderActionPerformed(java.awt.event.ActionEvent evt) {
+        this.buttonSelectFolder.doClick();
+    }
 
-  private void buttonImageFromClipboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonImageFromClipboardActionPerformed
-      try {
-          final Image image = (Image) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.imageFlavor);
-          if (image == null) {
-              LOGGER.warn("NULL image from clipboard");
-              JOptionPane.showMessageDialog(this, "Can't find image in clipboard!", "No clipboard image", JOptionPane.ERROR_MESSAGE);
-              return;
-          }
+    private void buttonImageFromClipboardActionPerformed(java.awt.event.ActionEvent evt) {
+        try {
+            final Image image =
+                (Image) Toolkit.getDefaultToolkit().getSystemClipboard()
+                    .getData(DataFlavor.imageFlavor);
+            if (image == null) {
+                LOGGER.warn("NULL image from clipboard");
+                JOptionPane.showMessageDialog(this, "Can't find image in clipboard!",
+                    "No clipboard image",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
-          final RenderedImage rendered;
-          if (image instanceof RenderedImage) {
-              rendered = (RenderedImage) image;
-          } else {
-              final BufferedImage bufferimage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
-              final Graphics g = bufferimage.createGraphics();
-              g.drawImage(image, 0, 0, null);
-              g.dispose();
-              rendered = bufferimage;
-          }
-          LOGGER.info("Prepared clipboard image {}x{} to be sent", rendered.getWidth(), rendered.getHeight());
-          final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-          ImageIO.write(rendered, "png", buffer);
-          this.startPlaying(new ContentFile(Paths.get("clipboard_screenshot.png"), ContentType.PICTURE), buffer.toByteArray());
-      } catch (Exception ex) {
-          LOGGER.error("Can't send image from clipboard for error", ex);
-          JOptionPane.showMessageDialog(this, "Error during operation : " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-      }
-  }//GEN-LAST:event_buttonImageFromClipboardActionPerformed
+            final RenderedImage rendered;
+            if (image instanceof RenderedImage) {
+                rendered = (RenderedImage) image;
+            } else {
+                final BufferedImage bufferimage =
+                    new BufferedImage(image.getWidth(null), image.getHeight(null),
+                        BufferedImage.TYPE_INT_RGB);
+                final Graphics g = bufferimage.createGraphics();
+                g.drawImage(image, 0, 0, null);
+                g.dispose();
+                rendered = bufferimage;
+            }
+            LOGGER.info("Prepared clipboard image {}x{} to be sent", rendered.getWidth(),
+                rendered.getHeight());
+            final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            ImageIO.write(rendered, "png", buffer);
+            this.startPlaying(
+                new ContentFile(Paths.get("clipboard_screenshot.png"), ContentType.PICTURE),
+                buffer.toByteArray());
+        } catch (Exception ex) {
+            LOGGER.error("Can't send image from clipboard for error", ex);
+            JOptionPane.showMessageDialog(this, "Error during operation : " + ex.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
-  private void menuOpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuOpenFileActionPerformed
-      final File folder;
+    private void menuOpenFileActionPerformed(java.awt.event.ActionEvent evt) {
+        final File folder;
 
-      if (this.lastSelectedFileFolder == null) {
-          folder = this.currentRootFolder == null ? null : this.currentRootFolder.toFile();
-      } else {
-          folder = this.lastSelectedFileFolder;
-      }
+        if (this.lastSelectedFileFolder == null) {
+            folder = this.currentRootFolder == null ? null : this.currentRootFolder.toFile();
+        } else {
+            folder = this.lastSelectedFileFolder;
+        }
 
-      final JFileChooser fileChooser = new JFileChooser(folder);
-      fileChooser.setDialogTitle("Open file on KODI");
-      fileChooser.setMultiSelectionEnabled(false);
-      fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-      fileChooser.setAcceptAllFileFilterUsed(false);
+        final JFileChooser fileChooser = new JFileChooser(folder);
+        fileChooser.setDialogTitle("Open file on KODI");
+        fileChooser.setMultiSelectionEnabled(false);
+        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        fileChooser.setAcceptAllFileFilterUsed(false);
 
-      for (final MimeTypes.ContentType c : MimeTypes.ContentType.values()) {
-          if (c != ContentType.UNKNOWN) {
-              fileChooser.addChoosableFileFilter(this.mimeTypes.makeFileFilter(c));
-          }
-      }
+        for (final MimeTypes.ContentType c : MimeTypes.ContentType.values()) {
+            if (c != ContentType.UNKNOWN) {
+                fileChooser.addChoosableFileFilter(this.mimeTypes.makeFileFilter(c));
+            }
+        }
 
-      if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-          final File fileToOpen = fileChooser.getSelectedFile();
-          this.lastSelectedFileFolder = fileToOpen.getParentFile();
-          if (fileToOpen.isFile()) {
-              LOGGER.info("Opening file {}", fileToOpen);
-              startPlaying(new ContentFile(fileToOpen.toPath(), ContentType.findType(fileToOpen)), null);
-          } else {
-              LOGGER.warn("Can't find file {}", fileToOpen);
-          }
-      }
-  }//GEN-LAST:event_menuOpenFileActionPerformed
+        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            final File fileToOpen = fileChooser.getSelectedFile();
+            this.lastSelectedFileFolder = fileToOpen.getParentFile();
+            if (fileToOpen.isFile()) {
+                LOGGER.info("Opening file {}", fileToOpen);
+                startPlaying(new ContentFile(fileToOpen.toPath(), ContentType.findType(fileToOpen)),
+                    null);
+            } else {
+                LOGGER.warn("Can't find file {}", fileToOpen);
+            }
+        }
+    }
 
-  private void menuAboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuAboutActionPerformed
-      JOptionPane.showMessageDialog(this, new AboutPanel(this.donationController, this.buildProperties), "About", JOptionPane.PLAIN_MESSAGE);
-  }//GEN-LAST:event_menuAboutActionPerformed
+    private void menuAboutActionPerformed(java.awt.event.ActionEvent evt) {
+        JOptionPane.showMessageDialog(this,
+            new AboutPanel(this.donationController, this.buildProperties), "About",
+            JOptionPane.PLAIN_MESSAGE);
+    }
 
-    private final void openUrlLink(final String url) {
+    private void openUrlLink(final String url) {
         OpeningFileInfoPanel infoPanel = this.openingFileInfoPanel.get();
         if (infoPanel == null) {
             infoPanel = new OpeningFileInfoPanel();
             this.openingFileInfoPanel.set(infoPanel);
             this.setGlassPane(infoPanel);
         }
-        infoPanel.setTextInfo(String.format("Opening link '%s'", Utils.cutStrLength(url, STR_CUT_LEN)));
+        infoPanel.setTextInfo(
+            String.format("Opening link '%s'", Utils.cutStrLength(url, STR_CUT_LEN)));
         infoPanel.setVisible(true);
 
         this.executorService.submit(() -> {
             final KodiAddress kodiAddress;
             kodiAddress = new KodiAddress(
-                    this.preferences.getKodiAddress(),
-                    this.preferences.getKodiPort(),
-                    this.preferences.getKodiName(),
-                    this.preferences.getKodiPassword(),
-                    this.preferences.isKodiSsl()
+                this.preferences.getKodiAddress(),
+                this.preferences.getKodiPort(),
+                this.preferences.getKodiName(),
+                this.preferences.getKodiPassword(),
+                this.preferences.isKodiSsl()
             );
 
             final AtomicReference<Throwable> error = new AtomicReference<>();
             try {
-                final String result = new KodiService(kodiAddress, this.preferences.getJsonRequestTimeout()).doPlayerOpenFile(url);
+                final String result =
+                    new KodiService(kodiAddress,
+                        this.preferences.getJsonRequestTimeout()).doPlayerOpenFile(
+                        url);
                 LOGGER.info("Player open link response is '{}' for '{}'", result, url);
                 if (!"ok".equalsIgnoreCase(result)) {
                     throw new IllegalStateException("Can't start play link, status : " + result);
@@ -1092,131 +1085,149 @@ public final class MainFrame extends javax.swing.JFrame
                 SwingUtilities.invokeLater(() -> {
                     openingFileInfoPanel.get().setVisible(false);
                     if (error.get() != null) {
-                        JOptionPane.showMessageDialog(MainFrame.this, "Can't open link by KODI, '" + Utils.cutStrLength(url, 64) + "', error: " + Utils.cutStrLength(error.get().getMessage(), 64), "Can't open URL", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(MainFrame.this,
+                            "Can't open link by KODI, '" + Utils.cutStrLength(url, 64) +
+                                "', error: " +
+                                Utils.cutStrLength(error.get().getMessage(), 64), "Can't open URL",
+                            JOptionPane.ERROR_MESSAGE);
                     }
                 });
             }
         });
     }
 
-  private void menuFileOpenURLActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuFileOpenURLActionPerformed
-      final Icon icon = new ImageIcon(Utils.loadImage("32_url_link.png"));
-      final Object text = JOptionPane.showInputDialog(this, "Entered URL will be opened with KODI player", "Open URL", JOptionPane.PLAIN_MESSAGE, icon, null, null);
-      if (text == null) {
-          return;
-      }
+    private void menuFileOpenURLActionPerformed(java.awt.event.ActionEvent evt) {
+        final Icon icon = new ImageIcon(Utils.loadImage("32_url_link.png"));
+        final Object text =
+            JOptionPane.showInputDialog(this, "Entered URL will be opened with KODI player",
+                "Open URL",
+                JOptionPane.PLAIN_MESSAGE, icon, null, null);
+        if (text == null) {
+            return;
+        }
 
-      final URI uri;
-      try {
-          uri = URI.create(text.toString().trim());
-          if (!uri.isAbsolute()) {
-              throw new IllegalArgumentException("Entered non-absolute URI: " + uri);
-          }
-      } catch (Exception ex) {
-          LOGGER.error("Error URL {}", text, ex);
-          JOptionPane.showMessageDialog(this, "Unsupported or wrong formatted URL: " + Utils.cutStrLength(text.toString(), STR_CUT_LEN), "Can't open URL", JOptionPane.ERROR_MESSAGE);
-          return;
-      }
+        final URI uri;
+        try {
+            uri = URI.create(text.toString().trim());
+            if (!uri.isAbsolute()) {
+                throw new IllegalArgumentException("Entered non-absolute URI: " + uri);
+            }
+        } catch (Exception ex) {
+            LOGGER.error("Error URL {}", text, ex);
+            JOptionPane.showMessageDialog(this,
+                "Unsupported or wrong formatted URL: " +
+                    Utils.cutStrLength(text.toString(), STR_CUT_LEN),
+                "Can't open URL", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-      this.openUrlLink(uri.toASCIIString());
-  }//GEN-LAST:event_menuFileOpenURLActionPerformed
+        this.openUrlLink(uri.toASCIIString());
+    }
 
-  private void buttonRefreshFolderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonRefreshFolderActionPerformed
-      this.setFileRoot(this.currentRootFolder.toString());
-  }//GEN-LAST:event_buttonRefreshFolderActionPerformed
+    private void buttonRefreshFolderActionPerformed(java.awt.event.ActionEvent evt) {
+        this.setFileRoot(this.currentRootFolder.toString());
+    }
 
-  private void toggleButtonScreencastActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_toggleButtonScreencastActionPerformed
-      if (this.toggleButtonScreencast.isSelected()) {
-          this.toggleButtonScreencast.setEnabled(false);
-          if (JOptionPane.showConfirmDialog(this, "Do you want begin screencast?", "Confirmation", JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) {
-              this.toggleButtonScreencast.setEnabled(true);
-              this.toggleButtonScreencast.setSelected(false);
-              updateToolButtons();
-              return;
-          }
+    private void toggleButtonScreencastActionPerformed(java.awt.event.ActionEvent evt) {
+        if (this.toggleButtonScreencast.isSelected()) {
+            this.toggleButtonScreencast.setEnabled(false);
+            if (JOptionPane.showConfirmDialog(this, "Do you want begin screencast?", "Confirmation",
+                JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) {
+                this.toggleButtonScreencast.setEnabled(true);
+                this.toggleButtonScreencast.setSelected(false);
+                updateToolButtons();
+                return;
+            }
 
-          try {
-              final ScreenGrabber newScreenGrabber = new ScreenGrabber(this.preferences);
-              this.timeWhenEndScreencastFlowEnable.set(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30));
+            try {
+                final ScreenGrabber newScreenGrabber = new ScreenGrabber(this.preferences);
+                this.timeWhenEndScreencastFlowEnable.set(
+                    System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30));
 
-              final FfmpegWrapper ffmpwrapper = new FfmpegWrapper(
-                      this.preferences,
-                      this.soundAdapter,
-                      this.server.getScreencastDataBuffer()
-              );
+                final FfmpegWrapper ffmpwrapper = new FfmpegWrapper(
+                    this.preferences,
+                    this.soundAdapter,
+                    this.server.getScreencastDataBuffer()
+                );
 
-              this.lastFFmpegWrapper = new WeakReference<>(ffmpwrapper);
+                this.lastFFmpegWrapper = new WeakReference<>(ffmpwrapper);
 
-              newScreenGrabber.addGrabbingListener(ffmpwrapper);
+                newScreenGrabber.addGrabbingListener(ffmpwrapper);
 
-              newScreenGrabber.addGrabbingListener(new ScreenGrabber.ScreenGrabberListener() {
-                  private void endWork() {
-                      stopScreenCast();
-                  }
+                newScreenGrabber.addGrabbingListener(new ScreenGrabber.ScreenGrabberListener() {
+                    private void endWork() {
+                        stopScreenCast();
+                    }
 
-                  @Override
-                  public void onStarted(final ScreenGrabber source) {
-                      sendScreencastAddressToKodi();
-                  }
+                    @Override
+                    public void onStarted(final ScreenGrabber source) {
+                        sendScreencastAddressToKodi();
+                    }
 
-                  @Override
-                  public void onDisposed(final ScreenGrabber source) {
-                      endWork();
-                  }
+                    @Override
+                    public void onDisposed(final ScreenGrabber source) {
+                        endWork();
+                    }
 
-                  @Override
-                  public void onError(final ScreenGrabber source, final Throwable error) {
-                      timeWhenEndScreencastFlowEnable.set(0L);
-                      final Runnable code = () -> {
-                          JOptionPane.showMessageDialog(MainFrame.this, "Screencast error: " + Utils.cutStrLength(error.getMessage(), STR_CUT_LEN), "Error", JOptionPane.ERROR_MESSAGE);
-                      };
-                      if (SwingUtilities.isEventDispatchThread()) {
-                          code.run();
-                      } else {
-                          SwingUtilities.invokeLater(code);
-                      }
-                      endWork();
-                  }
-              });
+                    @Override
+                    public void onError(final ScreenGrabber source, final Throwable error) {
+                        timeWhenEndScreencastFlowEnable.set(0L);
+                        final Runnable code = () -> JOptionPane.showMessageDialog(MainFrame.this,
+                            "Screencast error: " +
+                                Utils.cutStrLength(error.getMessage(), STR_CUT_LEN), "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                        if (SwingUtilities.isEventDispatchThread()) {
+                            code.run();
+                        } else {
+                            SwingUtilities.invokeLater(code);
+                        }
+                        endWork();
+                    }
+                });
 
-              if (this.currentScreenGrabber.compareAndSet(null, newScreenGrabber)) {
-                  newScreenGrabber.start();
+                if (this.currentScreenGrabber.compareAndSet(null, newScreenGrabber)) {
+                    newScreenGrabber.start();
 
-                  this.executorService.schedule(() -> {
-                      if (this.server.isScreencastFlowActive()) {
-                          LOGGER.info("Detected started screencast flow");
-                      } else {
-                          LOGGER.warn("Detected that there is no screencast flow, stopping grabber");
-                          if (this.currentScreenGrabber.get() != null) {
-                              this.stopScreenCast();
-                          }
-                      }
-                  }, 30, TimeUnit.SECONDS);
-              } else {
-                  LOGGER.warn("Detected already active screen grabber!");
-              }
-          } catch (Exception ex) {
-              LOGGER.error("Can't create screen grabber");
-              JOptionPane.showMessageDialog(this, "Can't create screen grabber: " + Utils.cutStrLength(ex.getMessage(), STR_CUT_LEN), "Error", JOptionPane.ERROR_MESSAGE);
-              stopScreenCast();
-          }
-      }
-      this.updateToolButtons();
-  }//GEN-LAST:event_toggleButtonScreencastActionPerformed
+                    this.executorService.schedule(() -> {
+                        if (this.server.isScreencastFlowActive()) {
+                            LOGGER.info("Detected started screencast flow");
+                        } else {
+                            LOGGER.warn(
+                                "Detected that there is no screencast flow, stopping grabber");
+                            if (this.currentScreenGrabber.get() != null) {
+                                this.stopScreenCast();
+                            }
+                        }
+                    }, 30, TimeUnit.SECONDS);
+                } else {
+                    LOGGER.warn("Detected already active screen grabber!");
+                }
+            } catch (Exception ex) {
+                LOGGER.error("Can't create screen grabber");
+                JOptionPane.showMessageDialog(this,
+                    "Can't create screen grabber: " +
+                        Utils.cutStrLength(ex.getMessage(), STR_CUT_LEN),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+                stopScreenCast();
+            }
+        }
+        this.updateToolButtons();
+    }
 
-  private void menuHelpDonationActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuHelpDonationActionPerformed
-      this.donationController.openDonationUrl();
-  }//GEN-LAST:event_menuHelpDonationActionPerformed
+    private void menuHelpDonationActionPerformed(java.awt.event.ActionEvent evt) {
+        this.donationController.openDonationUrl();
+    }
 
-    private void menuTimersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuTimersActionPerformed
+    private void menuTimersActionPerformed(java.awt.event.ActionEvent evt) {
         final File root = new File(this.preferences.getFileRoot());
         final TimersTable timersTable = new TimersTable(root, this.preferences.getTimers());
-        if (JOptionPane.showConfirmDialog(this, timersTable, "Timers", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+        if (JOptionPane.showConfirmDialog(this, timersTable, "Timers", JOptionPane.OK_CANCEL_OPTION,
+            JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
             final List<TimerResource> newTimers = timersTable.getTimers();
             this.preferences.setTimers(newTimers);
             this.timerScheduler.reloadTimers();
         }
-    }//GEN-LAST:event_menuTimersActionPerformed
+    }
 
     private void openYoutubeVideoLinkWithKodiPlugin(final String youTubeVideoId) {
         final String patternVideo = "plugin://plugin.video.youtube/play/?video_id=%s";
@@ -1231,53 +1242,71 @@ public final class MainFrame extends javax.swing.JFrame
     }
 
     private void openYoutubeThroughDirectLinkSearch(
-            @NonNull final String youTubeVideoId,
-            @NonNull final YtQuality preferredQuality,
-            @NonNull final YtVideoType requiredFormat,
-            final boolean throughPlayList) {
-        LOGGER.info("Opening youtube (playlist flag is {}) through direct link search, preffered quality is {}, required format is {}: {}", throughPlayList, preferredQuality, requiredFormat, youTubeVideoId);
+        @NonNull final String youTubeVideoId,
+        @NonNull final YtQuality preferredQuality,
+        @NonNull final YtVideoType requiredFormat,
+        final boolean throughPlayList) {
+        LOGGER.info(
+            "Opening youtube (playlist flag is {}) through direct link search, preffered quality is {}, required format is {}: {}",
+            throughPlayList, preferredQuality, requiredFormat, youTubeVideoId);
         if (throughPlayList) {
-            this.youTubeLinkExtractor.findPlayListInfoAsync(youTubeVideoId, (playListId, playlistInfo, error) -> {
-                if (error == null) {
-                    if (playlistInfo.videos().isEmpty()) {
-                        SwingUtilities.invokeLater(() -> {
-                            JOptionPane.showMessageDialog(MainFrame.this, "Youtube playlist is empty!", "Info '" + playListId + '\'', JOptionPane.WARNING_MESSAGE);
-                        });
-                    } else {
-                        var firstVideo = playlistInfo.videos().stream()
-                                .filter(x -> x.isPlayable())
+            this.youTubeLinkExtractor.findPlayListInfoAsync(youTubeVideoId,
+                (playListId, playlistInfo, error) -> {
+                    if (error == null) {
+                        if (playlistInfo.videos().isEmpty()) {
+                            SwingUtilities.invokeLater(
+                                () -> JOptionPane.showMessageDialog(MainFrame.this,
+                                    "Youtube playlist is empty!", "Info '" + playListId + '\'',
+                                    JOptionPane.WARNING_MESSAGE));
+                        } else {
+                            var firstVideo = playlistInfo.videos().stream()
+                                .filter(PlaylistVideoDetails::isPlayable)
                                 .findFirst()
                                 .orElse(null);
-                        if (firstVideo == null) {
-                            LOGGER.info("Can't find any playable video in youtube playlist: {}", playListId);
-                            SwingUtilities.invokeLater(() -> {
-                                JOptionPane.showMessageDialog(MainFrame.this, "Youtube playlist doesn't have playable video!", "Info '" + playListId + '\'', JOptionPane.WARNING_MESSAGE);
-                            });
-                        } else {
-                            SwingUtilities.invokeLater(() -> {
-                                LOGGER.info("Opening first video in youtube playlist '{}': {} ({})", playListId, firstVideo.title(), firstVideo.videoId());
-                                this.youTubeLinkExtractor.findVideoUrlAsync(firstVideo.videoId(), preferredQuality, requiredFormat, this::onResolvedYoutubeUrlLink);
-                            });
+                            if (firstVideo == null) {
+                                LOGGER.info("Can't find any playable video in youtube playlist: {}",
+                                    playListId);
+                                SwingUtilities.invokeLater(
+                                    () -> JOptionPane.showMessageDialog(MainFrame.this,
+                                        "Youtube playlist doesn't have playable video!",
+                                        "Info '" + playListId + '\'',
+                                        JOptionPane.WARNING_MESSAGE));
+                            } else {
+                                SwingUtilities.invokeLater(() -> {
+                                    LOGGER.info(
+                                        "Opening first video in youtube playlist '{}': {} ({})",
+                                        playListId,
+                                        firstVideo.title(), firstVideo.videoId());
+                                    this.youTubeLinkExtractor.findVideoUrlAsync(
+                                        firstVideo.videoId(),
+                                        preferredQuality, requiredFormat,
+                                        this::onResolvedYoutubeUrlLink);
+                                });
+                            }
                         }
+                    } else {
+                        SwingUtilities.invokeLater(
+                            () -> JOptionPane.showMessageDialog(MainFrame.this, error.getMessage(),
+                                "Error '" + youTubeLinkExtractor + '\'',
+                                JOptionPane.ERROR_MESSAGE));
                     }
-                } else {
-                    SwingUtilities.invokeLater(() -> {
-                        JOptionPane.showMessageDialog(MainFrame.this, error.getMessage(), "Error '" + youTubeLinkExtractor + '\'', JOptionPane.ERROR_MESSAGE);
-                    });
-                }
-            });
+                });
         } else {
-            this.youTubeLinkExtractor.findVideoUrlAsync(youTubeVideoId, preferredQuality, requiredFormat, this::onResolvedYoutubeUrlLink);
+            this.youTubeLinkExtractor.findVideoUrlAsync(youTubeVideoId, preferredQuality,
+                requiredFormat,
+                this::onResolvedYoutubeUrlLink);
         }
     }
 
-    private void onResolvedYoutubeUrlLink(@NonNull final String youTubeVideoId, @Nullable final String url, @Nullable final Throwable error) {
+    private void onResolvedYoutubeUrlLink(@NonNull final String youTubeVideoId,
+                                          @Nullable final String url,
+                                          @Nullable final Throwable error) {
         if (error == null) {
             SwingUtilities.invokeLater(() -> this.openUrlLink(url));
         } else {
-            SwingUtilities.invokeLater(() -> {
-                JOptionPane.showMessageDialog(MainFrame.this, error.getMessage(), "Error '" + youTubeVideoId + '\'', JOptionPane.ERROR_MESSAGE);
-            });
+            SwingUtilities.invokeLater(
+                () -> JOptionPane.showMessageDialog(MainFrame.this, error.getMessage(),
+                    "Error '" + youTubeVideoId + '\'', JOptionPane.ERROR_MESSAGE));
         }
     }
 
@@ -1291,14 +1320,14 @@ public final class MainFrame extends javax.swing.JFrame
                     id = YoutubeUtils.extractYoutubePlaylistId(youtubeLinkUrl).orElse(null);
                     if (id == null) {
                         this.openYoutubeThroughDirectLinkSearch(youtubeLinkUrl.trim(),
-                                preferredQuality, requiredFormat, false);
+                            preferredQuality, requiredFormat, false);
                     } else {
                         this.openYoutubeThroughDirectLinkSearch(id,
-                                preferredQuality, requiredFormat, true);
+                            preferredQuality, requiredFormat, true);
                     }
                 } else {
                     this.openYoutubeThroughDirectLinkSearch(id,
-                            preferredQuality, requiredFormat, false);
+                        preferredQuality, requiredFormat, false);
                 }
 
             }
@@ -1322,112 +1351,121 @@ public final class MainFrame extends javax.swing.JFrame
         }
     }
 
-    private void menuOpenYoutubeLinkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuOpenYoutubeLinkActionPerformed
+    private void menuOpenYoutubeLinkActionPerformed(java.awt.event.ActionEvent evt) {
         final Icon icon = new ImageIcon(Utils.loadImage("32_youtube.png"));
-        final String text = (String) JOptionPane.showInputDialog(this, "Entered Youtube URL will be opened with KODI player", "Open Youtube link", JOptionPane.PLAIN_MESSAGE, icon, null, null);
+        final String text = (String) JOptionPane.showInputDialog(this,
+            "Entered Youtube URL will be opened with KODI player", "Open Youtube link",
+            JOptionPane.PLAIN_MESSAGE, icon, null, null);
         if (text == null) {
             return;
         }
         this.openYoutubeLink(text);
-    }//GEN-LAST:event_menuOpenYoutubeLinkActionPerformed
+    }
 
-    private void menuStaticContentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuStaticContentActionPerformed
+    private void menuStaticContentActionPerformed(java.awt.event.ActionEvent evt) {
         final File root = new File(this.preferences.getFileRoot());
 
-        final PublishedFilesTable publishedFilesTable = new PublishedFilesTable(this.server.makeUrlPrefix(InternalServer.PATH_RESOURCES), root, this.preferences.getStaticResources());
-        if (JOptionPane.showConfirmDialog(this, publishedFilesTable, "Published files", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+        final PublishedFilesTable publishedFilesTable =
+            new PublishedFilesTable(this.server.makeUrlPrefix(InternalServer.PATH_RESOURCES), root,
+                this.preferences.getStaticResources());
+        if (JOptionPane.showConfirmDialog(this, publishedFilesTable, "Published files",
+            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
             final List<StaticResource> newResources = publishedFilesTable.getResources();
             this.preferences.setStaticResources(newResources);
             this.staticFileRegistry.refresh();
         }
-    }//GEN-LAST:event_menuStaticContentActionPerformed
+    }
 
-    private void menuMiscDecodeYoutubeUrlActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuMiscDecodeYoutubeUrlActionPerformed
+    private void menuMiscDecodeYoutubeUrlActionPerformed(java.awt.event.ActionEvent evt) {
         final String youtubeLinkUrl = JOptionPane.showInputDialog(this, "Enter Youtube URL", "");
         if (youtubeLinkUrl == null || youtubeLinkUrl.isBlank()) {
             return;
         }
 
-        final String youTubeVideoId = YoutubeUtils.extractYoutubeVideoId(youtubeLinkUrl).orElse(null);
+        final String youTubeVideoId =
+            YoutubeUtils.extractYoutubeVideoId(youtubeLinkUrl).orElse(null);
 
         if (youTubeVideoId == null) {
-            JOptionPane.showMessageDialog(this, "Can't extract Youtube video ID", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Can't extract Youtube video ID", "Error",
+                JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         final RequestVideoInfo request = new RequestVideoInfo(youTubeVideoId)
-                .callback(new YoutubeCallback<VideoInfo>() {
-                    @Override
-                    public void onFinished(final VideoInfo videoInfo) {
-                        final List<? extends VideoFormat> formatsWithSound = videoInfo.videoWithAudioFormats();
-                        final List<VideoFormat> formatsNoSound = videoInfo.videoFormats();
-                        final List<AudioFormat> formatsSound = videoInfo.audioFormats();
+            .callback(new YoutubeCallback<>() {
+                @Override
+                public void onFinished(final VideoInfo videoInfo) {
+                    final List<? extends VideoFormat> formatsWithSound =
+                        videoInfo.videoWithAudioFormats();
+                    final List<VideoFormat> formatsNoSound = videoInfo.videoFormats();
+                    final List<AudioFormat> formatsSound = videoInfo.audioFormats();
 
-                        final StringBuilder buffer = new StringBuilder();
-                        buffer.append("<html><body>");
+                    final StringBuilder buffer = new StringBuilder();
+                    buffer.append("<html><body>");
 
-                        buffer.append("<h2>With sound</h2><ul>");
+                    buffer.append("<h2>With sound</h2><ul>");
 
-                        formatsWithSound.forEach(x -> {
-                            buffer.append(String.format("<li>%s %s %s %s <a href=\"%s\">url</a></li>",
-                                    StringEscapeUtils.escapeHtml3(x.type()),
-                                    StringEscapeUtils.escapeHtml3(x.mimeType()),
-                                    StringEscapeUtils.escapeHtml3(x.qualityLabel()),
-                                    StringEscapeUtils.escapeHtml3(x.videoQuality().name()),
-                                    StringEscapeUtils.escapeHtml3(x.url())));
+                    formatsWithSound.forEach(
+                        x -> buffer.append(
+                            String.format("<li>%s %s %s %s <a href=\"%s\">url</a></li>",
+                                StringEscapeUtils.escapeHtml3(x.type()),
+                                StringEscapeUtils.escapeHtml3(x.mimeType()),
+                                StringEscapeUtils.escapeHtml3(x.qualityLabel()),
+                                StringEscapeUtils.escapeHtml3(x.videoQuality().name()),
+                                StringEscapeUtils.escapeHtml3(x.url()))));
+
+                    buffer.append("</ul><h2>No sound</h2><ul>");
+
+                    formatsNoSound.forEach(
+                        x -> buffer.append(
+                            String.format("<li>%s %s %s %s <a href=\"%s\">url</a></li>",
+                                StringEscapeUtils.escapeHtml3(x.type()),
+                                StringEscapeUtils.escapeHtml3(x.mimeType()),
+                                StringEscapeUtils.escapeHtml3(x.qualityLabel()),
+                                StringEscapeUtils.escapeHtml3(x.videoQuality().name()),
+                                StringEscapeUtils.escapeHtml3(x.url()))));
+
+                    buffer.append("</ul><h2>Only sound</h2><ul>");
+
+                    formatsSound.forEach(x -> buffer.append(String.format(
+                        "<li>%s %s %s samplerate: %d bitrate:%d <a href=\"%s\">url</a></li>",
+                        StringEscapeUtils.escapeHtml3(x.type()),
+                        StringEscapeUtils.escapeHtml3(x.mimeType()),
+                        StringEscapeUtils.escapeHtml3(x.audioQuality().name()),
+                        x.audioSampleRate(),
+                        x.averageBitrate(),
+                        StringEscapeUtils.escapeHtml3(x.url()))));
+
+                    buffer.append("</ul></body></html>");
+
+                    SwingUtilities.invokeLater(() -> {
+                        final JEditorPane ed1tor = new JEditorPane("text/html", buffer.toString());
+                        ed1tor.addHyperlinkListener(e -> {
+                            if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+                                Utils.showURLExternal(e.getURL());
+                            }
                         });
+                        ed1tor.setEditable(false);
+                        JOptionPane.showMessageDialog(MainFrame.this, new JScrollPane(ed1tor),
+                            "Found Youtube links", JOptionPane.PLAIN_MESSAGE);
+                    });
+                }
 
-                        buffer.append("</ul><h2>No sound</h2><ul>");
-
-                        formatsNoSound.forEach(x -> {
-                            buffer.append(String.format("<li>%s %s %s %s <a href=\"%s\">url</a></li>",
-                                    StringEscapeUtils.escapeHtml3(x.type()),
-                                    StringEscapeUtils.escapeHtml3(x.mimeType()),
-                                    StringEscapeUtils.escapeHtml3(x.qualityLabel()),
-                                    StringEscapeUtils.escapeHtml3(x.videoQuality().name()),
-                                    StringEscapeUtils.escapeHtml3(x.url())));
-                        });
-
-                        buffer.append("</ul><h2>Only sound</h2><ul>");
-
-                        formatsSound.forEach(x -> {
-                            buffer.append(String.format("<li>%s %s %s samplerate: %d bitrate:%d <a href=\"%s\">url</a></li>",
-                                    StringEscapeUtils.escapeHtml3(x.type()),
-                                    StringEscapeUtils.escapeHtml3(x.mimeType()),
-                                    StringEscapeUtils.escapeHtml3(x.audioQuality().name()),
-                                    x.audioSampleRate(),
-                                    x.averageBitrate(),
-                                    StringEscapeUtils.escapeHtml3(x.url())));
-                        });
-
-                        buffer.append("</ul></body></html>");
-
-                        SwingUtilities.invokeLater(() -> {
-                            final JEditorPane ed1tor = new JEditorPane("text/html", buffer.toString());
-                            ed1tor.addHyperlinkListener(e -> {
-                                if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-                                    Utils.showURLExternal(e.getURL());
-                                }
-                            });
-                            ed1tor.setEditable(false);
-                            JOptionPane.showMessageDialog(MainFrame.this, new JScrollPane(ed1tor), "Found Youtube links", JOptionPane.PLAIN_MESSAGE);
-                        });
-                    }
-
-                    @Override
-                    public void onError(final Throwable throwable) {
-                        LOGGER.error("Error during search video formats for youtube '{}'", youTubeVideoId, throwable);
-                        SwingUtilities.invokeLater(() -> {
-                            JOptionPane.showMessageDialog(MainFrame.this, "Error during search video formats for youtube: " + throwable.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                        });
-                    }
-                })
-                .clientType(ClientType.WEB_PARENT_TOOLS)
-                .maxRetries(5)
-                .async();
+                @Override
+                public void onError(final Throwable throwable) {
+                    LOGGER.error("Error during search video formats for youtube '{}'",
+                        youTubeVideoId, throwable);
+                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(MainFrame.this,
+                        "Error during search video formats for youtube: " +
+                            throwable.getMessage(), "Error", JOptionPane.ERROR_MESSAGE));
+                }
+            })
+            .clientType(ClientType.WEB_PARENT_TOOLS)
+            .maxRetries(5)
+            .async();
         this.youTubeLinkExtractor.getYoutubeDownloader().getVideoInfo(request);
 
-    }//GEN-LAST:event_menuMiscDecodeYoutubeUrlActionPerformed
+    }
 
     public void startPlaying(@NonNull final ContentFile contentFile, @Nullable final byte[] data) {
         final Runnable run = () -> {
@@ -1442,10 +1480,12 @@ public final class MainFrame extends javax.swing.JFrame
 
             this.executorService.submit(() -> {
                 final String uuid = UUID.randomUUID().toString();
-                final UploadFileRecord record = this.fileRegstry.registerFile(uuid, contentFile.getFilePath(), data);
+                final UploadFileRecord record =
+                    this.fileRegstry.registerFile(uuid, contentFile.getFilePath(), data);
                 final AtomicReference<Throwable> error = new AtomicReference<>();
                 try {
-                    if (!this.kodiComm.openFileThroughRegistry(record.getFile(), data, Collections.singletonMap("repeat", "off")).isPresent()) {
+                    if (!this.kodiComm.openFileThroughRegistry(record.getFile(), data,
+                        Collections.singletonMap("repeat", "off")).isPresent()) {
                         throw new IllegalStateException("Can't start play");
                     }
                     notifyAllPlayersToRefreshFullData();
@@ -1457,7 +1497,11 @@ public final class MainFrame extends javax.swing.JFrame
                     SwingUtilities.invokeLater(() -> {
                         openingFileInfoPanel.get().setVisible(false);
                         if (error.get() != null) {
-                            JOptionPane.showMessageDialog(MainFrame.this, "Can't send to KODI, file '" + contentFile.getFileNameAsString() + "', error: " + error.get().getMessage(), "Can't open file", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(MainFrame.this,
+                                "Can't send to KODI, file '" + contentFile.getFileNameAsString() +
+                                    "', error: " +
+                                    error.get().getMessage(), "Can't open file",
+                                JOptionPane.ERROR_MESSAGE);
                         }
                         this.repaint();
                     });
@@ -1485,17 +1529,20 @@ public final class MainFrame extends javax.swing.JFrame
         this.executorService.submit(() -> {
             final KodiAddress kodiAddress;
             kodiAddress = new KodiAddress(
-                    this.preferences.getKodiAddress(),
-                    this.preferences.getKodiPort(),
-                    this.preferences.getKodiName(),
-                    this.preferences.getKodiPassword(),
-                    this.preferences.isKodiSsl()
+                this.preferences.getKodiAddress(),
+                this.preferences.getKodiPort(),
+                this.preferences.getKodiName(),
+                this.preferences.getKodiPassword(),
+                this.preferences.isKodiSsl()
             );
 
             final AtomicReference<Throwable> error = new AtomicReference<>();
             try {
                 final String screenCastUrl = this.server.getScreenCastUrl();
-                final String result = new KodiService(kodiAddress, this.preferences.getJsonRequestTimeout()).doPlayerOpenFile(screenCastUrl);
+                final String result =
+                    new KodiService(kodiAddress,
+                        this.preferences.getJsonRequestTimeout()).doPlayerOpenFile(
+                        screenCastUrl);
                 LOGGER.info("Player open response for '{}' is '{}'", screenCastUrl, result);
                 if (!"ok".equalsIgnoreCase(result)) {
                     throw new IllegalStateException("Can't start play, status : " + result);
@@ -1508,7 +1555,9 @@ public final class MainFrame extends javax.swing.JFrame
                 SwingUtilities.invokeLater(() -> {
                     openingFileInfoPanel.get().setVisible(false);
                     if (error.get() != null) {
-                        JOptionPane.showMessageDialog(MainFrame.this, "Can't open screen-cast on KODI, error: " + error.get().getMessage(), "Can't open file", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(MainFrame.this,
+                            "Can't open screen-cast on KODI, error: " + error.get().getMessage(),
+                            "Can't open file", JOptionPane.ERROR_MESSAGE);
                         stopScreenCast();
                     }
                     this.repaint();
@@ -1532,41 +1581,6 @@ public final class MainFrame extends javax.swing.JFrame
         }
     }
 
-
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton buttonImageFromClipboard;
-    private javax.swing.JButton buttonOpenSelectedFileInSystem;
-    private javax.swing.JButton buttonPlaySelected;
-    private javax.swing.JButton buttonRefreshFolder;
-    private javax.swing.JButton buttonSelectFolder;
-    private javax.swing.JScrollPane fileTreeScrollPane;
-    private javax.swing.JPopupMenu.Separator jSeparator1;
-    private javax.swing.JToolBar jToolBar1;
-    private javax.swing.JSplitPane mainPanelSplit;
-    private javax.swing.JMenuItem menuAbout;
-    private javax.swing.JMenuItem menuExit;
-    private javax.swing.JMenu menuFile;
-    private javax.swing.JMenuItem menuFileOpenURL;
-    private javax.swing.JMenu menuHelp;
-    private javax.swing.JMenuItem menuHelpDonation;
-    private javax.swing.JMenu menuLookAndFeel;
-    private javax.swing.JMenuBar menuMain;
-    private javax.swing.JMenu menuMisc;
-    private javax.swing.JMenuItem menuMiscDecodeYoutubeUrl;
-    private javax.swing.JMenuItem menuOpenFile;
-    private javax.swing.JMenuItem menuOpenYoutubeLink;
-    private javax.swing.JMenuItem menuSelectFolder;
-    private javax.swing.JMenuItem menuStaticContent;
-    private javax.swing.JMenuItem menuTimers;
-    private javax.swing.JMenu menuTools;
-    private javax.swing.JMenuItem menuToolsOptions;
-    private javax.swing.JPanel panelFileTree;
-    private javax.swing.JPanel panelMain;
-    private javax.swing.JPanel panelPlayers;
-    private javax.swing.JToggleButton toggleButtonScreencast;
-    private javax.swing.JTree treeVideoFiles;
-    // End of variables declaration//GEN-END:variables
-
     @Override
     @NonNull
     public Object getRoot() {
@@ -1579,7 +1593,8 @@ public final class MainFrame extends javax.swing.JFrame
         if (parent == this) {
             return this.videoFiles.get(index);
         } else {
-            return parent instanceof ContentFolder ? ((ContentFolder) parent).getFiles().get(index) : 0;
+            return parent instanceof ContentFolder ?
+                ((ContentFolder) parent).getFiles().get(index) : 0;
         }
     }
 
@@ -1629,47 +1644,57 @@ public final class MainFrame extends javax.swing.JFrame
         return folderName == null ? this.currentRootFolder.toString() : folderName.toString();
     }
 
-    public static void openInSystem(@NonNull final ContentFile file) {
-        LOGGER.info("Opening '{}' in system viewer", file.getFilePathAsString());
-        if (Desktop.isDesktopSupported()) {
-            final Desktop desktop = Desktop.getDesktop();
-            if (desktop.isSupported(Desktop.Action.OPEN)) {
-                try {
-                    desktop.open(file.getFilePath().toFile());
-                } catch (Exception x) {
-                    LOGGER.error("Can't open file in Desktop", x); //NOI18N
-                }
-            } else if (SystemUtils.IS_OS_LINUX) {
-                final Runtime runtime = Runtime.getRuntime();
-                try {
-                    runtime.exec("xdg-open \"" + file.getFilePathAsString() + "\""); //NOI18N
-                } catch (IOException e) {
-                    LOGGER.error("Can't open file under Linux", e); //NOI18N
-                }
-            } else if (SystemUtils.IS_OS_MAC) {
-                final Runtime runtime = Runtime.getRuntime();
-                try {
-                    runtime.exec("open \"" + file.getFilePathAsString() + "\""); //NOI18N
-                } catch (IOException e) {
-                    LOGGER.error("Can't open file on MAC", e); //NOI18N
-                }
-            }
-        }
+    private static class FileTreeRenderer extends DefaultTreeCellRenderer {
+
+        private static final Icon ICON_UNKNOWN = new ImageIcon(Utils.loadImage("tree/mask.png"));
+        private static final Icon ICON_AUDIO = new ImageIcon(Utils.loadImage("tree/music.png"));
+        private static final Icon ICON_VIDEO = new ImageIcon(Utils.loadImage("tree/movies.png"));
+        private static final Icon ICON_PICTURE = new ImageIcon(Utils.loadImage("tree/picture.png"));
+        private static final Icon ICON_FOLDER = new ImageIcon(Utils.loadImage("tree/folder.png"));
+        private static final Icon ICON_FOLDER_OPEN =
+            new ImageIcon(Utils.loadImage("tree/folder_blue.png"));
+
+        public FileTreeRenderer() {
+            super();
     }
 
-    public static URI extractUrlLinkFromFile(final File file) {
-        URI result = null;
-        if (file.isFile()) {
-            if (file.getName().endsWith(".url") || (SystemUtils.IS_OS_WINDOWS && file.length() < 1024)) {
-                try {
-                    final String uri = new UrlFile(file).getURL();
-                    result = uri == null ? null : new URI(uri);
-                } catch (URISyntaxException | IOException ex) {
-                    result = null;
+        @Override
+        public Component getTreeCellRendererComponent(
+            final JTree tree,
+            final Object value,
+            final boolean selected,
+            final boolean expanded,
+            final boolean leaf,
+            final int row,
+            final boolean hasFocus
+        ) {
+            DefaultTreeCellRenderer result =
+                (DefaultTreeCellRenderer) super.getTreeCellRendererComponent(tree, value, selected,
+                    expanded, leaf, row, hasFocus);
+            if (leaf) {
+                if (value instanceof ContentFile) {
+                    switch (((ContentFile) value).getContentType()) {
+                        case AUDIO:
+                            result.setIcon(ICON_AUDIO);
+                            break;
+                        case VIDEO:
+                            result.setIcon(ICON_VIDEO);
+                            break;
+                        case PICTURE:
+                            result.setIcon(ICON_PICTURE);
+                            break;
+                        case UNKNOWN:
+                            result.setIcon(ICON_UNKNOWN);
+                            break;
+                    }
+                } else {
+                    result.setIcon(null);
                 }
+            } else {
+                result.setIcon(expanded ? ICON_FOLDER_OPEN : ICON_FOLDER);
             }
-        }
-        return result;
+            return result;
+    }
     }
 
 }

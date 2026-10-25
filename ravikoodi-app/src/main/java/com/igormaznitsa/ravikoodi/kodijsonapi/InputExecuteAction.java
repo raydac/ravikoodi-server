@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.kodijsonapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class InputExecuteAction {
-  
+
   @JsonProperty("action")
   public final String action;
-  
+
   public InputExecuteAction(final ExecuteAction action) {
     this.action = action.getAction();
-  }  
+  }
 }

@@ -15,10 +15,10 @@ import java.nio.file.Path;
 import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
 import org.apache.commons.lang3.SystemUtils;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 public final class Utils {
 
@@ -38,27 +38,30 @@ public final class Utils {
     }
 
     public static String cutStrLength(final String text, final int maxAllowedSize) {
-        if (text == null) return null;
-        
+        if (text == null) {
+            return null;
+        }
+
         final int lengthDiff = text.length() - maxAllowedSize;
-        
+
         if (lengthDiff <= 0) {
             return text;
         } else if (lengthDiff < 16) {
             final int partLength = (text.length() - maxAllowedSize) / 2;
-            return text.substring(0, partLength) + "..." + text.substring(text.length() - partLength);
+            return text.substring(0, partLength) + "..." +
+                text.substring(text.length() - partLength);
         } else {
-           return text.substring(0, maxAllowedSize) + "...";
+            return text.substring(0, maxAllowedSize) + "...";
         }
     }
 
-    public static Component makeOwningDialogResizable(final Component component, final Runnable... extraActions) {
+    public static Component makeOwningDialogResizable(final Component component,
+                                                      final Runnable... extraActions) {
         final HierarchyListener listener = new HierarchyListener() {
             @Override
             public void hierarchyChanged(final HierarchyEvent e) {
                 final Window window = SwingUtilities.getWindowAncestor(component);
-                if (window instanceof Dialog) {
-                    final Dialog dialog = (Dialog) window;
+                if (window instanceof Dialog dialog) {
                     if (!dialog.isResizable()) {
                         dialog.setResizable(true);
                         component.removeHierarchyListener(this);
@@ -74,23 +77,27 @@ public final class Utils {
         return component;
     }
 
-    
-    public static long calculateNextKodiSpeedValue(final long currentSpeed, final boolean increase) {
+
+    public static long calculateNextKodiSpeedValue(final long currentSpeed,
+                                                   final boolean increase) {
         final long nextValue;
 
         if (currentSpeed == 0) {
             nextValue = increase ? 1 : -1;
         } else if (currentSpeed < 0) {
-            nextValue = 0 - Math.min(32, increase ? Math.abs(currentSpeed) >> 1 : Math.abs(currentSpeed) << 1);
+            nextValue =
+                -Math.min(32, increase ? Math.abs(currentSpeed) >> 1 : Math.abs(currentSpeed) << 1);
         } else {
-            nextValue = Math.min(32, increase ? Math.abs(currentSpeed) << 1 : Math.abs(currentSpeed) >> 1);
+            nextValue =
+                Math.min(32, increase ? Math.abs(currentSpeed) << 1 : Math.abs(currentSpeed) >> 1);
         }
         return nextValue;
     }
 
     @NonNull
     public static Image loadImage(@NonNull final String imageName) {
-        try (InputStream in = Utils.class.getClassLoader().getResourceAsStream("icons/" + imageName)) {
+        try (InputStream in = Utils.class.getClassLoader()
+            .getResourceAsStream("icons/" + imageName)) {
             return ImageIO.read(in);
         } catch (Exception ex) {
             throw new Error("Can't load image : " + imageName, ex);
@@ -104,8 +111,8 @@ public final class Utils {
 
     @NonNull
     public static String getFileExtension(@NonNull final Path path) {
-      final Path fileName = path.getFileName();
-      return getExtension(fileName == null ? "" : fileName.toString());
+        final Path fileName = path.getFileName();
+        return getExtension(fileName == null ? "" : fileName.toString());
     }
 
     @NonNull
@@ -114,7 +121,7 @@ public final class Utils {
     }
 
     public static boolean isBlank(@Nullable final String sequence) {
-        return sequence == null || sequence.length() == 0 || sequence.trim().length() == 0;
+        return sequence == null || sequence.isEmpty() || sequence.trim().isEmpty();
     }
 
     public static void showURLExternal(@NonNull final URL url) {
@@ -124,21 +131,21 @@ public final class Utils {
                 try {
                     desktop.browse(url.toURI());
                 } catch (Exception x) {
-                    LOGGER.error("Can't browse URL in Desktop", x); //NOI18N
+                    LOGGER.error("Can't browse URL in Desktop", x);
                 }
             } else if (SystemUtils.IS_OS_LINUX) {
                 final Runtime runtime = Runtime.getRuntime();
                 try {
-                    runtime.exec("xdg-open " + url); //NOI18N
+                    runtime.exec("xdg-open " + url);
                 } catch (Exception e) {
-                    LOGGER.error("Can't browse URL under Linux", e); //NOI18N
+                    LOGGER.error("Can't browse URL under Linux", e);
                 }
             } else if (SystemUtils.IS_OS_MAC) {
                 final Runtime runtime = Runtime.getRuntime();
                 try {
-                    runtime.exec("open " + url); //NOI18N
+                    runtime.exec("open " + url);
                 } catch (Exception e) {
-                    LOGGER.error("Can't browse URL on MAC", e); //NOI18N
+                    LOGGER.error("Can't browse URL on MAC", e);
                 }
             }
         }

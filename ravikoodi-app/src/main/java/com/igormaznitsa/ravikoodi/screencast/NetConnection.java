@@ -13,17 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.screencast;
 
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 
 public abstract class NetConnection implements Closeable {
 
   protected final List<NetConnectionListener> listeners = new CopyOnWriteArrayList<>();
+  protected final Duration dataFlowTimeout;
+  protected final String id;
+
+  protected NetConnection(final String id, final Duration dataFlowTimeout) {
+    this.id = id;
+    this.dataFlowTimeout = dataFlowTimeout;
+  }
 
   public void addNetConectionListener(@NonNull final NetConnectionListener listener) {
     this.listeners.add(listener);
@@ -33,36 +41,28 @@ public abstract class NetConnection implements Closeable {
     this.listeners.remove(listener);
   }
 
-  protected final Duration dataFlowTimeout;
-  protected final String id;
-
-  protected NetConnection(final String id, final Duration dataFlowTimeout) {
-    this.id = id;
-    this.dataFlowTimeout = dataFlowTimeout;
-  }
-  
   @NonNull
   public String getId() {
     return this.id;
   }
-  
+
   @Override
   @NonNull
   public String toString() {
-    return this.getClass().getSimpleName()+'('+this.id+')';
+    return this.getClass().getSimpleName() + '(' + this.id + ')';
   }
-  
+
   @NonNull
   abstract String getAddress();
 
   abstract void start();
 
   abstract void dispose();
-  
+
   public interface NetConnectionListener {
-    
+
     void onDataFlowTimeout(@NonNull NetConnection source, @NonNull Duration timeout);
-    
+
     void onCompleted(@NonNull NetConnection source);
   }
 }

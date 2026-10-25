@@ -3,7 +3,7 @@ package com.igormaznitsa.ravikoodi.kodijsonapi;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class PlaylistPropertiesRequest {
-  
+
   @JsonProperty(value = "playlistid")
   public final long playlistid;
   @JsonProperty(value = "properties")
@@ -13,5 +13,5 @@ public class PlaylistPropertiesRequest {
     this.playlistid = playlist.getPlaylistid();
     this.properties = properties;
   }
-  
+
 }

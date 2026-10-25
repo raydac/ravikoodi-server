@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi;
 
 import java.awt.Component;
@@ -23,7 +24,7 @@ import javax.swing.JTable;
 import javax.swing.table.TableCellEditor;
 
 public class FilePathCellEditor extends AbstractCellEditor implements TableCellEditor {
-    
+
     private final AtomicReference<File> dirRef = new AtomicReference<>();
     private final FilePathEditor editor;
 
@@ -31,9 +32,7 @@ public class FilePathCellEditor extends AbstractCellEditor implements TableCellE
         super();
         this.editor = new FilePathEditor(FilePathCellEditor.this, dirRef);
         this.dirRef.set(file);
-        editor.text.addActionListener(a -> {
-            this.stopCellEditing();
-        });
+        editor.text.addActionListener(a -> this.stopCellEditing());
     }
 
     @Override
@@ -42,9 +41,10 @@ public class FilePathCellEditor extends AbstractCellEditor implements TableCellE
     }
 
     @Override
-    public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+    public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected,
+                                                 int row, int column) {
         this.editor.setPath((File) value);
         return this.editor;
     }
-    
+
 }

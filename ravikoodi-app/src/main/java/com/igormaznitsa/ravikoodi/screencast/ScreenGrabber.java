@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.screencast;
 
 import com.igormaznitsa.ravikoodi.ApplicationPreferences;
@@ -29,9 +30,9 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.Nullable;
 
 public final class ScreenGrabber implements Closeable {
 
@@ -44,39 +45,42 @@ public final class ScreenGrabber implements Closeable {
   private final List<ScreenGrabberListener> listeners = new CopyOnWriteArrayList<>();
   private final Rectangle targetSize;
   private final AbstractScreenSource screenSource;
-  
+
   public ScreenGrabber(final ApplicationPreferences preferences) throws AWTException {
     this.showCursor = preferences.isGrabCursor();
     this.snapsPerSecond = preferences.getSnapsPerSecond();
 
     final GrabberType grabberType = preferences.getGrabberType();
-    
+
     AbstractScreenSource srcSource = null;
-    switch(grabberType) {
-      case AUTO : {
+    switch (grabberType) {
+      case AUTO, ROBOT: {
         srcSource = makeRobotGrabber(this.showCursor);
-      }break;
-      case ROBOT : {
-        srcSource = makeRobotGrabber(this.showCursor);
-      }break;
-      case FFMPEG : {
+      }
+      break;
+      case FFMPEG: {
         srcSource = makeFfmpegGrabber(preferences, this.showCursor);
-      }break;
+      }
+      break;
     }
 
     if (srcSource == null) {
-      throw new RuntimeException("Can't create grabber "+ grabberType.name());
+      throw new RuntimeException("Can't create grabber " + grabberType.name());
     } else {
       this.screenSource = srcSource;
     }
-    
+
     this.targetSize = this.screenSource.getBounds();
-    
-    LOGGER.info("Prepared screen grabber {} for {}x{}, device {}, show cursor = {}, {} snapshots per second", this.screenSource, this.targetSize.width, this.targetSize.height, this.screenSource.getSourceDevice().getIDstring(), this.showCursor, this.snapsPerSecond);
+
+    LOGGER.info(
+        "Prepared screen grabber {} for {}x{}, device {}, show cursor = {}, {} snapshots per second",
+        this.screenSource, this.targetSize.width, this.targetSize.height,
+        this.screenSource.getSourceDevice().getIDstring(), this.showCursor, this.snapsPerSecond);
   }
-  
+
   @Nullable
-  private AbstractScreenSource makeFfmpegGrabber(final ApplicationPreferences preferences, final boolean showPointer) {
+  private AbstractScreenSource makeFfmpegGrabber(final ApplicationPreferences preferences,
+                                                 final boolean showPointer) {
     AbstractScreenSource result;
     try {
       result = new FfmpegScreenSource(preferences, showPointer);
@@ -86,7 +90,7 @@ public final class ScreenGrabber implements Closeable {
     }
     return result;
   }
-  
+
   @Nullable
   private AbstractScreenSource makeRobotGrabber(final boolean showPointer) {
     AbstractScreenSource result;
@@ -98,7 +102,7 @@ public final class ScreenGrabber implements Closeable {
     }
     return result;
   }
-  
+
   public int getSnapsPerSecond() {
     return this.snapsPerSecond;
   }
@@ -123,7 +127,8 @@ public final class ScreenGrabber implements Closeable {
     if (this.disposed.get()) {
       throw new IllegalStateException("Disposed screen grabber");
     } else {
-      final Thread screenGrabberThread = new Thread(this::run, "screen-grabbing-thread-" + System.nanoTime());
+      final Thread screenGrabberThread =
+          new Thread(this::run, "screen-grabbing-thread-" + System.nanoTime());
       screenGrabberThread.setDaemon(true);
       if (this.grabbingThread.compareAndSet(null, screenGrabberThread)) {
         screenGrabberThread.start();
@@ -147,7 +152,8 @@ public final class ScreenGrabber implements Closeable {
         } catch (Exception ex) {
           this.listeners.forEach(x -> x.onError(this, ex));
         }
-        final long restTime = Math.max(0L, (start + delayBetweenFrames) - System.currentTimeMillis());
+        final long restTime =
+            Math.max(0L, (start + delayBetweenFrames) - System.currentTimeMillis());
         if (restTime > 0L) {
           try {
             Thread.sleep(restTime);
@@ -158,7 +164,8 @@ public final class ScreenGrabber implements Closeable {
         }
       }
     } finally {
-      LOGGER.info("Screen grabber thread '{}' has been completed", Thread.currentThread().getName());
+      LOGGER.info("Screen grabber thread '{}' has been completed",
+          Thread.currentThread().getName());
     }
   }
 

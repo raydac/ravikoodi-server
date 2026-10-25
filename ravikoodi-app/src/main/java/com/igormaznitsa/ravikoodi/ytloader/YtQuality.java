@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.ytloader;
 
 import java.util.Arrays;
@@ -21,27 +22,42 @@ import java.util.regex.Pattern;
 
 public enum YtQuality {
     UNKNOWN(-1),
-    p144(144), 
-    p240(240), 
-    p360(360), 
-    p480(480), 
-    p720(720), 
-    p1080(1080), 
-    p1440(1440), 
-    p2160(2160); 
-    
-    private static final Pattern VALUE_EXTRACTOR = Pattern.compile("^[\\D]*(\\d+).*$", Pattern.CASE_INSENSITIVE);
-    
-    private static final YtQuality [] VALUES = YtQuality.values();
-    
-    
+    p144(144),
+    p240(240),
+    p360(360),
+    p480(480),
+    p720(720),
+    p1080(1080),
+    p1440(1440),
+    p2160(2160);
+
+    private static final Pattern VALUE_EXTRACTOR =
+        Pattern.compile("^[\\D]*(\\d+).*$", Pattern.CASE_INSENSITIVE);
+
+    private static final YtQuality[] VALUES = YtQuality.values();
+    private final int lines;
+
+    private YtQuality(final int lines) {
+        this.lines = lines;
+    }
+
     public static YtQuality find(final String value) {
-        if (value == null || value.isBlank()) return UNKNOWN;
-        if (value.equalsIgnoreCase("tiny")) return p144;
-        if (value.equalsIgnoreCase("small")) return p240;
-        if (value.equalsIgnoreCase("medium")) return p360;
-        if (value.equalsIgnoreCase("large")) return p480;
-        
+        if (value == null || value.isBlank()) {
+            return UNKNOWN;
+        }
+        if (value.equalsIgnoreCase("tiny")) {
+            return p144;
+        }
+        if (value.equalsIgnoreCase("small")) {
+            return p240;
+        }
+        if (value.equalsIgnoreCase("medium")) {
+            return p360;
+        }
+        if (value.equalsIgnoreCase("large")) {
+            return p480;
+        }
+
         final Matcher matcher = VALUE_EXTRACTOR.matcher(value);
         if (matcher.find()) {
             final int lines = Integer.parseInt(matcher.group(1));
@@ -50,14 +66,9 @@ public enum YtQuality {
             return UNKNOWN;
         }
     }
-    
-    public int getLines(){
+
+    public int getLines() {
         return this.lines;
     }
-    
-    private final int lines;
-    private YtQuality(final int lines) {
-        this.lines = lines;
-    }
-    
+
 }

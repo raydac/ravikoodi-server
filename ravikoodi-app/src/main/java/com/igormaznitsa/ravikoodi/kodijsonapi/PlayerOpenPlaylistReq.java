@@ -14,7 +14,7 @@ public class PlayerOpenPlaylistReq {
 
     public PlayerOpenPlaylistReq(final Playlist playlist, final Map<String, String> options) {
         this.item = new PlayerOpenPlaylistItem(playlist);
-      this.options = options == null ? null : new HashMap<>(options);
+        this.options = options == null ? null : new HashMap<>(options);
     }
 
 }

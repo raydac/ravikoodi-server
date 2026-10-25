@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi;
 
 import java.io.BufferedInputStream;
@@ -28,33 +29,35 @@ import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 public final class UploadFileRecord {
-    
-    private final String id;
-    private final Path file;
-    private final String mimeType;
-    private final AtomicInteger uploadsCounter = new AtomicInteger();
-    private final AtomicLong validUntil = new AtomicLong();
-    private final byte[] predefinedData;
 
-    UploadFileRecord(@NonNull final String id, @NonNull final Path file, @NonNull final String mimeType, @Nullable final byte[] predefinedData) {
-        this.validUntil.set(System.currentTimeMillis() + UploadingFileRegistry.INITIAL_VALID_DELAY_MILLISECONDS);
-        this.id = id;
-        this.file = file;
-        this.mimeType = mimeType;
-        this.predefinedData = predefinedData;
-    }
+  private final String id;
+  private final Path file;
+  private final String mimeType;
+  private final AtomicInteger uploadsCounter = new AtomicInteger();
+  private final AtomicLong validUntil = new AtomicLong();
+  private final byte[] predefinedData;
 
-    public long getValidUntil(){
-        return this.validUntil.get();
-    }
-    
-    public void setValidUntil(final long time){
-        this.validUntil.set(time);
-    }
+  UploadFileRecord(@NonNull final String id, @NonNull final Path file,
+                   @NonNull final String mimeType, @Nullable final byte[] predefinedData) {
+    this.validUntil.set(
+        System.currentTimeMillis() + UploadingFileRegistry.INITIAL_VALID_DELAY_MILLISECONDS);
+    this.id = id;
+    this.file = file;
+    this.mimeType = mimeType;
+    this.predefinedData = predefinedData;
+  }
+
+  public long getValidUntil() {
+    return this.validUntil.get();
+  }
+
+  public void setValidUntil(final long time) {
+    this.validUntil.set(time);
+  }
 
   public long getPayloadSize() throws IOException {
     if (this.predefinedData != null) {
@@ -63,9 +66,9 @@ public final class UploadFileRecord {
     return Files.size(this.file);
   }
 
-    public InputStream getAsInputStream() throws IOException {
-      return this.openFrom(0L);
-    }
+  public InputStream getAsInputStream() throws IOException {
+    return this.openFrom(0L);
+  }
 
   public InputStream openFrom(final long offset) throws IOException {
     if (offset < 0L) {
@@ -105,52 +108,52 @@ public final class UploadFileRecord {
       if (!transferred) {
         channel.close();
       }
-        }
     }
+  }
 
-    public Optional<byte[]> getPredefinedData() {
-        return Optional.ofNullable(this.predefinedData);
-    }
+  public Optional<byte[]> getPredefinedData() {
+    return Optional.ofNullable(this.predefinedData);
+  }
 
-    public int getUploadsCounter() {
-        return this.uploadsCounter.get();
-    }
+  public int getUploadsCounter() {
+    return this.uploadsCounter.get();
+  }
 
-    public void refreshValidTime() {
-        this.validUntil.set(System.currentTimeMillis() + UploadingFileRegistry.VALID_TIME_MILLISECONDS);
-    }
+  public void refreshValidTime() {
+    this.validUntil.set(System.currentTimeMillis() + UploadingFileRegistry.VALID_TIME_MILLISECONDS);
+  }
 
-    public int incUploadsCounter() {
-        this.validUntil.set(System.currentTimeMillis() + UploadingFileRegistry.VALID_TIME_MILLISECONDS);
-        return this.uploadsCounter.incrementAndGet();
-    }
+  public int incUploadsCounter() {
+    this.validUntil.set(System.currentTimeMillis() + UploadingFileRegistry.VALID_TIME_MILLISECONDS);
+    return this.uploadsCounter.incrementAndGet();
+  }
 
-    public int decUploadsCounter() {
-        this.validUntil.set(System.currentTimeMillis() + UploadingFileRegistry.VALID_TIME_MILLISECONDS);
-        return this.uploadsCounter.decrementAndGet();
-    }
+  public int decUploadsCounter() {
+    this.validUntil.set(System.currentTimeMillis() + UploadingFileRegistry.VALID_TIME_MILLISECONDS);
+    return this.uploadsCounter.decrementAndGet();
+  }
 
-    @NonNull
-    public String getMimeType() {
-        return this.mimeType;
-    }
+  @NonNull
+  public String getMimeType() {
+    return this.mimeType;
+  }
 
-    @NonNull
-    public String getId() {
-        return this.id;
-    }
+  @NonNull
+  public String getId() {
+    return this.id;
+  }
 
-    @NonNull
-    public Path getFile() {
-        return this.file;
-    }
+  @NonNull
+  public Path getFile() {
+    return this.file;
+  }
 
-    @NonNull
-    @Override
-    public String toString() {
-      final Path fileName = this.file.getFileName();
-      return String.format("FileRecord(%s,file=%s)", this.id,
-          fileName == null ? this.file : fileName);
-    }
-    
+  @NonNull
+  @Override
+  public String toString() {
+    final Path fileName = this.file.getFileName();
+    return String.format("FileRecord(%s,file=%s)", this.id,
+        fileName == null ? this.file : fileName);
+  }
+
 }

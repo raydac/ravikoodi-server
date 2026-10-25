@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 public class PlayerIdReq {
   @JsonProperty("playerid")
   protected final long playerid;
-  
+
   public PlayerIdReq(final ActivePlayerInfo player) {
     this.playerid = player.getPlayerid();
   }

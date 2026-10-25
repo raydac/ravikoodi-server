@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi;
 
 import com.igormaznitsa.ravikoodi.kodijsonapi.ActivePlayerInfo;
@@ -38,11 +39,11 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -54,7 +55,7 @@ public class KodiComm {
     private final InternalServer internalServer;
     private final UploadingFileRegistry fileRegstry;
     private final MimeTypes mimeTypes;
-    
+
     @Autowired
     public KodiComm(
         @NonNull final InternalServer internalServer,
@@ -107,7 +108,8 @@ public class KodiComm {
     }
 
     @NonNull
-    public PlayerProperties getPlayerProperties(@NonNull final ActivePlayerInfo playerInfo, final String... properties) throws Throwable {
+    public PlayerProperties getPlayerProperties(@NonNull final ActivePlayerInfo playerInfo,
+                                                final String... properties) throws Throwable {
         final Optional<KodiService> service = this.makeKodiService();
         if (service.isPresent()) {
             return service.get().getPlayerProperties(playerInfo, properties);
@@ -125,7 +127,8 @@ public class KodiComm {
         }
     }
 
-    public void setPlayerSpeed(@NonNull final ActivePlayerInfo playerInfo, final long next) throws Throwable {
+    public void setPlayerSpeed(@NonNull final ActivePlayerInfo playerInfo, final long next)
+        throws Throwable {
         final Optional<KodiService> service = this.makeKodiService();
         if (service.isPresent()) {
             service.get().setPlayerSpeed(playerInfo, next);
@@ -161,7 +164,8 @@ public class KodiComm {
         }
     }
 
-    public void doPlayerRepeat(@NonNull final ActivePlayerInfo playerInfo, @NonNull final RepeatValue repeat) throws Throwable {
+    public void doPlayerRepeat(@NonNull final ActivePlayerInfo playerInfo,
+                               @NonNull final RepeatValue repeat) throws Throwable {
         final Optional<KodiService> service = this.makeKodiService();
         if (service.isPresent()) {
             service.get().doPlayerRepeat(playerInfo, repeat.name().toLowerCase(Locale.ENGLISH));
@@ -170,7 +174,8 @@ public class KodiComm {
         }
     }
 
-    public void setPlayerAudiostream(@NonNull final ActivePlayerInfo playerInfo, @NonNull final AudioStream newAudioStream) throws Throwable {
+    public void setPlayerAudiostream(@NonNull final ActivePlayerInfo playerInfo,
+                                     @NonNull final AudioStream newAudioStream) throws Throwable {
         final Optional<KodiService> service = this.makeKodiService();
         if (service.isPresent()) {
             service.get().setPlayerAudiostream(playerInfo, newAudioStream);
@@ -179,7 +184,9 @@ public class KodiComm {
         }
     }
 
-    public void setPlayerSubtitle(@NonNull final ActivePlayerInfo playerInfo, @NonNull final Subtitle subtitle, final boolean enable) throws Throwable {
+    public void setPlayerSubtitle(@NonNull final ActivePlayerInfo playerInfo,
+                                  @NonNull final Subtitle subtitle, final boolean enable)
+        throws Throwable {
         final Optional<KodiService> service = this.makeKodiService();
         if (service.isPresent()) {
             service.get().setPlayerSubtitle(playerInfo, subtitle, enable);
@@ -192,7 +199,8 @@ public class KodiComm {
     @NonNull
     public final Optional<String> openFileThroughRegistry(@NonNull final Path path,
                                                           @Nullable final byte[] data, @NonNull
-                                                          final Map<String, String>... options) throws Throwable {
+                                                          final Map<String, String>... options)
+        throws Throwable {
         final String uid = UUID.randomUUID().toString();
         final UploadFileRecord record = this.fileRegstry.registerFile(uid, path, data);
         final String fileUrl = this.internalServer.makeUrlFor(record);
@@ -202,13 +210,14 @@ public class KodiComm {
 
     @SafeVarargs
     @NonNull
-    public final Optional<Pair<Playlist,String>> openFileAsPlaylistThroughRegistry(
+    public final Optional<Pair<Playlist, String>> openFileAsPlaylistThroughRegistry(
         @NonNull final Path path, @Nullable final byte[] data,
         @NonNull final Map<String, String>... options) throws Throwable {
         final String uid = UUID.randomUUID().toString();
         final UploadFileRecord record = this.fileRegstry.registerFile(uid, path, data);
         final String fileUrl = this.internalServer.makeUrlFor(record);
-        LOGGER.info("Opening file as playlist {} as {} through playlist, uuid={}", path, fileUrl, uid);
+        LOGGER.info("Opening file as playlist {} as {} through playlist, uuid={}", path, fileUrl,
+            uid);
 
         final MimeTypes.MimeRecord foundMimeRecord = this.mimeTypes.getMimeRecord(path);
 
@@ -224,22 +233,26 @@ public class KodiComm {
         } else {
             playListType = "mixed";
         }
-        
-        final KodiService service = this.makeKodiService().orElseThrow(()->new IllegalStateException("Can't get kodi service"));
-        
-        final Playlist [] foundLists = service.getPlaylists();
+
+        final KodiService service = this.makeKodiService()
+            .orElseThrow(() -> new IllegalStateException("Can't get kodi service"));
+
+        final Playlist[] foundLists = service.getPlaylists();
         LOGGER.info("Found play lists: {}", Arrays.toString(foundLists));
 
-        Optional<Playlist> foundTargetList = Stream.of(foundLists).filter(x -> playListType.equalsIgnoreCase(x.getType()))
+        Optional<Playlist> foundTargetList =
+            Stream.of(foundLists).filter(x -> playListType.equalsIgnoreCase(x.getType()))
             .findFirst();
-        if (foundTargetList.isEmpty()){
-            foundTargetList = Stream.of(foundLists).filter(x -> playListType.equalsIgnoreCase("unknown")).findFirst();
+        if (foundTargetList.isEmpty()) {
+            foundTargetList =
+                Stream.of(foundLists).filter(x -> playListType.equalsIgnoreCase("unknown"))
+                    .findFirst();
         }
-        
+
         if (foundTargetList.isPresent()) {
             final Playlist targetList = foundTargetList.get();
             LOGGER.info("Selected target list is {}", targetList);
-            if (!isOk(service.clearPlaylist(targetList))){
+            if (!isOk(service.clearPlaylist(targetList))) {
                 LOGGER.error("Can't clear play list");
                 throw new IllegalStateException("Can't clear play list");
             }
@@ -247,18 +260,22 @@ public class KodiComm {
             item.setFile(fileUrl);
             final String resultForAddPlayerItem = service.addPlaylistItem(targetList, item);
             if (isOk(resultForAddPlayerItem)) {
-                return Optional.ofNullable(isOk(service.doPlayerOpenPlaylist(targetList, Collections.singletonMap("repeat","one"))) ? Pair.of(targetList, uid) : null);
+                return Optional.ofNullable(isOk(
+                    service.doPlayerOpenPlaylist(targetList,
+                        Collections.singletonMap("repeat", "one"))) ?
+                    Pair.of(targetList, uid) : null);
             } else {
                 LOGGER.error("Can't add player list item");
                 throw new IOException("Can't add player list item: " + resultForAddPlayerItem);
             }
         } else {
-            throw new IOException("Can't find any player list for type: "+playListType);
+            throw new IOException("Can't find any player list for type: " + playListType);
         }
     }
 
     @NonNull
-    public PlayerSeekResult doPlayerSeekPercentage(@NonNull final ActivePlayerInfo playerInfo, final double percentage) throws Throwable {
+    public PlayerSeekResult doPlayerSeekPercentage(@NonNull final ActivePlayerInfo playerInfo,
+                                                   final double percentage) throws Throwable {
         final Optional<KodiService> service = this.makeKodiService();
         if (service.isPresent()) {
             return service.get().doPlayerSeekPercentage(playerInfo, percentage);
@@ -274,13 +291,16 @@ public class KodiComm {
         }
         return ok;
     }
-    
-    @NonNull
-    public boolean doPlayerOpenFile(@NonNull final String fileUrl, @NonNull final Map<String,String> ... options) throws Throwable {
-        final KodiService service = this.makeKodiService().orElseThrow(() -> new IllegalStateException("Can't get kodi service"));
-            final String result = service.doPlayerOpenFile(fileUrl, options);
-            LOGGER.info("Player open response for '{}' is '{}'", fileUrl, result);
-            return isOk(result);
+
+    @SafeVarargs
+    public final boolean doPlayerOpenFile(@NonNull final String fileUrl,
+                                          @NonNull final Map<String, String>... options)
+        throws Throwable {
+        final KodiService service = this.makeKodiService()
+            .orElseThrow(() -> new IllegalStateException("Can't get kodi service"));
+        final String result = service.doPlayerOpenFile(fileUrl, options);
+        LOGGER.info("Player open response for '{}' is '{}'", fileUrl, result);
+        return isOk(result);
     }
 
 }

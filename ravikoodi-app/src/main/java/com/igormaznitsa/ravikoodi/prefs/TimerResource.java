@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.prefs;
 
 import java.io.File;
@@ -24,15 +25,32 @@ import java.time.LocalTime;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.Properties;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 public final class TimerResource implements Comparable<TimerResource> {
-    
+
+    private String name;
+    private boolean enabled;
+    private boolean replay;
+    private LocalTime from;
+    private LocalTime to;
+    private File resourcePath;
+
+    public TimerResource(@NonNull final String id) {
+        this.name = Objects.requireNonNull(id);
+        this.enabled = false;
+        this.replay = false;
+        this.from = null;
+        this.to = null;
+        this.resourcePath = null;
+    }
+
     @NonNull
     public static TimerResource fromBase64(@NonNull final String base64encoded) throws IOException {
         final Properties properties = new Properties();
-        properties.load(new StringReader(new String(Base64.getDecoder().decode(base64encoded), StandardCharsets.UTF_8)));
+        properties.load(new StringReader(
+            new String(Base64.getDecoder().decode(base64encoded), StandardCharsets.UTF_8)));
         if (!properties.containsKey("name")) {
             throw new IllegalArgumentException("Can't find 'name' field");
         }
@@ -50,20 +68,18 @@ public final class TimerResource implements Comparable<TimerResource> {
         }
         return result;
     }
-    private String name;
-    private boolean enabled;
-    private boolean replay;
-    private LocalTime from;
-    private LocalTime to;
-    private File resourcePath;
 
-    public TimerResource(@NonNull final String id) {
-        this.name = Objects.requireNonNull(id);
-        this.enabled = false;
-        this.replay = false;
-        this.from = null;
-        this.to = null;
-        this.resourcePath = null;
+    private static int compareStart(final LocalTime left, final LocalTime right) {
+        if (left == null && right == null) {
+            return 0;
+        }
+        if (left == null) {
+            return -1;
+        }
+        if (right == null) {
+            return 1;
+        }
+        return left.compareTo(right);
     }
 
     public boolean isReplay() {
@@ -77,6 +93,10 @@ public final class TimerResource implements Comparable<TimerResource> {
     @NonNull
     public String getName() {
         return this.name;
+    }
+
+    public void setName(@NonNull String value) {
+        this.name = Objects.requireNonNull(value);
     }
 
     public boolean isEnabled() {
@@ -132,33 +152,17 @@ public final class TimerResource implements Comparable<TimerResource> {
         try {
             final StringWriter writer = new StringWriter();
             properties.store(writer, null);
-            return Base64.getEncoder().encodeToString(writer.toString().getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder()
+                .encodeToString(writer.toString().getBytes(StandardCharsets.UTF_8));
         } catch (IOException ex) {
             throw new Error("Unexpected IOException in internal operation", ex);
         }
     }
 
-    public void setName(@NonNull String value) {
-        this.name = Objects.requireNonNull(value);
-    }
-
-  private static int compareStart(final LocalTime left, final LocalTime right) {
-    if (left == null && right == null) {
-      return 0;
-    }
-    if (left == null) {
-            return -1;
-        }
-    if (right == null) {
-      return 1;
-    }
-    return left.compareTo(right);
-  }
-
     @Override
     public int compareTo(@NonNull final TimerResource that) {
-      final int byStart = compareStart(this.from, that.from);
-      return byStart != 0 ? byStart : this.name.compareTo(that.name);
+        final int byStart = compareStart(this.from, that.from);
+        return byStart != 0 ? byStart : this.name.compareTo(that.name);
     }
 
   @Override
@@ -171,6 +175,6 @@ public final class TimerResource implements Comparable<TimerResource> {
   @Override
   public int hashCode() {
     return Objects.hash(this.name, this.from);
-    }
-    
+  }
+
 }

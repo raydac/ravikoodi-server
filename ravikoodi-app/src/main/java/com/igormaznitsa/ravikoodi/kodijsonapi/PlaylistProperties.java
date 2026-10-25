@@ -12,5 +12,5 @@ public class PlaylistProperties {
 
   public final long size;
   public final String type;
-  
+
 }

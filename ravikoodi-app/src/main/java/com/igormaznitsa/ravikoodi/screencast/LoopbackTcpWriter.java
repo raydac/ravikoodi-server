@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.screencast;
 
 import ch.qos.logback.core.util.CloseUtil;
@@ -27,9 +28,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
 
 public final class LoopbackTcpWriter extends NetConnection {
 
@@ -44,13 +45,10 @@ public final class LoopbackTcpWriter extends NetConnection {
   private final Supplier<Boolean> active;
 
   public LoopbackTcpWriter(
-          @NonNull
-          final String id,
-          @NonNull
-          final Duration dataFlowTimeout,
-          final int maxQueuedItems,
-          @NonNull
-          final Supplier<Boolean> active
+      @NonNull final String id,
+      @NonNull final Duration dataFlowTimeout,
+      final int maxQueuedItems,
+      @NonNull final Supplier<Boolean> active
   ) throws IOException {
     super(Objects.requireNonNull(id, "id"),
         Objects.requireNonNull(dataFlowTimeout, "dataFlowTimeout"));
@@ -58,7 +56,7 @@ public final class LoopbackTcpWriter extends NetConnection {
     this.buffer = new PreemptiveBuffer(maxQueuedItems);
     this.serverSocket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress());
     this.thread = new Thread(
-            this::doWork, id + this.serverSocket.getLocalPort()
+        this::doWork, id + this.serverSocket.getLocalPort()
     );
     this.thread.setDaemon(true);
   }
@@ -100,10 +98,10 @@ public final class LoopbackTcpWriter extends NetConnection {
   public void dispose() {
     if (this.disposed.compareAndSet(false, true)) {
       final Socket socket = this.currentSocket.getAndSet(null);
-      if (socket!=null){
-        try{
+      if (socket != null) {
+        try {
           socket.shutdownOutput();
-        }catch(IOException ex){
+        } catch (IOException ex) {
           LOGGER.error("IOException", ex);
         }
       }
@@ -123,7 +121,8 @@ public final class LoopbackTcpWriter extends NetConnection {
       LOGGER.info("starting tcp-writer-thread");
       this.latch.countDown();
       while (!Thread.currentThread().isInterrupted() && !this.disposed.get()) {
-        LOGGER.info("Wating incoming connection: {}:{}", this.serverSocket.getInetAddress(), this.serverSocket.getLocalPort());
+        LOGGER.info("Wating incoming connection: {}:{}", this.serverSocket.getInetAddress(),
+            this.serverSocket.getLocalPort());
         final Socket socket = this.serverSocket.accept();
         LOGGER.info("Incoming connection: {}", socket);
         this.currentSocket.set(socket);
@@ -134,7 +133,8 @@ public final class LoopbackTcpWriter extends NetConnection {
           final long watchTimeDelayMs = this.dataFlowTimeout.toMillis();
           long nextWatchTime = System.currentTimeMillis() + watchTimeDelayMs;
 
-          while (!Thread.currentThread().isInterrupted() && !this.disposed.get() && this.active.get()) {
+          while (!Thread.currentThread().isInterrupted() && !this.disposed.get() &&
+              this.active.get()) {
             final byte[] portion = this.buffer.next();
             if (portion == null) {
               if (nextWatchTime < System.currentTimeMillis()) {

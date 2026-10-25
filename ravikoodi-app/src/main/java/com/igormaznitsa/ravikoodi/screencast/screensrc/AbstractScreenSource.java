@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.screencast.screensrc;
 
 import com.igormaznitsa.ravikoodi.Utils;
@@ -23,8 +24,8 @@ import java.awt.Point;
 import java.awt.PointerInfo;
 import java.awt.Rectangle;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 public abstract class AbstractScreenSource {
 
@@ -38,12 +39,9 @@ public abstract class AbstractScreenSource {
     this.showPointer = showPointer;
   }
 
-  public abstract double getScaleX();
-
-  public abstract double getScaleY();
-
   @Nullable
-  protected static Rectangle scale(@Nullable final Rectangle src, final double scaleX, final double scaleY) {
+  protected static Rectangle scale(@Nullable final Rectangle src, final double scaleX,
+                                   final double scaleY) {
     if (src == null) {
       return null;
     }
@@ -59,7 +57,8 @@ public abstract class AbstractScreenSource {
   }
 
   @Nullable
-  protected static Point scale(@Nullable final Point src, final double scaleX, final double scaleY) {
+  protected static Point scale(@Nullable final Point src, final double scaleX,
+                               final double scaleY) {
     if (src == null) {
       return null;
     }
@@ -71,6 +70,10 @@ public abstract class AbstractScreenSource {
       return new Point(x, y);
     }
   }
+
+  public abstract double getScaleX();
+
+  public abstract double getScaleY();
 
   public boolean isShowPointer() {
     return this.showPointer;

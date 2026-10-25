@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.kodijsonapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -21,13 +22,13 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class PlaylistAddFileReq extends PlaylistIdReq {
 
-    @JsonProperty("item")
-    protected final PlaylistFileItem item;
+  @JsonProperty("item")
+  protected final PlaylistFileItem item;
 
-    public PlaylistAddFileReq(final Playlist playlist, final PlaylistFileItem item) {
-        super(playlist);
-      this.item = copyOf(item);
-    }
+  public PlaylistAddFileReq(final Playlist playlist, final PlaylistFileItem item) {
+    super(playlist);
+    this.item = copyOf(item);
+  }
 
   private static PlaylistFileItem copyOf(final PlaylistFileItem item) {
     final PlaylistFileItem copy = new PlaylistFileItem();
@@ -35,6 +36,6 @@ public class PlaylistAddFileReq extends PlaylistIdReq {
     copy.setType(item.getType());
     copy.setLabel(item.getLabel());
     return copy;
-    }
+  }
 
 }

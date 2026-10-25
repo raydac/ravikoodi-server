@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor(force = true)
 public class ListLimitsReturned {
-  @JsonProperty(value = "total",required = true)
+  @JsonProperty(value = "total", required = true)
   private final long total;
   @JsonProperty(value = "start", required = false, defaultValue = "0")
   private final long start;

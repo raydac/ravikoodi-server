@@ -10,8 +10,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
@@ -20,12 +20,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -43,12 +42,12 @@ public class InternalServer {
   private final List<InternalServerListener> listeners = new CopyOnWriteArrayList<>();
   private final AtomicBoolean screencastActive = new AtomicBoolean();
   private final AtomicReference<Throwable> lastStartServerError = new AtomicReference<>();
-  
+
   @Autowired
   public InternalServer(
-          final UploadingFileRegistry fileRegistry,
-          final StaticFileRegistry staticFileRegistry,
-          final ApplicationPreferences options
+      final UploadingFileRegistry fileRegistry,
+      final StaticFileRegistry staticFileRegistry,
+      final ApplicationPreferences options
   ) {
     this.staticFileRegistry = staticFileRegistry;
     this.fileRegistry = fileRegistry;
@@ -67,54 +66,6 @@ public class InternalServer {
     }
   }
 
-  public void addListener(@NonNull final InternalServerListener listener) {
-    this.listeners.add(listener);
-  }
-
-  public void removeListener(@NonNull final InternalServerListener listener) {
-    this.listeners.remove(listener);
-  }
-
-  public PreemptiveBuffer getScreencastDataBuffer() {
-    return this.screencastBuffer;
-  }
-
-  public boolean isStarted() {
-    final JavaServer theServer = this.serverRef.get();
-    return theServer != null;
-  }
-
-  @NonNull
-  public String getScreenCastUrl() {
-    return String.format((this.options.isServerSsl() ? "https://" : "http://")
-            + "%s:%d/screen-cast.ts", this.getHost(),
-            this.getPort());
-  }
-
-  @NonNull
-  public String makeUrlPrefix(@NonNull final String resourcePath) {
-      return String.format((this.options.isServerSsl() ? "https://" : "http://")
-              + "%s:%d/%s", this.getHost(),
-              this.getPort(),
-              resourcePath);
-  }
-  
-  @NonNull
-  public String makeUrlFor(@NonNull final UploadFileRecord record) {
-    try {
-      final Path fileName = record.getFile().getFileName();
-      final String name = fileName == null ? "file" : fileName.toString();
-      final String encodedFileName = URLEncoder.encode(name, "UTF-8");
-      final String pathPrefix = makeUrlPrefix(PATH_VFILES);
-      return String.format("%s/%s/%s",
-              pathPrefix,
-              record.getId(),
-              encodedFileName);
-    } catch (UnsupportedEncodingException ex) {
-      throw new Error("Unexpected exception", ex);
-    }
-  }
-
   private static void addStandardHeaders(final Headers headers, final UploadFileRecord record,
                                          final long contentLength, final boolean head) {
     headers.set("Content-Type", record.getMimeType());
@@ -128,20 +79,6 @@ public class InternalServer {
       headers.set("Keep-Alive", "max");
     }
     headers.set("Accept-Ranges", "bytes");
-  }
-
-  private void addScreenCastHeaders(final Headers response, final boolean head) {
-    response.set("Content-Type","video/MP2T");
-    response.set("Cache-Control", "no-cache, no-store");
-    response.set("Pragma", "no-cache");
-    response.set("Transfer-Encoding", "chunked");
-    response.set("Content-Transfer-Encoding", "binary");
-    response.set("Expires", "0");
-    if (!head) {
-      response.set("Connection", "Keep-Alive");
-      response.set("Keep-Alive", "max");
-    }
-    response.set("Accept-Ranges", "none");
   }
 
   // Pass -1 so the server sends no body; 0 would select chunked encoding.
@@ -246,117 +183,179 @@ public class InternalServer {
     }
   }
 
+  public void addListener(@NonNull final InternalServerListener listener) {
+    this.listeners.add(listener);
+  }
+
+  public void removeListener(@NonNull final InternalServerListener listener) {
+    this.listeners.remove(listener);
+  }
+
+  public PreemptiveBuffer getScreencastDataBuffer() {
+    return this.screencastBuffer;
+  }
+
+  public boolean isStarted() {
+    final JavaServer theServer = this.serverRef.get();
+    return theServer != null;
+  }
+
+  @NonNull
+  public String getScreenCastUrl() {
+    return String.format((this.options.isServerSsl() ? "https://" : "http://")
+            + "%s:%d/screen-cast.ts", this.getHost(),
+        this.getPort());
+  }
+
+  @NonNull
+  public String makeUrlPrefix(@NonNull final String resourcePath) {
+    return String.format((this.options.isServerSsl() ? "https://" : "http://")
+            + "%s:%d/%s", this.getHost(),
+        this.getPort(),
+        resourcePath);
+  }
+
+  @NonNull
+  public String makeUrlFor(@NonNull final UploadFileRecord record) {
+    final Path fileName = record.getFile().getFileName();
+    final String name = fileName == null ? "file" : fileName.toString();
+    final String encodedFileName = URLEncoder.encode(name, StandardCharsets.UTF_8);
+    final String pathPrefix = makeUrlPrefix(PATH_VFILES);
+    return String.format("%s/%s/%s",
+        pathPrefix,
+        record.getId(),
+        encodedFileName);
+  }
+
+  private void addScreenCastHeaders(final Headers response, final boolean head) {
+    response.set("Content-Type", "video/MP2T");
+    response.set("Cache-Control", "no-cache, no-store");
+    response.set("Pragma", "no-cache");
+    response.set("Transfer-Encoding", "chunked");
+    response.set("Content-Transfer-Encoding", "binary");
+    response.set("Expires", "0");
+    if (!head) {
+      response.set("Connection", "Keep-Alive");
+      response.set("Keep-Alive", "max");
+    }
+    response.set("Accept-Ranges", "none");
+  }
+
   public boolean isScreencastFlowActive() {
     return this.screencastActive.get();
   }
 
   private HttpHandler makeHandler() {
     return exchange -> {
-        LOGGER.info("Incoming request {} {}", exchange.getRequestMethod(), exchange.getRequestURI().toString());
+      LOGGER.info("Incoming request {} {}", exchange.getRequestMethod(),
+          exchange.getRequestURI().toString());
 
-        String preparedTarget = exchange.getRequestURI().toString();
-        if (preparedTarget.contains("?")) {
-          preparedTarget = preparedTarget.substring(0, preparedTarget.indexOf("?"));
-        }
+      String preparedTarget = exchange.getRequestURI().toString();
+      if (preparedTarget.contains("?")) {
+        preparedTarget = preparedTarget.substring(0, preparedTarget.indexOf("?"));
+      }
 
-        final List<String> path = Stream.of(preparedTarget.split("\\/")).collect(Collectors.toList());
-        final String pathLast = !path.isEmpty() ? path.get(path.size()-1) : null;
-        final String pathPreLast = path.size() > 1 ? path.get(path.size()-2) : null;
-        final String pathPrePreLast = path.size() > 2 ? path.get(path.size()-3) : null;
+      final List<String> path = Stream.of(preparedTarget.split("\\/")).toList();
+      final String pathLast = !path.isEmpty() ? path.get(path.size() - 1) : null;
+      final String pathPreLast = path.size() > 1 ? path.get(path.size() - 2) : null;
+      final String pathPrePreLast = path.size() > 2 ? path.get(path.size() - 3) : null;
 
-        if ("screen-cast.ts".equals(pathLast)) {
-          if ("head".equalsIgnoreCase(exchange.getRequestMethod())) {
-            addScreenCastHeaders(exchange.getResponseHeaders(), true);
-            exchange.sendResponseHeaders(200, -1);
-          } else if ("get".equalsIgnoreCase(exchange.getRequestMethod())) {
-            addScreenCastHeaders(exchange.getResponseHeaders(), false);
-            LOGGER.info("Starting screen cast retranslation");
-            exchange.sendResponseHeaders(200, -1);
-            final OutputStream out = exchange.getResponseBody();
-            boolean waitDataEndDetected = false;
-            try {
-              screencastActive.set(true);
-              screencastBuffer.clear();
-              screencastBuffer.start();
-              final long MAX_WAIT_DATA_MS = 15000;
-              long waitDataEnd = System.currentTimeMillis() + MAX_WAIT_DATA_MS;
-              while (!Thread.currentThread().isInterrupted()) {
-                final byte[] next = screencastBuffer.next();
-                if (next == null) {
-                  if (waitDataEnd < System.currentTimeMillis()) {
-                    LOGGER.warn("There is no screen cast data longer than " + (MAX_WAIT_DATA_MS / 1000L) + " sec, stopping");
-                    waitDataEndDetected = true;
+      if ("screen-cast.ts".equals(pathLast)) {
+        if ("head".equalsIgnoreCase(exchange.getRequestMethod())) {
+          addScreenCastHeaders(exchange.getResponseHeaders(), true);
+          exchange.sendResponseHeaders(200, -1);
+        } else if ("get".equalsIgnoreCase(exchange.getRequestMethod())) {
+          addScreenCastHeaders(exchange.getResponseHeaders(), false);
+          LOGGER.info("Starting screen cast retranslation");
+          exchange.sendResponseHeaders(200, -1);
+          final OutputStream out = exchange.getResponseBody();
+          boolean waitDataEndDetected = false;
+          try {
+            screencastActive.set(true);
+            screencastBuffer.clear();
+            screencastBuffer.start();
+            final long MAX_WAIT_DATA_MS = 15000;
+            long waitDataEnd = System.currentTimeMillis() + MAX_WAIT_DATA_MS;
+            while (!Thread.currentThread().isInterrupted()) {
+              final byte[] next = screencastBuffer.next();
+              if (next == null) {
+                if (waitDataEnd < System.currentTimeMillis()) {
+                  LOGGER.warn(
+                      "There is no screen cast data longer than " + (MAX_WAIT_DATA_MS / 1000L) +
+                          " sec, stopping");
+                  waitDataEndDetected = true;
+                  break;
+                }
+              } else {
+                screencastActive.set(true);
+                if (next.length > 0) {
+                  try {
+                    out.write(next);
+                    out.flush();
+                  } catch (IOException ex) {
                     break;
-                  }
-                } else {
-                  screencastActive.set(true);
-                  if (next.length > 0) {
-                    try {
-                      out.write(next);
-                      out.flush();
-                    } catch (IOException ex) {
-                      break;
-                    } finally {
-                      waitDataEnd = System.currentTimeMillis() + MAX_WAIT_DATA_MS;
-                    }
+                  } finally {
+                    waitDataEnd = System.currentTimeMillis() + MAX_WAIT_DATA_MS;
                   }
                 }
               }
-            } finally {
-              screencastActive.set(false);
-              LOGGER.info("Screen cast retranslation ended, waitDataEnd={}, thread interrupted = {}", waitDataEndDetected, Thread.currentThread().isInterrupted());
-              listeners.forEach(x -> x.onScreencastEnded(InternalServer.this));
             }
-          } else {
-            LOGGER.warn("Unsupported screen cast method {}", exchange.getRequestMethod());
-            exchange.sendResponseHeaders(405, -1);
-          }
-        } else if (PATH_VFILES.equals(pathPrePreLast) || PATH_RESOURCES.equals(pathPreLast)) {
-
-          final boolean staticResource = PATH_RESOURCES.equals(pathPreLast);
-          final String uid = staticResource ? pathLast : pathPreLast;
-
-          final UploadFileRecord record;
-
-          if (staticResource) {
-            LOGGER.info("Request for static file resource: {}", uid);
-            record = staticFileRegistry.findFile(uid).orElse(null);
-          } else {
-            UploadFileRecord rec = fileRegistry.find(uid);
-            if (rec == null) {
-              final UploadFileRecord removedRecord = removedFileRecords.remove(uid);
-              if (removedRecord != null) {
-                LOGGER.info("found among removed streams, restoring: {}", uid);
-                rec = fileRegistry.restoreRecord(removedRecord);
-              }
-            }
-            record = rec;
-          }
-
-          if (record == null) {
-            LOGGER.warn("Request for non-registered file {}", uid);
-            exchange.sendResponseHeaders(404, -1);
-          } else {
-            record.incUploadsCounter();
-            try {
-              final String method = exchange.getRequestMethod();
-              if ("head".equalsIgnoreCase(method) || "get".equalsIgnoreCase(method)) {
-                respondWithPayload(exchange, record);
-              } else {
-                LOGGER.warn("Bad request : {}", exchange.getRequestURI());
-                exchange.sendResponseHeaders(400, -1);
-              }
-            } finally {
-              record.decUploadsCounter();
-            }
+          } finally {
+            screencastActive.set(false);
+            LOGGER.info("Screen cast retranslation ended, waitDataEnd={}, thread interrupted = {}",
+                waitDataEndDetected, Thread.currentThread().isInterrupted());
+            listeners.forEach(x -> x.onScreencastEnded(InternalServer.this));
           }
         } else {
-          LOGGER.warn("Unsupported request {}", exchange.getRequestURI());
+          LOGGER.warn("Unsupported screen cast method {}", exchange.getRequestMethod());
           exchange.sendResponseHeaders(405, -1);
         }
+      } else if (PATH_VFILES.equals(pathPrePreLast) || PATH_RESOURCES.equals(pathPreLast)) {
+
+        final boolean staticResource = PATH_RESOURCES.equals(pathPreLast);
+        final String uid = staticResource ? pathLast : pathPreLast;
+
+        final UploadFileRecord record;
+
+        if (staticResource) {
+          LOGGER.info("Request for static file resource: {}", uid);
+          record = staticFileRegistry.findFile(uid).orElse(null);
+        } else {
+          UploadFileRecord rec = fileRegistry.find(uid);
+          if (rec == null) {
+            final UploadFileRecord removedRecord = removedFileRecords.remove(uid);
+            if (removedRecord != null) {
+              LOGGER.info("found among removed streams, restoring: {}", uid);
+              rec = fileRegistry.restoreRecord(removedRecord);
+            }
+          }
+          record = rec;
+        }
+
+        if (record == null) {
+          LOGGER.warn("Request for non-registered file {}", uid);
+          exchange.sendResponseHeaders(404, -1);
+        } else {
+          record.incUploadsCounter();
+          try {
+            final String method = exchange.getRequestMethod();
+            if ("head".equalsIgnoreCase(method) || "get".equalsIgnoreCase(method)) {
+              respondWithPayload(exchange, record);
+            } else {
+              LOGGER.warn("Bad request : {}", exchange.getRequestURI());
+              exchange.sendResponseHeaders(400, -1);
+            }
+          } finally {
+            record.decUploadsCounter();
+          }
+        }
+      } else {
+        LOGGER.warn("Unsupported request {}", exchange.getRequestURI());
+        exchange.sendResponseHeaders(405, -1);
+      }
     };
   }
-  
+
   @NonNull
   public String getHost() {
     String result = "";
@@ -366,7 +365,7 @@ public class InternalServer {
     }
     return result;
   }
-  
+
   public int getPort() {
     int result = -1;
     final JavaServer currentServer = this.serverRef.get();
@@ -375,7 +374,7 @@ public class InternalServer {
     }
     return result;
   }
-  
+
   @PostConstruct
   public void restartServer() {
     JavaServer theServer = this.serverRef.getAndSet(null);
@@ -389,7 +388,8 @@ public class InternalServer {
     LOGGER.info("Starting server on {}:{}", host, port);
 
     try {
-      theServer = new JavaServer(this.options.getServerHost(), this.options.getServerPort(), this.options.isServerSsl(), makeHandler());
+      theServer = new JavaServer(this.options.getServerHost(), this.options.getServerPort(),
+          this.options.isServerSsl(), makeHandler());
       this.lastStartServerError.set(null);
       if (this.serverRef.compareAndSet(null, theServer)) {
         theServer.start();
@@ -409,7 +409,7 @@ public class InternalServer {
   public Throwable getLastStartServerError() {
     return this.lastStartServerError.get();
   }
-  
+
   @PreDestroy
   public void preDestroy() throws Exception {
     LOGGER.info("Destroying server");
@@ -423,7 +423,9 @@ public class InternalServer {
 
   public interface InternalServerListener {
 
-    void onScreencastStarted(@NonNull InternalServer source);
+    default void onScreencastStarted(@NonNull InternalServer source) {
+
+    }
 
     void onScreencastEnded(@NonNull InternalServer source);
   }

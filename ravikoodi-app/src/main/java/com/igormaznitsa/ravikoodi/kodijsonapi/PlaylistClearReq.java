@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.kodijsonapi;
 
 public class PlaylistClearReq extends PlaylistIdReq {
-    
-    public PlaylistClearReq(final Playlist playlist) {
-        super(playlist);
-    }
+
+  public PlaylistClearReq(final Playlist playlist) {
+    super(playlist);
+  }
 
 }

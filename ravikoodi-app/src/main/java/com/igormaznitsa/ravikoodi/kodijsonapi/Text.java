@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 public class Text {
   private final String text;
 
-  public Text(final String text){
+  public Text(final String text) {
     this.text = text;
   }
 }

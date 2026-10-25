@@ -30,16 +30,9 @@ import org.slf4j.LoggerFactory;
 
 public final class PlayerPanel extends javax.swing.JPanel {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(PlayerPanel.class);
-
-  private static final AtomicLong playerInternalIdCounter = new AtomicLong(1000L);
-
   public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
-
-  private final KodiComm kodiComm;
-  private final ActivePlayerInfo playerInfo;
-  private final ScheduledExecutorService executors;
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(PlayerPanel.class);
+  private static final AtomicLong playerInternalIdCounter = new AtomicLong(1000L);
   private static final String[] DETAIL_PROPERTIES = {
       "percentage",
       "time",
@@ -51,7 +44,6 @@ public final class PlayerPanel extends javax.swing.JPanel {
       "currentsubtitle",
       "subtitleenabled"
   };
-
   private static final String[] PROGRESS_PROPERTIES = {
       "percentage",
       "time",
@@ -59,42 +51,13 @@ public final class PlayerPanel extends javax.swing.JPanel {
       "speed",
       "subtitleenabled"
   };
-
-  private final AtomicBoolean fullPlayerDataRefresh = new AtomicBoolean(true);
-  private final AtomicLong refreshSeq = new AtomicLong();
-  private final AtomicReference<String> displayedItemKey = new AtomicReference<>("");
-
-  private final AtomicLong speed = new AtomicLong();
-
-  private final AtomicReference<Subtitle> lastDetectedSubtitle = new AtomicReference<>();
-  private final AtomicReference<AudioStream> lastDetectedAudiostream = new AtomicReference<>();
-  private final AtomicBoolean lastSubtitleEnabled = new AtomicBoolean();
-  private final AtomicReference<PlayerProperties> lastProperties = new AtomicReference<>();
-
-  private final Icon ICO_MOVIE = new ImageIcon(Utils.loadImage("32_movies.png"));
-  private final Icon ICO_MUSIC = new ImageIcon(Utils.loadImage("32_music.png"));
-  private final Icon ICO_PICTURE = new ImageIcon(Utils.loadImage("32_picture.png"));
-
-  private final Icon ICO_BIG_PLAY = new ImageIcon(Utils.loadImage("32_control_play_blue.png"));
-  private final Icon ICO_BIG_PAUSE = new ImageIcon(Utils.loadImage("32_control_pause_blue.png"));
-
-  private final AtomicLong updateStatusCounter = new AtomicLong();
-  private final MainFrame parent;
-
-  private volatile boolean enableListeners = true;
-
-  private volatile boolean ignoreRefresh = false;
-
   private static final Font DIGIFONT;
 
-  private final long internalId = playerInternalIdCounter.getAndIncrement();
-
-  private final AtomicBoolean paused = new AtomicBoolean();
-  
   static {
     Font font;
 
-    try (InputStream fontStream = PlayerPanel.class.getClassLoader().getResourceAsStream("fonts/digi.ttf")) {
+    try (InputStream fontStream = PlayerPanel.class.getClassLoader()
+        .getResourceAsStream("fonts/digi.ttf")) {
       font = Font.createFont(Font.TRUETYPE_FONT, fontStream);
     } catch (Exception ex) {
       LOGGER.error("Can't load DIGIFONT from resources", ex);
@@ -104,11 +67,57 @@ public final class PlayerPanel extends javax.swing.JPanel {
     DIGIFONT = font;
   }
 
-  public PlayerPanel(final MainFrame parent, final ActivePlayerInfo playerInfo, final ScheduledExecutorService executors, final KodiComm kodiComm) {
+  private final KodiComm kodiComm;
+  private final ActivePlayerInfo playerInfo;
+  private final ScheduledExecutorService executors;
+  private final AtomicBoolean fullPlayerDataRefresh = new AtomicBoolean(true);
+  private final AtomicLong refreshSeq = new AtomicLong();
+  private final AtomicReference<String> displayedItemKey = new AtomicReference<>("");
+  private final AtomicLong speed = new AtomicLong();
+  private final AtomicReference<Subtitle> lastDetectedSubtitle = new AtomicReference<>();
+  private final AtomicReference<AudioStream> lastDetectedAudiostream = new AtomicReference<>();
+  private final AtomicBoolean lastSubtitleEnabled = new AtomicBoolean();
+  private final AtomicReference<PlayerProperties> lastProperties = new AtomicReference<>();
+  private final Icon ICO_MOVIE = new ImageIcon(Utils.loadImage("32_movies.png"));
+  private final Icon ICO_MUSIC = new ImageIcon(Utils.loadImage("32_music.png"));
+  private final Icon ICO_PICTURE = new ImageIcon(Utils.loadImage("32_picture.png"));
+  private final Icon ICO_BIG_PLAY = new ImageIcon(Utils.loadImage("32_control_play_blue.png"));
+  private final Icon ICO_BIG_PAUSE = new ImageIcon(Utils.loadImage("32_control_pause_blue.png"));
+  private final AtomicLong updateStatusCounter = new AtomicLong();
+  private final MainFrame parent;
+  private final long internalId = playerInternalIdCounter.getAndIncrement();
+  private final AtomicBoolean paused = new AtomicBoolean();
+  private volatile boolean enableListeners = true;
+  private volatile boolean ignoreRefresh = false;
+  private javax.swing.JButton buttonClose;
+  private javax.swing.JButton buttonIncreaseSpeed;
+  private javax.swing.JButton buttonPausePlay;
+  private javax.swing.JButton buttonSpeedDecrease;
+  private javax.swing.JCheckBox checkboxSubtitleEabled;
+  private javax.swing.JComboBox<com.igormaznitsa.ravikoodi.kodijsonapi.AudioStream> comboAudio;
+  private javax.swing.JComboBox<com.igormaznitsa.ravikoodi.kodijsonapi.Subtitle> comboSubtitle;
+  private javax.swing.Box.Filler filler1;
+  private javax.swing.Box.Filler filler3;
+  private javax.swing.JLabel jLabel1;
+  private javax.swing.JLabel jLabel2;
+  private javax.swing.JLabel labelEndTime;
+  private javax.swing.JLabel labelSpeed;
+  private javax.swing.JLabel labelStartTime;
+  private javax.swing.JLabel labelTitle;
+  private javax.swing.JPanel panelControlButton;
+  private javax.swing.JPanel panelOptions;
+  private javax.swing.JPanel panelProgress;
+  private javax.swing.JProgressBar progressTime;
+  private com.igormaznitsa.ravikoodi.Ruler ruler1;
+  private com.igormaznitsa.ravikoodi.Ruler ruler2;
+
+  public PlayerPanel(final MainFrame parent, final ActivePlayerInfo playerInfo,
+                     final ScheduledExecutorService executors, final KodiComm kodiComm) {
     super();
     initComponents();
 
-    this.labelTitle.setFont(this.labelTitle.getFont().deriveFont(Font.BOLD, this.labelTitle.getFont().getSize2D() * 1.5f));
+    this.labelTitle.setFont(this.labelTitle.getFont()
+        .deriveFont(Font.BOLD, this.labelTitle.getFont().getSize2D() * 1.5f));
 
     Font font = DIGIFONT.deriveFont(Font.PLAIN, this.progressTime.getFont().getSize2D() * 1.5f);
 
@@ -162,26 +171,6 @@ public final class PlayerPanel extends javax.swing.JPanel {
     });
   }
 
-  public boolean isPaused() {
-    return this.paused.get();
-  }
-  
-  public long getPlayerId() {
-    return this.playerInfo.getPlayerid();
-  }
-
-  public void dispose() {
-  }
-
-  private void focusSelectedSubtitle(final Subtitle subtitle, final boolean enabled) {
-    this.comboSubtitle.setSelectedItem(subtitle);
-    this.checkboxSubtitleEabled.setSelected(enabled);
-  }
-
-  private void focusSelectedAudiostream(final AudioStream audioStream) {
-    this.comboAudio.setSelectedItem(audioStream);
-  }
-
   static String playingItemKey(final PlaylistFileItem item) {
     if (item == null) {
       return "";
@@ -204,6 +193,26 @@ public final class PlayerPanel extends javax.swing.JPanel {
 
   private static String text(final String value) {
     return value == null ? "" : value;
+  }
+
+  public boolean isPaused() {
+    return this.paused.get();
+  }
+
+  public long getPlayerId() {
+    return this.playerInfo.getPlayerid();
+  }
+
+  public void dispose() {
+  }
+
+  private void focusSelectedSubtitle(final Subtitle subtitle, final boolean enabled) {
+    this.comboSubtitle.setSelectedItem(subtitle);
+    this.checkboxSubtitleEabled.setSelected(enabled);
+  }
+
+  private void focusSelectedAudiostream(final AudioStream audioStream) {
+    this.comboAudio.setSelectedItem(audioStream);
   }
 
   public void refresh() {
@@ -346,25 +355,21 @@ public final class PlayerPanel extends javax.swing.JPanel {
       this.fullPlayerDataRefresh.set(true);
     }
   }
-  
-  /**
-   * This method is called from within the constructor to initialize the form.
-   * WARNING: Do NOT modify this code. The content of this method is always
-   * regenerated by the Form Editor.
-   */
+
   @SuppressWarnings("unchecked")
-  // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
   private void initComponents() {
     java.awt.GridBagConstraints gridBagConstraints;
 
-    filler1 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0), new java.awt.Dimension(32767, 0));
+    filler1 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0),
+        new java.awt.Dimension(32767, 0));
     buttonClose = new javax.swing.JButton();
     panelOptions = new javax.swing.JPanel();
     jLabel1 = new javax.swing.JLabel();
     comboAudio = new javax.swing.JComboBox<>();
     jLabel2 = new javax.swing.JLabel();
     comboSubtitle = new javax.swing.JComboBox<>();
-    filler3 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0), new java.awt.Dimension(32767, 0));
+    filler3 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0),
+        new java.awt.Dimension(32767, 0));
     panelControlButton = new javax.swing.JPanel();
     buttonSpeedDecrease = new javax.swing.JButton();
     buttonPausePlay = new javax.swing.JButton();
@@ -375,15 +380,17 @@ public final class PlayerPanel extends javax.swing.JPanel {
     panelProgress = new javax.swing.JPanel();
     labelStartTime = new javax.swing.JLabel();
     labelEndTime = new javax.swing.JLabel();
-    progressTime = new javax.swing.JProgressBar(){
-      public Point getToolTipLocation(MouseEvent evt){
+    progressTime = new javax.swing.JProgressBar() {
+      public Point getToolTipLocation(MouseEvent evt) {
         return new Point(evt.getPoint().x, this.getHeight() - 2);
       }
     };
     ruler1 = new com.igormaznitsa.ravikoodi.Ruler();
     ruler2 = new com.igormaznitsa.ravikoodi.Ruler();
 
-    setBorder(javax.swing.BorderFactory.createCompoundBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)), javax.swing.BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+    setBorder(javax.swing.BorderFactory.createCompoundBorder(
+        javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)),
+        javax.swing.BorderFactory.createEmptyBorder(8, 8, 8, 8)));
     setLayout(new java.awt.GridBagLayout());
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 1;
@@ -392,13 +399,10 @@ public final class PlayerPanel extends javax.swing.JPanel {
     gridBagConstraints.weightx = 1000.0;
     add(filler1, gridBagConstraints);
 
-    buttonClose.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/32_control_eject_blue.png"))); // NOI18N
+    buttonClose.setIcon(
+        new javax.swing.ImageIcon(getClass().getResource("/icons/32_control_eject_blue.png")));
     buttonClose.setToolTipText("Shutdown the player");
-    buttonClose.addActionListener(new java.awt.event.ActionListener() {
-      public void actionPerformed(java.awt.event.ActionEvent evt) {
-        buttonCloseActionPerformed(evt);
-      }
-    });
+    buttonClose.addActionListener(this::buttonCloseActionPerformed);
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 2;
     gridBagConstraints.gridy = 0;
@@ -415,11 +419,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
     panelOptions.add(jLabel1, gridBagConstraints);
 
     comboAudio.setEnabled(false);
-    comboAudio.addActionListener(new java.awt.event.ActionListener() {
-      public void actionPerformed(java.awt.event.ActionEvent evt) {
-        comboAudioActionPerformed(evt);
-      }
-    });
+    comboAudio.addActionListener(this::comboAudioActionPerformed);
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 2;
     gridBagConstraints.gridy = 0;
@@ -433,11 +433,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
     panelOptions.add(jLabel2, gridBagConstraints);
 
     comboSubtitle.setEnabled(false);
-    comboSubtitle.addActionListener(new java.awt.event.ActionListener() {
-      public void actionPerformed(java.awt.event.ActionEvent evt) {
-        comboSubtitleActionPerformed(evt);
-      }
-    });
+    comboSubtitle.addActionListener(this::comboSubtitleActionPerformed);
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 4;
     gridBagConstraints.gridy = 0;
@@ -448,31 +444,22 @@ public final class PlayerPanel extends javax.swing.JPanel {
     gridBagConstraints.weightx = 1000.0;
     panelOptions.add(filler3, gridBagConstraints);
 
-    buttonSpeedDecrease.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/32_control_rewind_blue.png"))); // NOI18N
+    buttonSpeedDecrease.setIcon(
+        new javax.swing.ImageIcon(getClass().getResource("/icons/32_control_rewind_blue.png")));
     buttonSpeedDecrease.setToolTipText("Decrease speed");
-    buttonSpeedDecrease.addActionListener(new java.awt.event.ActionListener() {
-      public void actionPerformed(java.awt.event.ActionEvent evt) {
-        buttonSpeedDecreaseActionPerformed(evt);
-      }
-    });
+    buttonSpeedDecrease.addActionListener(this::buttonSpeedDecreaseActionPerformed);
     panelControlButton.add(buttonSpeedDecrease);
 
-    buttonPausePlay.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/32_control_play_blue.png"))); // NOI18N
+    buttonPausePlay.setIcon(
+        new javax.swing.ImageIcon(getClass().getResource("/icons/32_control_play_blue.png")));
     buttonPausePlay.setToolTipText("Play/Pause");
-    buttonPausePlay.addActionListener(new java.awt.event.ActionListener() {
-      public void actionPerformed(java.awt.event.ActionEvent evt) {
-        buttonPausePlayActionPerformed(evt);
-      }
-    });
+    buttonPausePlay.addActionListener(this::buttonPausePlayActionPerformed);
     panelControlButton.add(buttonPausePlay);
 
-    buttonIncreaseSpeed.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/32_control_fastforward_blue.png"))); // NOI18N
+    buttonIncreaseSpeed.setIcon(new javax.swing.ImageIcon(
+        getClass().getResource("/icons/32_control_fastforward_blue.png")));
     buttonIncreaseSpeed.setToolTipText("Increase speed");
-    buttonIncreaseSpeed.addActionListener(new java.awt.event.ActionListener() {
-      public void actionPerformed(java.awt.event.ActionEvent evt) {
-        buttonIncreaseSpeedActionPerformed(evt);
-      }
-    });
+    buttonIncreaseSpeed.addActionListener(this::buttonIncreaseSpeedActionPerformed);
     panelControlButton.add(buttonIncreaseSpeed);
 
     gridBagConstraints = new java.awt.GridBagConstraints();
@@ -491,11 +478,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
 
     checkboxSubtitleEabled.setText("Subtitle enabled");
     checkboxSubtitleEabled.setEnabled(false);
-    checkboxSubtitleEabled.addActionListener(new java.awt.event.ActionListener() {
-      public void actionPerformed(java.awt.event.ActionEvent evt) {
-        checkboxSubtitleEabledActionPerformed(evt);
-      }
-    });
+    checkboxSubtitleEabled.addActionListener(this::checkboxSubtitleEabledActionPerformed);
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 5;
     gridBagConstraints.gridy = 0;
@@ -581,10 +564,11 @@ public final class PlayerPanel extends javax.swing.JPanel {
     gridBagConstraints.gridwidth = 3;
     gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
     add(panelProgress, gridBagConstraints);
-  }// </editor-fold>//GEN-END:initComponents
+  }
 
-  private void buttonCloseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonCloseActionPerformed
-    if (JOptionPane.showConfirmDialog(this.parent, "Do you really want to stop the player?", "Stop player", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+  private void buttonCloseActionPerformed(java.awt.event.ActionEvent evt) {
+    if (JOptionPane.showConfirmDialog(this.parent, "Do you really want to stop the player?",
+        "Stop player", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
       executors.submit(() -> {
         try {
           this.kodiComm.doPlayerStop(this.playerInfo);
@@ -593,9 +577,9 @@ public final class PlayerPanel extends javax.swing.JPanel {
         }
       });
     }
-  }//GEN-LAST:event_buttonCloseActionPerformed
+  }
 
-  private void buttonSpeedDecreaseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonSpeedDecreaseActionPerformed
+  private void buttonSpeedDecreaseActionPerformed(java.awt.event.ActionEvent evt) {
     if (this.enableListeners) {
       executors.submit(() -> {
         try {
@@ -606,9 +590,9 @@ public final class PlayerPanel extends javax.swing.JPanel {
         }
       });
     }
-  }//GEN-LAST:event_buttonSpeedDecreaseActionPerformed
+  }
 
-  private void buttonIncreaseSpeedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonIncreaseSpeedActionPerformed
+  private void buttonIncreaseSpeedActionPerformed(java.awt.event.ActionEvent evt) {
     if (this.enableListeners) {
       executors.submit(() -> {
         try {
@@ -619,9 +603,9 @@ public final class PlayerPanel extends javax.swing.JPanel {
         }
       });
     }
-  }//GEN-LAST:event_buttonIncreaseSpeedActionPerformed
+  }
 
-  private void buttonPausePlayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonPausePlayActionPerformed
+  private void buttonPausePlayActionPerformed(java.awt.event.ActionEvent evt) {
     if (this.enableListeners) {
       executors.submit(() -> {
         try {
@@ -631,15 +615,16 @@ public final class PlayerPanel extends javax.swing.JPanel {
         }
       });
     }
-  }//GEN-LAST:event_buttonPausePlayActionPerformed
+  }
 
-  private void comboAudioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboAudioActionPerformed
+  private void comboAudioActionPerformed(java.awt.event.ActionEvent evt) {
     if (this.enableListeners) {
       final AudioStream newAudioStream = (AudioStream) this.comboAudio.getSelectedItem();
       if (newAudioStream != null && !newAudioStream.equals(this.lastDetectedAudiostream.get())) {
         executors.submit(() -> {
           try {
-            LOGGER.info("Trying to change audiostream of '{}' to '{}'", this.playerInfo, newAudioStream);
+            LOGGER.info("Trying to change audiostream of '{}' to '{}'", this.playerInfo,
+                newAudioStream);
             this.kodiComm.setPlayerAudiostream(this.playerInfo, newAudioStream);
           } catch (Throwable thr) {
             LOGGER.error("Error during set player audiostream", thr);
@@ -647,21 +632,22 @@ public final class PlayerPanel extends javax.swing.JPanel {
         });
       }
     }
-  }//GEN-LAST:event_comboAudioActionPerformed
+  }
 
-  private void comboSubtitleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboSubtitleActionPerformed
+  private void comboSubtitleActionPerformed(java.awt.event.ActionEvent evt) {
     if (this.enableListeners) {
       final Subtitle newSubtitle = (Subtitle) this.comboSubtitle.getSelectedItem();
       if (newSubtitle != null && !newSubtitle.equals(this.lastDetectedSubtitle.get())) {
         sendSubtitle(newSubtitle, this.checkboxSubtitleEabled.isSelected());
       }
     }
-  }//GEN-LAST:event_comboSubtitleActionPerformed
+  }
 
   private void sendSubtitle(final Subtitle subtitle, final boolean enable) {
     executors.submit(() -> {
       try {
-        LOGGER.info("Trying to change subtite of '{}' to '{}', enable={}", this.playerInfo, subtitle, enable);
+        LOGGER.info("Trying to change subtite of '{}' to '{}', enable={}", this.playerInfo,
+            subtitle, enable);
         this.kodiComm.setPlayerSubtitle(this.playerInfo, subtitle, enable);
       } catch (Throwable thr) {
         LOGGER.error("Error during set player audiostream", thr);
@@ -669,30 +655,32 @@ public final class PlayerPanel extends javax.swing.JPanel {
     });
   }
 
-  private void checkboxSubtitleEabledActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkboxSubtitleEabledActionPerformed
+  private void checkboxSubtitleEabledActionPerformed(java.awt.event.ActionEvent evt) {
     if (this.enableListeners) {
       this.updateStatusCounter.incrementAndGet();
-      sendSubtitle((Subtitle) this.comboSubtitle.getModel().getSelectedItem(), this.checkboxSubtitleEabled.isSelected());
+      sendSubtitle((Subtitle) this.comboSubtitle.getModel().getSelectedItem(),
+          this.checkboxSubtitleEabled.isSelected());
     }
-  }//GEN-LAST:event_checkboxSubtitleEabledActionPerformed
+  }
 
-  private void progressTimeMouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_progressTimeMouseMoved
+  private void progressTimeMouseMoved(java.awt.event.MouseEvent evt) {
     showProgressAtPoint(evt.getPoint(), true);
-  }//GEN-LAST:event_progressTimeMouseMoved
+  }
 
-  private void progressTimeMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_progressTimeMouseClicked
+  private void progressTimeMouseClicked(java.awt.event.MouseEvent evt) {
     if (this.enableListeners && !this.progressTime.isIndeterminate()) {
       final double position = getProgressPercentAtPoint(evt.getPoint());
       this.updateStatusCounter.incrementAndGet();
       try {
         LOGGER.info("Seek player '{}' position : {}%", this.playerInfo, position);
-        final PlayerSeekResult result = this.kodiComm.doPlayerSeekPercentage(playerInfo, position * 100.0d);
+        final PlayerSeekResult result =
+            this.kodiComm.doPlayerSeekPercentage(playerInfo, position * 100.0d);
         this.progressTime.setValue((int) Math.round(result.getPercentage() * 100));
       } catch (Throwable ex) {
         LOGGER.error("Error in player seek: {}", ex.getMessage());
       }
     }
-  }//GEN-LAST:event_progressTimeMouseClicked
+  }
 
   private double getProgressPercentAtPoint(final Point point) {
     return point.getX() / this.progressTime.getWidth();
@@ -704,7 +692,9 @@ public final class PlayerPanel extends javax.swing.JPanel {
     if (show && playerProperties != null && !this.progressTime.isIndeterminate()) {
       if (!playerProperties.getTotaltime().isZero()) {
         final LocalTime totalTime = playerProperties.getTotaltime().asLocalTime();
-        this.progressTime.setToolTipText(LocalTime.ofSecondOfDay(Math.round((totalTime.toSecondOfDay() * getProgressPercentAtPoint(mousePoint)))).format(TIME_FORMATTER));
+        this.progressTime.setToolTipText(LocalTime.ofSecondOfDay(
+                Math.round((totalTime.toSecondOfDay() * getProgressPercentAtPoint(mousePoint))))
+            .format(TIME_FORMATTER));
       } else {
         this.progressTime.setToolTipText(null);
       }
@@ -717,30 +707,5 @@ public final class PlayerPanel extends javax.swing.JPanel {
   public String toString() {
     return String.format("playerPanel#%d(%d)", this.internalId, this.getPlayerId());
   }
-
-
-  // Variables declaration - do not modify//GEN-BEGIN:variables
-  private javax.swing.JButton buttonClose;
-  private javax.swing.JButton buttonIncreaseSpeed;
-  private javax.swing.JButton buttonPausePlay;
-  private javax.swing.JButton buttonSpeedDecrease;
-  private javax.swing.JCheckBox checkboxSubtitleEabled;
-  private javax.swing.JComboBox<com.igormaznitsa.ravikoodi.kodijsonapi.AudioStream> comboAudio;
-  private javax.swing.JComboBox<com.igormaznitsa.ravikoodi.kodijsonapi.Subtitle> comboSubtitle;
-  private javax.swing.Box.Filler filler1;
-  private javax.swing.Box.Filler filler3;
-  private javax.swing.JLabel jLabel1;
-  private javax.swing.JLabel jLabel2;
-  private javax.swing.JLabel labelEndTime;
-  private javax.swing.JLabel labelSpeed;
-  private javax.swing.JLabel labelStartTime;
-  private javax.swing.JLabel labelTitle;
-  private javax.swing.JPanel panelControlButton;
-  private javax.swing.JPanel panelOptions;
-  private javax.swing.JPanel panelProgress;
-  private javax.swing.JProgressBar progressTime;
-  private com.igormaznitsa.ravikoodi.Ruler ruler1;
-  private com.igormaznitsa.ravikoodi.Ruler ruler2;
-  // End of variables declaration//GEN-END:variables
 
 }

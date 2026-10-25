@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.timers;
+
+import static com.igormaznitsa.ravikoodi.Utils.isBlank;
 
 import com.igormaznitsa.ravikoodi.FilePathCellEditor;
 import com.igormaznitsa.ravikoodi.TableLookupButton;
-import static com.igormaznitsa.ravikoodi.Utils.isBlank;
 import com.igormaznitsa.ravikoodi.prefs.TimerResource;
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -41,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.swing.AbstractCellEditor;
 import javax.swing.Box;
@@ -59,12 +62,13 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableModel;
 import javax.swing.text.DateFormatter;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 public final class TimersTable extends JPanel {
 
-    protected static final DateTimeFormatter HHMMSS_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final DateTimeFormatter HHMMSS_FORMATTER =
+        DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final JTable timersTable;
 
@@ -95,7 +99,10 @@ public final class TimersTable extends JPanel {
 
         final JPanel buttonPanel = new JPanel(new GridBagLayout());
 
-        GridBagConstraints gbc = new GridBagConstraints(0, GridBagConstraints.RELATIVE, 1, 1, 1, 1, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(1, 1, 1, 1), 0, 0);
+        GridBagConstraints gbc =
+            new GridBagConstraints(0, GridBagConstraints.RELATIVE, 1, 1, 1, 1,
+                GridBagConstraints.WEST,
+                GridBagConstraints.HORIZONTAL, new Insets(1, 1, 1, 1), 0, 0);
 
         final JButton addTimer = new JButton("Add");
         final JButton removeTimer = new JButton("Remove");
@@ -103,17 +110,16 @@ public final class TimersTable extends JPanel {
         final JButton enableAll = new JButton("Enable All");
         final JButton disableAll = new JButton("Disable All");
 
-        enableAll.addActionListener(e -> {
-            ((TimersTableModel) this.timersTable.getModel()).enableAll();
-        });
+        enableAll.addActionListener(
+            e -> ((TimersTableModel) this.timersTable.getModel()).enableAll());
 
-        disableAll.addActionListener(e -> {
-            ((TimersTableModel) this.timersTable.getModel()).disableAll();
-        });
+        disableAll.addActionListener(
+            e -> ((TimersTableModel) this.timersTable.getModel()).disableAll());
 
         removeAll.addActionListener(e -> {
             if (this.timersTable.getRowCount() > 0
-                    && JOptionPane.showConfirmDialog(this, "Remove all timers?", "Remove timers", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                && JOptionPane.showConfirmDialog(this, "Remove all timers?", "Remove timers",
+                JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
                 ((TimersTableModel) this.timersTable.getModel()).clear();
             }
         });
@@ -121,7 +127,10 @@ public final class TimersTable extends JPanel {
         removeTimer.addActionListener(e -> {
             final int[] indexes = this.timersTable.getSelectedRows();
             if (indexes.length > 0
-                    && JOptionPane.showConfirmDialog(this, String.format("Remove %d timer(s)?", indexes.length), "Remove timers", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                &&
+                JOptionPane.showConfirmDialog(this,
+                    String.format("Remove %d timer(s)?", indexes.length),
+                    "Remove timers", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
                 ((TimersTableModel) this.timersTable.getModel()).removeIndexes(indexes);
             }
         });
@@ -141,9 +150,7 @@ public final class TimersTable extends JPanel {
         removeTimer.setEnabled(false);
         removeAll.setEnabled(!timers.isEmpty());
 
-        addTimer.addActionListener(e -> {
-            model.addTimer(new TimerResource("Unnamed"));
-        });
+        addTimer.addActionListener(e -> model.addTimer(new TimerResource("Unnamed")));
 
         this.timersTable.getSelectionModel().addListSelectionListener(event -> {
             if (this.timersTable.getSelectedRowCount() > 0) {
@@ -173,7 +180,8 @@ public final class TimersTable extends JPanel {
 
         public LocalTimeEditor(final LocalTime value) {
             super(new BorderLayout(0, 0));
-            this.textField = new JFormattedTextField(new DateFormatter(new SimpleDateFormat("HH:mm:ss")));
+            this.textField =
+                new JFormattedTextField(new DateFormatter(new SimpleDateFormat("HH:mm:ss")));
             this.textField.setBorder(new EmptyBorder(0, 0, 0, 0));
             this.setTime(value);
 
@@ -218,18 +226,21 @@ public final class TimersTable extends JPanel {
 
         }
 
-        public void setTime(final LocalTime time) {
-            final LocalTime value = time == null ? LocalTime.of(0, 0, 0) : time;
-            this.textField.setValue(Date.from(value.atDate(LocalDate.now()).atZone(ZoneId.systemDefault()).toInstant()));
-            this.textField.setCaretPosition(this.textField.getText().length());
-        }
-
         @Nullable
         public LocalTime getTime() {
             if (isBlank(this.textField.getText())) {
                 return null;
             }
-            return LocalTime.from(((Date) this.textField.getValue()).toInstant().atZone(ZoneId.systemDefault()));
+            return LocalTime.from(
+                ((Date) this.textField.getValue()).toInstant().atZone(ZoneId.systemDefault()));
+        }
+
+        public void setTime(final LocalTime time) {
+            final LocalTime value = time == null ? LocalTime.of(0, 0, 0) : time;
+            this.textField.setValue(
+                Date.from(
+                    value.atDate(LocalDate.now()).atZone(ZoneId.systemDefault()).toInstant()));
+            this.textField.setCaretPosition(this.textField.getText().length());
         }
 
         @NonNull
@@ -241,6 +252,11 @@ public final class TimersTable extends JPanel {
     static final class LocalTimeCellEditor extends AbstractCellEditor implements TableCellEditor {
 
         private final LocalTimeEditor edit = new LocalTimeEditor(LocalTime.of(0, 0, 0));
+
+        public LocalTimeCellEditor() {
+            super();
+            this.edit.getTextField().addActionListener(x -> this.stopCellEditing());
+        }
 
         @Override
         public boolean stopCellEditing() {
@@ -256,20 +272,14 @@ public final class TimersTable extends JPanel {
             }
         }
 
-        public LocalTimeCellEditor() {
-            super();
-            this.edit.getTextField().addActionListener(x -> {
-                this.stopCellEditing();
-            });
-        }
-
         @Override
         public Object getCellEditorValue() {
             return this.edit.getTime();
         }
 
         @Override
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected,
+                                                     int row, int column) {
             this.edit.setBackground(table.getBackground());
             this.edit.setForeground(table.getForeground());
             this.edit.setFont(table.getFont());
@@ -312,42 +322,26 @@ public final class TimersTable extends JPanel {
 
         @Override
         public String getColumnName(final int column) {
-            switch (column) {
-                case 0:
-                    return "Enabled";
-                case 1:
-                    return "Name";
-                case 2:
-                    return "Start time";
-                case 3:
-                    return "Stop time";
-                case 4:
-                    return "File";
-                case 5:
-                    return "Replay";
-                default:
-                    throw new Error("Unexpected column: " + column);
-            }
+            return switch (column) {
+                case 0 -> "Enabled";
+                case 1 -> "Name";
+                case 2 -> "Start time";
+                case 3 -> "Stop time";
+                case 4 -> "File";
+                case 5 -> "Replay";
+                default -> throw new Error("Unexpected column: " + column);
+            };
         }
 
         @Override
         public Class<?> getColumnClass(final int column) {
-            switch (column) {
-                case 0:
-                    return Boolean.class;
-                case 1:
-                    return String.class;
-                case 2:
-                    return LocalTime.class;
-                case 3:
-                    return LocalTime.class;
-                case 4:
-                    return File.class;
-                case 5:
-                    return Boolean.class;
-                default:
-                    throw new Error("Unexpected column: " + column);
-            }
+            return switch (column) {
+                case 0, 5 -> Boolean.class;
+                case 1 -> String.class;
+                case 2, 3 -> LocalTime.class;
+                case 4 -> File.class;
+                default -> throw new Error("Unexpected column: " + column);
+            };
         }
 
         @Override
@@ -358,22 +352,15 @@ public final class TimersTable extends JPanel {
         @Override
         public Object getValueAt(int row, int col) {
             final TimerResource timer = this.timers.get(row);
-            switch (col) {
-                case 0:
-                    return timer.isEnabled();
-                case 1:
-                    return timer.getName();
-                case 2:
-                    return timer.getFrom();
-                case 3:
-                    return timer.getTo();
-                case 4:
-                    return timer.getResourcePath();
-                case 5:
-                    return timer.isReplay();
-                default:
-                    throw new Error("Unexpected column: " + col);
-            }
+            return switch (col) {
+                case 0 -> timer.isEnabled();
+                case 1 -> timer.getName();
+                case 2 -> timer.getFrom();
+                case 3 -> timer.getTo();
+                case 4 -> timer.getResourcePath();
+                case 5 -> timer.isReplay();
+                default -> throw new Error("Unexpected column: " + col);
+            };
         }
 
         @Override
@@ -405,41 +392,31 @@ public final class TimersTable extends JPanel {
 
         private void addTimer(@NonNull final TimerResource timer) {
             this.timers.add(timer);
-            this.listeners.forEach(x -> {
-                x.tableChanged(new TableModelEvent(this));
-            });
+            this.listeners.forEach(x -> x.tableChanged(new TableModelEvent(this)));
         }
 
         private void removeIndexes(@NonNull final int[] indexes) {
-            for (int i = 0; i < indexes.length; i++) {
-                this.timers.set(indexes[i], null);
+            for (int index : indexes) {
+                this.timers.set(index, null);
             }
-            this.timers.removeIf(x -> x == null);
-            this.listeners.forEach(x -> {
-                x.tableChanged(new TableModelEvent(this));
-            });
+            this.timers.removeIf(Objects::isNull);
+            this.listeners.forEach(x -> x.tableChanged(new TableModelEvent(this)));
         }
 
         private void clear() {
             this.timers.clear();
-            this.listeners.forEach(x -> {
-                x.tableChanged(new TableModelEvent(this));
-            });
+            this.listeners.forEach(x -> x.tableChanged(new TableModelEvent(this)));
 
         }
 
         private void disableAll() {
             this.timers.forEach(x -> x.setEnabled(false));
-            this.listeners.forEach(x -> {
-                x.tableChanged(new TableModelEvent(this));
-            });
+            this.listeners.forEach(x -> x.tableChanged(new TableModelEvent(this)));
         }
 
         private void enableAll() {
             this.timers.forEach(x -> x.setEnabled(true));
-            this.listeners.forEach(x -> {
-                x.tableChanged(new TableModelEvent(this));
-            });
+            this.listeners.forEach(x -> x.tableChanged(new TableModelEvent(this)));
         }
     }
 
@@ -450,7 +427,9 @@ public final class TimersTable extends JPanel {
         }
 
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected,
+                                                       boolean hasFocus, int row, int column) {
             final String text;
             final boolean problem;
             if (value == null) {
@@ -461,8 +440,8 @@ public final class TimersTable extends JPanel {
                 text = theFile.getName();
                 problem = !theFile.isFile();
             }
-            final Component result = super.getTableCellRendererComponent(table, text, isSelected, hasFocus, row, column);
-            return result;
+            return super.getTableCellRendererComponent(table, text, isSelected, hasFocus, row,
+                column);
         }
     }
 
@@ -475,12 +454,12 @@ public final class TimersTable extends JPanel {
         @NonNull
         @Override
         public Component getTableCellRendererComponent(
-                JTable table,
-                Object value,
-                boolean isSelected,
-                boolean hasFocus,
-                int row,
-                int column
+            JTable table,
+            Object value,
+            boolean isSelected,
+            boolean hasFocus,
+            int row,
+            int column
         ) {
             final String text;
             if (value == null) {
@@ -488,7 +467,8 @@ public final class TimersTable extends JPanel {
             } else {
                 text = ((LocalTime) value).format(HHMMSS_FORMATTER);
             }
-            return super.getTableCellRendererComponent(table, text, isSelected, hasFocus, row, column);
+            return super.getTableCellRendererComponent(table, text, isSelected, hasFocus, row,
+                column);
         }
     }
 

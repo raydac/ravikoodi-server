@@ -21,6 +21,8 @@
 - `MainFrame.startPlaying` registers a file, then `KodiComm.openFileThroughRegistry` registers a second id and that second URL is what Kodi opens. On failure only the first id is unregistered.
 - `.webm` is mapped to `video/x-ms-wmv` in `MimeTypes`.
 - File-handler path parsing is still string-split on the raw request URI.
+- NetBeans `.form` files and `GEN` / `NOI18N` markers are gone. Swing layout lives in the Java sources.
+- Nullness annotations are `org.jspecify.annotations.NonNull` and `Nullable`. Spring's `org.springframework.lang` copies are deprecated. `jspecify` comes from the Spring Boot BOM.
 
 ## 4. Current Work In Progress
 - SpotBugs check is clean after the fixes. `mvn22 -pl ravikoodi-app -am verify`.

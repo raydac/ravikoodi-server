@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.screencast.screensrc;
 
 import ch.qos.logback.core.util.CloseUtil;
@@ -40,37 +41,15 @@ import java.util.List;
 import java.util.concurrent.Exchanger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.SystemUtils;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 public final class FfmpegScreenSource extends AbstractScreenSource {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FfmpegScreenSource.class);
-
-  @NonNull
-  private static byte[] readAllButes(@NonNull final InputStream stream) throws IOException {
-    final ByteArrayOutputStream buffer = new ByteArrayOutputStream(16384);
-    while (!Thread.currentThread().isInterrupted()) {
-      final int next = stream.read();
-      if (next < 0) {
-        break;
-      }
-      buffer.write(next);
-    }
-    buffer.close();
-    return buffer.toByteArray();
-  }
-  
-  @NonNull
-  private static Rectangle calculateTargetSize(@NonNull final ApplicationPreferences.Quality quality, @NonNull final Rectangle screenSize) {
-    final double aspect = (double) quality.getHeight() / (double) screenSize.height;
-    return new Rectangle((int) Math.round(screenSize.width * aspect) & 0xFFFFFFFE, quality.getHeight());
-  }
-
   private final GraphicsDevice sourceDevice;
   private final Rectangle screenBounds;
   private final Rectangle targetSize;
@@ -88,7 +67,8 @@ public final class FfmpegScreenSource extends AbstractScreenSource {
   private final int captureDeviceIndex;
   private int rgbBufferPositon = 0;
 
-  public FfmpegScreenSource(@NonNull final ApplicationPreferences preferences, final boolean showPointer) throws IOException {
+  public FfmpegScreenSource(@NonNull final ApplicationPreferences preferences,
+                            final boolean showPointer) throws IOException {
     super(showPointer);
     this.sourceDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
     final GraphicsConfiguration configuration = this.sourceDevice.getDefaultConfiguration();
@@ -114,20 +94,23 @@ public final class FfmpegScreenSource extends AbstractScreenSource {
       this.captureDeviceIndex = 0;
     }
 
-    final BufferedImage scaledMouseCursor = makeScaledMousePointer(this.aspectWidth, this.aspectHeight);
+    final BufferedImage scaledMouseCursor =
+        makeScaledMousePointer(this.aspectWidth, this.aspectHeight);
     this.scaledMouseCursorWidth = scaledMouseCursor.getWidth();
     this.scaledMouseCursorHeight = scaledMouseCursor.getHeight();
 
-    this.scaledMouseCursorARGB = Arrays.copyOf(((DataBufferInt) scaledMouseCursor.getRaster().getDataBuffer()).getData(), this.scaledMouseCursorWidth * this.scaledMouseCursorHeight);
+    this.scaledMouseCursorARGB =
+        Arrays.copyOf(((DataBufferInt) scaledMouseCursor.getRaster().getDataBuffer()).getData(),
+            this.scaledMouseCursorWidth * this.scaledMouseCursorHeight);
 
     LoopbackTcpReader reader = null;
     try {
       reader = new LoopbackTcpReader(
-              "ffmpeg-scr-capture-reader",
-              Duration.ofSeconds(2),
-              0x10000,
-              this::consumeInData,
-              () -> !this.isDisposed());
+          "ffmpeg-scr-capture-reader",
+          Duration.ofSeconds(2),
+          0x10000,
+          this::consumeInData,
+          () -> !this.isDisposed());
       reader.start();
       LOGGER.info("started tcp loopback reader: {}", reader.getAddress());
     } catch (IOException ex) {
@@ -140,12 +123,12 @@ public final class FfmpegScreenSource extends AbstractScreenSource {
 
     try {
       this.ffmpegProcess = startFfmpeg(
-              preferences.getFfmpegPath(),
-              this.sourceDevice.getIDstring(),
-              preferences.getSnapsPerSecond(),
-              reader,
-              this.screenBounds,
-              this.targetSize
+          preferences.getFfmpegPath(),
+          this.sourceDevice.getIDstring(),
+          preferences.getSnapsPerSecond(),
+          reader,
+          this.screenBounds,
+          this.targetSize
       );
       LOGGER.info("started ffmpeg capturing process");
     } catch (Exception ex) {
@@ -153,7 +136,31 @@ public final class FfmpegScreenSource extends AbstractScreenSource {
       CloseUtil.closeQuietly(this.resultReader);
       throw new IllegalStateException("Can't start ffmpeg capture", ex);
     }
-    LOGGER.info("created ffmpeg grabber, device={}, bounds={}, target_size={}x{}", this.sourceDevice.getIDstring(), this.screenBounds, this.targetSize.width, this.targetSize.height);
+    LOGGER.info("created ffmpeg grabber, device={}, bounds={}, target_size={}x{}",
+        this.sourceDevice.getIDstring(), this.screenBounds, this.targetSize.width,
+        this.targetSize.height);
+  }
+
+  @NonNull
+  private static byte[] readAllButes(@NonNull final InputStream stream) throws IOException {
+    final ByteArrayOutputStream buffer = new ByteArrayOutputStream(16384);
+    while (!Thread.currentThread().isInterrupted()) {
+      final int next = stream.read();
+      if (next < 0) {
+        break;
+      }
+      buffer.write(next);
+    }
+    buffer.close();
+    return buffer.toByteArray();
+  }
+
+  @NonNull
+  private static Rectangle calculateTargetSize(
+      final ApplicationPreferences.@NonNull Quality quality, @NonNull final Rectangle screenSize) {
+    final double aspect = (double) quality.getHeight() / (double) screenSize.height;
+    return new Rectangle((int) Math.round(screenSize.width * aspect) & 0xFFFFFFFE,
+        quality.getHeight());
   }
 
   private int findMacCaptureDeviceIndex(@NonNull final ApplicationPreferences preferences) {
@@ -168,14 +175,14 @@ public final class FfmpegScreenSource extends AbstractScreenSource {
     cmd.add("-i");
     cmd.add("dummy");
 
-    LOGGER.info("executing FFmpeg command line: {}", cmd.stream().collect(Collectors.joining(" ")));
+    LOGGER.info("executing FFmpeg command line: {}", String.join(" ", cmd));
 
     final Process process;
     try {
       process = new ProcessBuilder(cmd)
-              .redirectError(ProcessBuilder.Redirect.PIPE)
-              .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-              .start();
+          .redirectError(ProcessBuilder.Redirect.PIPE)
+          .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+          .start();
     } catch (IOException ex) {
       LOGGER.error("can't start external process", ex);
       return 0;
@@ -198,7 +205,9 @@ public final class FfmpegScreenSource extends AbstractScreenSource {
       return 0;
     }
 
-    final Pattern CAPTURE_SCREEN = Pattern.compile("^.*\\[(\\d+)]\\s+capture\\s+screen\\s+(\\d+)\\s*$", Pattern.CASE_INSENSITIVE);
+    final Pattern CAPTURE_SCREEN =
+        Pattern.compile("^.*\\[(\\d+)]\\s+capture\\s+screen\\s+(\\d+)\\s*$",
+            Pattern.CASE_INSENSITIVE);
     int foundDeviceId = -1;
     final String[] lines = outputData.split("\\r?\\n");
     LOGGER.info("avfoundation generated output {} lines", lines.length);
@@ -214,7 +223,8 @@ public final class FfmpegScreenSource extends AbstractScreenSource {
       }
     }
     if (foundDeviceId < 0) {
-      LOGGER.warn("Can't find any capture screen id among, trying use 0: {}", Arrays.toString(lines));
+      LOGGER.warn("Can't find any capture screen id among, trying use 0: {}",
+          Arrays.toString(lines));
       return 0;
     } else {
       return foundDeviceId;
@@ -233,10 +243,12 @@ public final class FfmpegScreenSource extends AbstractScreenSource {
   }
 
   @NonNull
-  private BufferedImage makeScaledMousePointer(final double aspectWidth, final double aspectHeight) {
+  private BufferedImage makeScaledMousePointer(final double aspectWidth,
+                                               final double aspectHeight) {
     final int scaledWidth = (int) Math.round(aspectWidth * MOUSE_ICON.getWidth(null));
     final int scaledHeight = (int) Math.round(aspectHeight * MOUSE_ICON.getHeight(null));
-    final BufferedImage result = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
+    final BufferedImage result =
+        new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
     final Graphics2D gfx = result.createGraphics();
     try {
       gfx.drawImage(MOUSE_ICON, AffineTransform.getScaleInstance(aspectWidth, aspectHeight), null);
@@ -247,12 +259,12 @@ public final class FfmpegScreenSource extends AbstractScreenSource {
   }
 
   private Process startFfmpeg(
-          final String ffmpegPath,
-          final String deviceId,
-          final int snapsPerSecond,
-          final LoopbackTcpReader reader,
-          final Rectangle screenBounds,
-          final Rectangle targetSize
+      final String ffmpegPath,
+      final String deviceId,
+      final int snapsPerSecond,
+      final LoopbackTcpReader reader,
+      final Rectangle screenBounds,
+      final Rectangle targetSize
   ) throws IOException {
     final List<String> args = new ArrayList<>();
 
@@ -309,12 +321,12 @@ public final class FfmpegScreenSource extends AbstractScreenSource {
 
     args.add(String.format("tcp://%s", reader.getAddress()));
 
-    LOGGER.info("prepared ffmpeg command: {}", args.stream().collect(Collectors.joining(" ")));
+    LOGGER.info("prepared ffmpeg command: {}", String.join(" ", args));
 
     return new ProcessBuilder(args)
-            .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-            .redirectError(ProcessBuilder.Redirect.INHERIT)
-            .start();
+        .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+        .redirectError(ProcessBuilder.Redirect.INHERIT)
+        .start();
   }
 
 
@@ -322,13 +334,15 @@ public final class FfmpegScreenSource extends AbstractScreenSource {
     int len = length;
 
     final int dataToWrite = Math.min(len, this.targetRgbBuffer.length - this.rgbBufferPositon);
-    System.arraycopy(data, 0, this.targetRgbBuffer, this.rgbBufferPositon, Math.min(len, dataToWrite));
+    System.arraycopy(data, 0, this.targetRgbBuffer, this.rgbBufferPositon,
+        Math.min(len, dataToWrite));
     this.rgbBufferPositon += dataToWrite;
     len -= dataToWrite;
     if (this.rgbBufferPositon >= this.targetRgbBuffer.length) {
       this.rgbBufferPositon = 0;
       try {
-        this.dataExchanger.exchange(Arrays.copyOf(this.targetRgbBuffer, this.targetRgbBuffer.length));
+        this.dataExchanger.exchange(
+            Arrays.copyOf(this.targetRgbBuffer, this.targetRgbBuffer.length));
         if (len > 0) {
           System.arraycopy(data, dataToWrite, this.targetRgbBuffer, 0, len);
           this.rgbBufferPositon = len;
@@ -364,14 +378,17 @@ public final class FfmpegScreenSource extends AbstractScreenSource {
     if (result == null) {
       result = new Point(this.targetSize.width, this.targetSize.height);
     } else {
-      result = new Point((int) Math.round(result.x * this.aspectWidth), (int) Math.round(result.y * this.aspectWidth));
+      result = new Point((int) Math.round(result.x * this.aspectWidth),
+          (int) Math.round(result.y * this.aspectWidth));
     }
     return result;
   }
 
   private void drawPointer(final Point mousePoint, final byte[] rgbArray) {
-    final int visibleWidth = Math.min(this.targetSize.width - mousePoint.x, this.scaledMouseCursorWidth);
-    final int visibleHeight = Math.min(this.targetSize.height - mousePoint.y, this.scaledMouseCursorHeight);
+    final int visibleWidth =
+        Math.min(this.targetSize.width - mousePoint.x, this.scaledMouseCursorWidth);
+    final int visibleHeight =
+        Math.min(this.targetSize.height - mousePoint.y, this.scaledMouseCursorHeight);
 
     int scry = mousePoint.y;
     for (int y = 0; y < visibleHeight; y++) {

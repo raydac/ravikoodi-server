@@ -122,7 +122,7 @@ final class DroppedLink {
     if (firstLine.startsWith("www.")) {
       return Optional.of("https://" + stripTrailingPunctuation(firstLine));
     }
-    if (!firstLine.isEmpty() && !firstLine.contains(" ") && firstLine.contains(".")) {
+    if (!firstLine.contains(" ") && firstLine.contains(".")) {
       return Optional.of("https://" + stripTrailingPunctuation(firstLine));
     }
     return Optional.empty();

@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi;
 
 import java.util.Comparator;
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 
 public interface ContentTreeItem {
-    static final Comparator<ContentTreeItem> CONTENT_ITEM_COMPARATOR = (@NonNull final ContentTreeItem o1, @NonNull final ContentTreeItem o2) -> {
+    static final Comparator<ContentTreeItem> CONTENT_ITEM_COMPARATOR =
+        (@NonNull final ContentTreeItem o1, @NonNull final ContentTreeItem o2) -> {
         if (o1 instanceof ContentFolder && o2 instanceof ContentFile) {
             return -1;
         } else if (o1 instanceof ContentFile && o2 instanceof ContentFolder) {
@@ -27,7 +29,7 @@ public interface ContentTreeItem {
         } else {
             return o1.getFileNameAsString().compareTo(o2.getFileNameAsString());
         }
-    };
+        };
 
 
     @NonNull

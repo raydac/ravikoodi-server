@@ -1,8 +1,9 @@
 package com.igormaznitsa.ravikoodi.kodijsonapi;
 
+import static java.time.temporal.ChronoUnit.MILLIS;
+
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import static java.time.temporal.ChronoUnit.MILLIS;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,12 +11,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(force = true)
 public class Time {
   public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
-  
+
   private final int hours;
   private final int minutes;
   private final int seconds;
   private final int milliseconds;
-  
+
   @Override
   public String toString() {
     return asLocalTime().format(FORMATTER);

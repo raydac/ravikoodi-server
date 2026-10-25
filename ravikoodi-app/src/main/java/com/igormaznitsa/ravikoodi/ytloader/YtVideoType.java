@@ -13,30 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.ytloader;
 
 import java.util.Arrays;
 import java.util.Locale;
 
 public enum YtVideoType {
-    GPP3("video/3gpp"), MP4("video/mp4"), WEBM("video/webm"), UNKNOWN(""); 
-    
-    private static final YtVideoType [] VALUES = YtVideoType.values();
-    public static YtVideoType find(final String value) {
-        if (value == null || value.isBlank()) return UNKNOWN;
-        final String lowCased = value.toLowerCase(Locale.ENGLISH);
-        return Arrays.stream(VALUES).filter(x -> lowCased.contains(x.mime)).findFirst().orElse(UNKNOWN);
-    }
-    
+    GPP3("video/3gpp"), MP4("video/mp4"), WEBM("video/webm"), UNKNOWN("");
+
+    private static final YtVideoType[] VALUES = YtVideoType.values();
     private final String mime;
-    
+
     private YtVideoType(final String mime) {
         this.mime = mime;
     }
-    
-    public String getMime(){
+
+    public static YtVideoType find(final String value) {
+        if (value == null || value.isBlank()) {
+            return UNKNOWN;
+        }
+        final String lowCased = value.toLowerCase(Locale.ENGLISH);
+        return Arrays.stream(VALUES).filter(x -> lowCased.contains(x.mime)).findFirst()
+            .orElse(UNKNOWN);
+    }
+
+    public String getMime() {
         return this.mime;
     }
-    
-    
+
+
 }

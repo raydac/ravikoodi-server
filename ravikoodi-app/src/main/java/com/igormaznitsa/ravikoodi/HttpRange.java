@@ -4,8 +4,8 @@ import static java.util.Optional.empty;
 import static java.util.Optional.of;
 
 import java.util.Optional;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 public final class HttpRange {
 
@@ -76,18 +76,6 @@ public final class HttpRange {
     return partial(contentSize - suffixLength, contentSize - 1L);
   }
 
-  public String getUnit() {
-    return this.unit;
-  }
-
-  public long getStart() {
-    return this.start;
-  }
-
-  public long getEnd() {
-    return this.end;
-  }
-
   private static Resolved resolveInterval(final String startText, final String endText,
                                           final long contentSize) {
     final long start = parseLong(startText).orElse(-1L);
@@ -129,6 +117,18 @@ public final class HttpRange {
 
   private static Resolved partial(final long start, final long end) {
     return new Resolved(false, start, end);
+  }
+
+  public String getUnit() {
+    return this.unit;
+  }
+
+  public long getStart() {
+    return this.start;
+  }
+
+  public long getEnd() {
+    return this.end;
   }
 
   public boolean isUnsatisfiable() {

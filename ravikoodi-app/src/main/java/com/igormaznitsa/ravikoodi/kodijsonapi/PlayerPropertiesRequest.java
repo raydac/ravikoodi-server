@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
 public class PlayerPropertiesRequest extends PlayerIdReq {
-  
+
   @JsonProperty(value = "properties")
   private final String[] properties;
 
@@ -13,5 +13,5 @@ public class PlayerPropertiesRequest extends PlayerIdReq {
     super(player);
     this.properties = properties;
   }
-  
+
 }

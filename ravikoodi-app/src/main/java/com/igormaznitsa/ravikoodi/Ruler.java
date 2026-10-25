@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi;
 
 import java.awt.Color;
@@ -26,6 +27,11 @@ public final class Ruler extends JComponent {
 
   private boolean down = true;
 
+  public Ruler() {
+    super();
+    this.setForeground(UIManager.getColor("Label.foreground"));
+  }
+
   public boolean getDown() {
     return this.down;
   }
@@ -33,11 +39,6 @@ public final class Ruler extends JComponent {
   public void setDown(final boolean down) {
     this.down = down;
     this.repaint();
-  }
-
-  public Ruler() {
-    super();
-    this.setForeground(UIManager.getColor("Label.foreground"));
   }
 
   @Override

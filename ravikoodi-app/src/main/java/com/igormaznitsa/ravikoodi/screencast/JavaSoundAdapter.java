@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.screencast;
 
 import jakarta.annotation.PostConstruct;
@@ -27,9 +28,9 @@ import javax.sound.sampled.Line;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.TargetDataLine;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -38,6 +39,55 @@ public class JavaSoundAdapter {
   private static final Logger LOGGER = LoggerFactory.getLogger(JavaSoundAdapter.class);
   private final List<SoundPort> foundPorts = new CopyOnWriteArrayList<>();
 
+  public JavaSoundAdapter() {
+
+  }
+
+  @NonNull
+  public Optional<SoundPort> findSoundPort(@NonNull final String name) {
+    return this.foundPorts.stream().filter(x -> x.getName().equals(name)).findFirst();
+  }
+
+  public List<SoundPort> getAvailableSoundPorts() {
+    return Collections.unmodifiableList(this.foundPorts);
+  }
+
+  @PostConstruct
+  public void post() {
+    final Mixer.Info[] mixers = AudioSystem.getMixerInfo();
+    LOGGER.info("Found sound mixers:");
+    int counter = 1;
+    for (final Mixer.Info mixerInfo : mixers) {
+      LOGGER.info(String.format(" %d: %s (vendor=%s, version=%s, description=%s)", counter++,
+          mixerInfo.getName(), mixerInfo.getVendor(), mixerInfo.getVersion(),
+          mixerInfo.getDescription()));
+      try (Mixer mixer = AudioSystem.getMixer(mixerInfo)) {
+        try {
+          mixer.open();
+        } catch (LineUnavailableException ex) {
+          LOGGER.error("Can't open mixer {}: {}", mixer, ex.getMessage());
+          continue;
+        }
+        final Line.Info[] targetLineInfo = mixer.getTargetLineInfo();
+        int lineCounter = 1;
+        for (final Line.Info lineInfo : targetLineInfo) {
+          try {
+            final Line line = mixer.getLine(lineInfo);
+            if (line instanceof TargetDataLine) {
+              LOGGER.info(String.format("  %d: %s, %s ", lineCounter++,
+                  lineInfo.getLineClass().getSimpleName(), line.getLineInfo()));
+              this.foundPorts.add(
+                  new SoundPort(mixer, mixerInfo.getName() + ':' + line.getLineInfo().toString(),
+                      line));
+            }
+          } catch (LineUnavailableException ex) {
+            LOGGER.error("Line unavailable: {}", lineInfo);
+          }
+        }
+      }
+    }
+  }
+
   public static final class SoundPort {
 
     private final UUID uuid = UUID.randomUUID();
@@ -45,7 +95,8 @@ public class JavaSoundAdapter {
     private final Mixer mixer;
     private final Line line;
 
-    public SoundPort(@NonNull final Mixer mixer, @NonNull final String name, @NonNull final Line line) {
+    public SoundPort(@NonNull final Mixer mixer, @NonNull final String name,
+                     @NonNull final Line line) {
       this.mixer = mixer;
       this.name = name;
       this.line = line;
@@ -126,53 +177,9 @@ public class JavaSoundAdapter {
       if (obj == this) {
         return true;
       }
-      return obj instanceof SoundPort ? ((SoundPort) obj).uuid.equals(this.uuid) : false;
+      return obj instanceof SoundPort && ((SoundPort) obj).uuid.equals(this.uuid);
     }
 
-  }
-
-  public JavaSoundAdapter() {
-
-  }
-
-  @NonNull
-  public Optional<SoundPort> findSoundPort(@NonNull final String name) {
-    return this.foundPorts.stream().filter(x -> x.getName().equals(name)).findFirst();
-  }
-
-  public List<SoundPort> getAvailableSoundPorts() {
-    return Collections.unmodifiableList(this.foundPorts);
-  }
-
-  @PostConstruct
-  public void post() {
-    final Mixer.Info[] mixers = AudioSystem.getMixerInfo();
-    LOGGER.info("Found sound mixers:");
-    int counter = 1;
-    for (final Mixer.Info mixerInfo : mixers) {
-      LOGGER.info(String.format(" %d: %s (vendor=%s, version=%s, description=%s)", counter++, mixerInfo.getName(), mixerInfo.getVendor(), mixerInfo.getVersion(), mixerInfo.getDescription()));
-      try (Mixer mixer = AudioSystem.getMixer(mixerInfo)) {
-        try {
-          mixer.open();
-        } catch (LineUnavailableException ex) {
-          LOGGER.error("Can't open mixer {}: {}", mixer, ex.getMessage());
-          continue;
-        }
-        final Line.Info[] targetLineInfo = mixer.getTargetLineInfo();
-        int lineCounter = 1;
-        for (final Line.Info lineInfo : targetLineInfo) {
-          try {
-            final Line line = mixer.getLine(lineInfo);
-            if (line instanceof TargetDataLine) {
-              LOGGER.info(String.format("  %d: %s, %s ", lineCounter++, lineInfo.getLineClass().getSimpleName(), line.getLineInfo()));
-              this.foundPorts.add(new SoundPort(mixer, mixerInfo.getName() + ':' + line.getLineInfo().toString(), line));
-            }
-          } catch (LineUnavailableException ex) {
-            LOGGER.error("Line unavailable: {}", lineInfo);
-          }
-        }
-      }
-    }
   }
 
 }

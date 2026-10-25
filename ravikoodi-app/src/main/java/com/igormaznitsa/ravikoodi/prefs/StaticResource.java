@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.prefs;
 
 import java.io.File;
@@ -23,25 +24,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.Properties;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 public final class StaticResource implements Comparable<StaticResource> {
-    
-    @NonNull
-    public static StaticResource fromBase64(@NonNull final String base64encoded) throws IOException {
-        final Properties properties = new Properties();
-        properties.load(new StringReader(new String(Base64.getDecoder().decode(base64encoded), StandardCharsets.UTF_8)));
-        if (!properties.containsKey("id")) {
-            throw new IllegalArgumentException("Can't find 'id' field");
-        }
-        final StaticResource result = new StaticResource(properties.getProperty("id"));
-        result.setEnabled(Boolean.parseBoolean(properties.getProperty("enabled")));
-        if (properties.containsKey("resource")) {
-            result.setResourcePath(new File(properties.getProperty("resource")));
-        }
-        return result;
-    }
+
     private String id;
     private boolean enabled;
     private File resourcePath;
@@ -53,8 +40,29 @@ public final class StaticResource implements Comparable<StaticResource> {
     }
 
     @NonNull
+    public static StaticResource fromBase64(@NonNull final String base64encoded)
+        throws IOException {
+        final Properties properties = new Properties();
+        properties.load(new StringReader(
+            new String(Base64.getDecoder().decode(base64encoded), StandardCharsets.UTF_8)));
+        if (!properties.containsKey("id")) {
+            throw new IllegalArgumentException("Can't find 'id' field");
+        }
+        final StaticResource result = new StaticResource(properties.getProperty("id"));
+        result.setEnabled(Boolean.parseBoolean(properties.getProperty("enabled")));
+        if (properties.containsKey("resource")) {
+            result.setResourcePath(new File(properties.getProperty("resource")));
+        }
+        return result;
+    }
+
+    @NonNull
     public String getId() {
         return this.id;
+    }
+
+    public void setId(@NonNull String id) {
+        this.id = Objects.requireNonNull(id);
     }
 
     public boolean isEnabled() {
@@ -85,14 +93,11 @@ public final class StaticResource implements Comparable<StaticResource> {
         try {
             final StringWriter writer = new StringWriter();
             properties.store(writer, null);
-            return Base64.getEncoder().encodeToString(writer.toString().getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder()
+                .encodeToString(writer.toString().getBytes(StandardCharsets.UTF_8));
         } catch (IOException ex) {
             throw new Error("Unexpected IOException in internal operation", ex);
         }
-    }
-
-    public void setId(@NonNull String id) {
-        this.id = Objects.requireNonNull(id);
     }
 
     @Override
@@ -109,5 +114,5 @@ public final class StaticResource implements Comparable<StaticResource> {
   public int hashCode() {
     return this.id.hashCode();
   }
-    
+
 }

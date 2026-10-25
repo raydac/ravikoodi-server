@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi;
 
 import java.util.Optional;
@@ -21,35 +22,38 @@ import java.util.regex.Pattern;
 
 public final class YoutubeUtils {
 
-    private YoutubeUtils() {
-    }
+  private static final Pattern PATTERN_YOUTUBE_VIDEO_ID_1 =
+      Pattern.compile(".*[&?]v=([\\w-]+).*|.*tu.be\\/([\\w-]+).*", Pattern.CASE_INSENSITIVE);
+  private static final Pattern PATTERN_YOUTUBE_VIDEO_ID_2 =
+      Pattern.compile(".*\\/live\\/(.+)", Pattern.CASE_INSENSITIVE);
+  private static final Pattern PATTERN_YOUTUBE_VIDEO_PLAYLIST_ID =
+      Pattern.compile(".*[^\\w-]list=([\\w-]+).*", Pattern.CASE_INSENSITIVE);
 
-    private static final Pattern PATTERN_YOUTUBE_VIDEO_ID_1 = Pattern.compile(".*[&?]v=([\\w-]+).*|.*tu.be\\/([\\w-]+).*", Pattern.CASE_INSENSITIVE);
-    private static final Pattern PATTERN_YOUTUBE_VIDEO_ID_2 = Pattern.compile(".*\\/live\\/(.+)", Pattern.CASE_INSENSITIVE);
-    private static final Pattern PATTERN_YOUTUBE_VIDEO_PLAYLIST_ID = Pattern.compile(".*[^\\w-]list=([\\w-]+).*", Pattern.CASE_INSENSITIVE);
+  private YoutubeUtils() {
+  }
 
-    public static Optional<String> extractYoutubeVideoId(final String url) {
-        final Matcher matcher = PATTERN_YOUTUBE_VIDEO_ID_1.matcher(url.trim());
-        final Matcher matcher2 = PATTERN_YOUTUBE_VIDEO_ID_2.matcher(url.trim());
-        if (matcher.find()) {
-            if (matcher.group(1)!=null) {
-                return Optional.ofNullable(matcher.group(1));
-            } else {
-                return Optional.ofNullable(matcher.group(2));
-            }
-        } else if (matcher2.find()) {
-            return Optional.ofNullable(matcher2.group(1));
-        } else {
-            return Optional.empty();
-        }
+  public static Optional<String> extractYoutubeVideoId(final String url) {
+    final Matcher matcher = PATTERN_YOUTUBE_VIDEO_ID_1.matcher(url.trim());
+    final Matcher matcher2 = PATTERN_YOUTUBE_VIDEO_ID_2.matcher(url.trim());
+    if (matcher.find()) {
+      if (matcher.group(1) != null) {
+        return Optional.ofNullable(matcher.group(1));
+      } else {
+        return Optional.ofNullable(matcher.group(2));
+      }
+    } else if (matcher2.find()) {
+      return Optional.ofNullable(matcher2.group(1));
+    } else {
+      return Optional.empty();
     }
+  }
 
-    public static Optional<String> extractYoutubePlaylistId(final String url) {
-        final Matcher matcher = PATTERN_YOUTUBE_VIDEO_PLAYLIST_ID.matcher(url.trim());
-        if (matcher.find()) {
-            return Optional.ofNullable(matcher.group(1));
-        } else {
-            return Optional.empty();
-        }
+  public static Optional<String> extractYoutubePlaylistId(final String url) {
+    final Matcher matcher = PATTERN_YOUTUBE_VIDEO_PLAYLIST_ID.matcher(url.trim());
+    if (matcher.find()) {
+      return Optional.ofNullable(matcher.group(1));
+    } else {
+      return Optional.empty();
     }
+  }
 }

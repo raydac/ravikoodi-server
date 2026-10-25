@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 public class PlaylistIdReq {
   @JsonProperty("playlistid")
   protected final long playlistid;
-  
+
   public PlaylistIdReq(final Playlist playlist) {
     this.playlistid = playlist.getPlaylistid();
   }

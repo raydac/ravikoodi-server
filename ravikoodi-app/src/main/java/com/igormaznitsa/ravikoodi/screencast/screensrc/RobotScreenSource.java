@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.screencast.screensrc;
 
 import java.awt.AWTException;
@@ -30,8 +31,8 @@ import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
 import java.awt.image.DataBufferInt;
 import java.awt.image.DataBufferUShort;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 public final class RobotScreenSource extends AbstractScreenSource {
 
@@ -41,12 +42,13 @@ public final class RobotScreenSource extends AbstractScreenSource {
   private final Rectangle screenBounds;
   private final double scaleX;
   private final double scaleY;
-  
+
   public RobotScreenSource(final boolean grabPointer) throws AWTException {
     super(grabPointer);
     this.toolkit = Toolkit.getDefaultToolkit();
     this.sourceDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-    final AffineTransform affineTransform = this.sourceDevice.getDefaultConfiguration().getDefaultTransform();
+    final AffineTransform affineTransform =
+        this.sourceDevice.getDefaultConfiguration().getDefaultTransform();
     this.scaleX = affineTransform.getScaleX();
     this.scaleY = affineTransform.getScaleY();
     this.screenBounds = this.sourceDevice.getDefaultConfiguration().getBounds();
@@ -78,164 +80,159 @@ public final class RobotScreenSource extends AbstractScreenSource {
   @Override
   @Nullable
   public byte[] grabRgb() {
-      final BufferedImage image = this.robot.createScreenCapture(this.screenBounds);
+    final BufferedImage image = this.robot.createScreenCapture(this.screenBounds);
 
-      if (this.isShowPointer()) {
-        final Graphics2D graph = (Graphics2D) image.createGraphics();
-        try {
-          final Point pointerPosition = this.getPointer();
-          graph.drawImage(MOUSE_ICON, pointerPosition.x, pointerPosition.y, null);
-        } finally {
-          graph.dispose();
-        }
+    if (this.isShowPointer()) {
+      final Graphics2D graph = (Graphics2D) image.createGraphics();
+      try {
+        final Point pointerPosition = this.getPointer();
+        graph.drawImage(MOUSE_ICON, pointerPosition.x, pointerPosition.y, null);
+      } finally {
+        graph.dispose();
       }
+    }
 
-      final DataBuffer dataBuffer = image.getRaster().getDataBuffer();
+    final DataBuffer dataBuffer = image.getRaster().getDataBuffer();
 
-      final byte[] result;
-      if (dataBuffer instanceof DataBufferInt) {
-        final int[] imageDataBuffer = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
-        final int bufferLen = imageDataBuffer.length;
+    final byte[] result;
+    if (dataBuffer instanceof DataBufferInt) {
+      final int[] imageDataBuffer = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
+      final int bufferLen = imageDataBuffer.length;
 
-        result = new byte[bufferLen * 3];
-        int dataIndex = 0;
+      result = new byte[bufferLen * 3];
+      int dataIndex = 0;
 
-        switch (image.getType()) {
-          case BufferedImage.TYPE_INT_BGR: {
-            for (int i = 0; i < bufferLen; i++) {
-              final int bgr = imageDataBuffer[i];
-              result[dataIndex++] = (byte) bgr;
-              result[dataIndex++] = (byte) (bgr >> 8);
-              result[dataIndex++] = (byte) (bgr >> 16);
-            }
+      switch (image.getType()) {
+        case BufferedImage.TYPE_INT_BGR: {
+          for (final int bgr : imageDataBuffer) {
+            result[dataIndex++] = (byte) bgr;
+            result[dataIndex++] = (byte) (bgr >> 8);
+            result[dataIndex++] = (byte) (bgr >> 16);
           }
-          break;
-          case BufferedImage.TYPE_INT_ARGB:
-          case BufferedImage.TYPE_INT_ARGB_PRE:
-          case BufferedImage.TYPE_INT_RGB: {
-            for (int i = 0; i < bufferLen; i++) {
-              final int argb = imageDataBuffer[i];
-              result[dataIndex++] = (byte) (argb >> 16);
-              result[dataIndex++] = (byte) (argb >> 8);
-              result[dataIndex++] = (byte) argb;
-            }
-          }
-          break;
-          default:
-            break;
         }
-      } else if (dataBuffer instanceof DataBufferUShort) {
-        final short[] imageDataBuffer = ((DataBufferUShort) image.getRaster().getDataBuffer()).getData();
-        final int bufferLen = imageDataBuffer.length;
-
-        result = new byte[bufferLen * 3];
-        int dataIndex = 0;
-
-        switch (image.getType()) {
-          case BufferedImage.TYPE_USHORT_555_RGB: {
-            for (int i = 0; i < bufferLen; i++) {
-              final int rgb = imageDataBuffer[i];
-              result[dataIndex++] = (byte) ((rgb >>> 7) & 0xF8); // R
-              result[dataIndex++] = (byte) ((rgb >>> 2) & 0xF8); // G
-              result[dataIndex++] = (byte) (rgb << 3); // B
-            }
+        break;
+        case BufferedImage.TYPE_INT_ARGB:
+        case BufferedImage.TYPE_INT_ARGB_PRE:
+        case BufferedImage.TYPE_INT_RGB: {
+          for (final int argb : imageDataBuffer) {
+            result[dataIndex++] = (byte) (argb >> 16);
+            result[dataIndex++] = (byte) (argb >> 8);
+            result[dataIndex++] = (byte) argb;
           }
-          break;
-          case BufferedImage.TYPE_USHORT_565_RGB: {
-            for (int i = 0; i < bufferLen; i++) {
-              final int rgb = imageDataBuffer[i];
-              result[dataIndex++] = (byte) ((rgb >>> 8) & 0xF8); // R
-              result[dataIndex++] = (byte) ((rgb >>> 3) & 0xF8) ; // G
-              result[dataIndex++] = (byte) (rgb << 3);
-            }
-          }
-          break;
-          case BufferedImage.TYPE_USHORT_GRAY: {
-            for (int i = 0; i < bufferLen; i++) {
-              final byte gray = (byte)(imageDataBuffer[i] >>> 8);
-              result[dataIndex++] = gray;
-              result[dataIndex++] = gray;
-              result[dataIndex++] = gray;
-            }
-          }
-          break;
-          default:
-            break;
         }
-      } else if (dataBuffer instanceof DataBufferByte) {
-        final byte[] imageDataBuffer = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
-        final int bufferLen = imageDataBuffer.length;
+        break;
+        default:
+          break;
+      }
+    } else if (dataBuffer instanceof DataBufferUShort) {
+      final short[] imageDataBuffer =
+          ((DataBufferUShort) image.getRaster().getDataBuffer()).getData();
+      final int bufferLen = imageDataBuffer.length;
 
-        int dataIndex = 0;
+      result = new byte[bufferLen * 3];
+      int dataIndex = 0;
 
-        switch (image.getType()) {
-          case BufferedImage.TYPE_3BYTE_BGR: {
-            result = new byte[imageDataBuffer.length];
-            for (int i = 0; i < bufferLen;) {
-              final byte b = imageDataBuffer[i++];
-              final byte g = imageDataBuffer[i++];
-              final byte r = imageDataBuffer[i++];
-              result[dataIndex++] = r;
-              result[dataIndex++] = g;
-              result[dataIndex++] = b;
-            }
+      switch (image.getType()) {
+        case BufferedImage.TYPE_USHORT_555_RGB: {
+          for (final int rgb : imageDataBuffer) {
+            result[dataIndex++] = (byte) ((rgb >>> 7) & 0xF8); // R
+            result[dataIndex++] = (byte) ((rgb >>> 2) & 0xF8); // G
+            result[dataIndex++] = (byte) (rgb << 3); // B
           }
-          break;
-          case BufferedImage.TYPE_BYTE_GRAY: {
-            result = new byte[imageDataBuffer.length * 3];
-            for (int i = 0; i < bufferLen; i++) {
-              final byte level = imageDataBuffer[i];
-              result[dataIndex++] = level;
-              result[dataIndex++] = level;
-              result[dataIndex++] = level;
-            }
+        }
+        break;
+        case BufferedImage.TYPE_USHORT_565_RGB: {
+          for (final int rgb : imageDataBuffer) {
+            result[dataIndex++] = (byte) ((rgb >>> 8) & 0xF8); // R
+            result[dataIndex++] = (byte) ((rgb >>> 3) & 0xF8); // G
+            result[dataIndex++] = (byte) (rgb << 3);
           }
-          break;
-          case BufferedImage.TYPE_BYTE_BINARY: {
-            final int imageWidth = image.getWidth();
-            final int imageHeight = image.getHeight();
-            result = new byte[imageWidth * imageHeight * 3];
-            for (int y = 0; y < imageHeight; y++) {
-              for (int x = 0; x < imageWidth; x++) {
-                final int rgb = image.getRGB(x, y);
-                result[dataIndex++] = (byte) (rgb >> 16);
-                result[dataIndex++] = (byte) (rgb >> 8);
-                result[dataIndex++] = (byte) rgb;
-              }
-            }
+        }
+        break;
+        case BufferedImage.TYPE_USHORT_GRAY: {
+          for (short value : imageDataBuffer) {
+            final byte gray = (byte) (value >>> 8);
+            result[dataIndex++] = gray;
+            result[dataIndex++] = gray;
+            result[dataIndex++] = gray;
           }
+        }
+        break;
+        default:
           break;
-          case BufferedImage.TYPE_BYTE_INDEXED: {
-            result = new byte[bufferLen * 3];
-            final ColorModel model = image.getColorModel();
-            for (int i = 0; i < bufferLen; i++) {
-              final int rgb = model.getRGB(i);
+      }
+    } else if (dataBuffer instanceof DataBufferByte) {
+      final byte[] imageDataBuffer = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
+      final int bufferLen = imageDataBuffer.length;
+
+      int dataIndex = 0;
+
+      switch (image.getType()) {
+        case BufferedImage.TYPE_3BYTE_BGR: {
+          result = new byte[imageDataBuffer.length];
+          for (int i = 0; i < bufferLen; ) {
+            final byte b = imageDataBuffer[i++];
+            final byte g = imageDataBuffer[i++];
+            final byte r = imageDataBuffer[i++];
+            result[dataIndex++] = r;
+            result[dataIndex++] = g;
+            result[dataIndex++] = b;
+          }
+        }
+        break;
+        case BufferedImage.TYPE_BYTE_GRAY: {
+          result = new byte[imageDataBuffer.length * 3];
+          for (final byte level : imageDataBuffer) {
+            result[dataIndex++] = level;
+            result[dataIndex++] = level;
+            result[dataIndex++] = level;
+          }
+        }
+        break;
+        case BufferedImage.TYPE_BYTE_BINARY: {
+          final int imageWidth = image.getWidth();
+          final int imageHeight = image.getHeight();
+          result = new byte[imageWidth * imageHeight * 3];
+          for (int y = 0; y < imageHeight; y++) {
+            for (int x = 0; x < imageWidth; x++) {
+              final int rgb = image.getRGB(x, y);
               result[dataIndex++] = (byte) (rgb >> 16);
               result[dataIndex++] = (byte) (rgb >> 8);
               result[dataIndex++] = (byte) rgb;
             }
           }
-          break;
-          case BufferedImage.TYPE_4BYTE_ABGR_PRE:
-          case BufferedImage.TYPE_4BYTE_ABGR: {
-            result = new byte[(bufferLen >> 2) * 3];
-            for (int i = 0; i < bufferLen; i++) {
-              final int rgb = imageDataBuffer[i];
-              result[dataIndex++] = (byte) (((rgb >> 11) & 0b11111) << 3);
-              result[dataIndex++] = (byte) (((rgb >> 5) & 0b111111) << 2);
-              result[dataIndex++] = (byte) ((rgb & 0b11111) << 3);
-            }
-          }
-          break;
-          default: {
-            result = new byte[this.screenBounds.width * this.screenBounds.height * 3];
-          }
-          break;
         }
-      } else {
-        result = new byte[this.screenBounds.width * this.screenBounds.height * 3];
+        break;
+        case BufferedImage.TYPE_BYTE_INDEXED: {
+          result = new byte[bufferLen * 3];
+          final ColorModel model = image.getColorModel();
+          for (int i = 0; i < bufferLen; i++) {
+            final int rgb = model.getRGB(i);
+            result[dataIndex++] = (byte) (rgb >> 16);
+            result[dataIndex++] = (byte) (rgb >> 8);
+            result[dataIndex++] = (byte) rgb;
+          }
+        }
+        break;
+        case BufferedImage.TYPE_4BYTE_ABGR_PRE:
+        case BufferedImage.TYPE_4BYTE_ABGR: {
+          result = new byte[(bufferLen >> 2) * 3];
+          for (final int rgb : imageDataBuffer) {
+            result[dataIndex++] = (byte) (((rgb >> 11) & 0b11111) << 3);
+            result[dataIndex++] = (byte) (((rgb >> 5) & 0b111111) << 2);
+            result[dataIndex++] = (byte) ((rgb & 0b11111) << 3);
+          }
+        }
+        break;
+        default: {
+          result = new byte[this.screenBounds.width * this.screenBounds.height * 3];
+        }
+        break;
       }
-      return result;
+    } else {
+      result = new byte[this.screenBounds.width * this.screenBounds.height * 3];
+    }
+    return result;
   }
 
   @Override

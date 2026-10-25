@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.screencast;
 
 import ch.qos.logback.core.util.CloseUtil;
@@ -29,25 +30,41 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.LineUnavailableException;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
 
 public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FfmpegWrapper.class);
+  private final AtomicReference<Process> externalProcess = new AtomicReference<>();
+  private final AtomicReference<FfmpegNetCommunicator> communicator = new AtomicReference<>();
+  private final PreemptiveBuffer output;
+  private final ApplicationPreferences preferences;
+  private final Optional<JavaSoundAdapter.SoundPort> soundPort;
+  private final AtomicReference<Thread> soundGrabbingThread = new AtomicReference<>();
+  private volatile boolean active = true;
+
+  public FfmpegWrapper(
+      final ApplicationPreferences preferences,
+      final JavaSoundAdapter soundAdapter,
+      final PreemptiveBuffer output
+  ) {
+    this.output = Objects.requireNonNull(output);
+    this.preferences = Objects.requireNonNull(preferences);
+    this.soundPort = soundAdapter.findSoundPort(preferences.getSoundInput());
+  }
+
   @NonNull
   private static Optional<Thread> openSound(
-          @NonNull
-          final JavaSoundAdapter.SoundPort theSoundPort,
-          @NonNull
-          final Supplier<Boolean> workingFlag,
-          @NonNull
-          final Optional<LoopbackTcpWriter> soundWriter
+      final JavaSoundAdapter.@NonNull SoundPort theSoundPort,
+      @NonNull final Supplier<Boolean> workingFlag,
+      @NonNull final Optional<LoopbackTcpWriter> soundWriter
   ) throws IOException {
     try {
       LOGGER.info("Opening target sound line: {}", theSoundPort);
-      final AudioFormat aformat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, true);
+      final AudioFormat aformat =
+          new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, true);
       theSoundPort.start(aformat);
       LOGGER.info("Target sound line started: {}", theSoundPort);
 
@@ -68,7 +85,7 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
         } finally {
           LOGGER.info("Sound grabbing thread completed");
         }
-      },"snd-reader-"+theSoundPort.getName());
+      }, "snd-reader-" + theSoundPort.getName());
       soundThread.setDaemon(true);
       return Optional.of(soundThread);
     } catch (LineUnavailableException ex) {
@@ -76,25 +93,6 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
       throw new IOException("Can't open sound line", ex);
     }
   }
-
-  private final AtomicReference<Process> externalProcess = new AtomicReference<>();
-  private final AtomicReference<FfmpegNetCommunicator> communicator = new AtomicReference<>();
-  private volatile boolean active = true;
-  private final PreemptiveBuffer output;
-  private final ApplicationPreferences preferences;
-  private final Optional<JavaSoundAdapter.SoundPort> soundPort;
-  private final AtomicReference<Thread> soundGrabbingThread = new AtomicReference<>();
-
-  public FfmpegWrapper(
-          final ApplicationPreferences preferences,
-          final JavaSoundAdapter soundAdapter,
-          final PreemptiveBuffer output
-  ) {
-    this.output = Objects.requireNonNull(output);
-    this.preferences = Objects.requireNonNull(preferences);
-    this.soundPort = soundAdapter.findSoundPort(preferences.getSoundInput());
-  }
-
 
   private void closeSound() {
     final Thread grabbingThread = this.soundGrabbingThread.getAndSet(null);
@@ -124,14 +122,16 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
       try {
         final Supplier<Boolean> activityIndicator = () -> this.active;
         ffmpegCom = new FfmpegNetCommunicator(
-                this.soundPort.isPresent(),
-                this::consumeVideoStream, activityIndicator,
-                x -> {
-                  CloseUtil.closeQuietly(source);
-                    this.stopStartedExternalProcess();
-                }
+            this.soundPort.isPresent(),
+            this::consumeVideoStream, activityIndicator,
+            x -> {
+              CloseUtil.closeQuietly(source);
+              this.stopStartedExternalProcess();
+            }
         );
-        final Optional<Thread> soundPublisherThread = this.soundPort.isPresent() ? openSound(this.soundPort.get(), activityIndicator, ffmpegCom.getSoundWriter()) : Optional.empty();
+        final Optional<Thread> soundPublisherThread = this.soundPort.isPresent() ?
+            openSound(this.soundPort.get(), activityIndicator, ffmpegCom.getSoundWriter()) :
+            Optional.empty();
 
         if (this.communicator.compareAndSet(null, ffmpegCom)) {
           ffmpegCom.start();
@@ -154,15 +154,15 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
 
       try {
         final Process processFfmpeg = startFfmpeg(
-                this.preferences.getFfmpegPath(),
-                "tcp://" + ffmpegCom.getReader().getAddress(),
-                this.preferences.getThreads(),
-                ffmpegCom.getSoundWriter().orElse(null),
-                ffmpegCom.getScreenWriter(),
-                source.getSnapsPerSecond(),
-                this.preferences.getCrf(),
-                source.getBounds().width,
-                source.getBounds().height
+            this.preferences.getFfmpegPath(),
+            "tcp://" + ffmpegCom.getReader().getAddress(),
+            this.preferences.getThreads(),
+            ffmpegCom.getSoundWriter().orElse(null),
+            ffmpegCom.getScreenWriter(),
+            source.getSnapsPerSecond(),
+            this.preferences.getCrf(),
+            source.getBounds().width,
+            source.getBounds().height
         );
         if (this.externalProcess.compareAndSet(null, processFfmpeg)) {
           LOGGER.info("FFmpeg process is started");
@@ -186,15 +186,15 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
   }
 
   private Process startFfmpeg(
-          final String ffmpegPath,
-          final String output,
-          final int threads,
-          final LoopbackTcpWriter soundWriter,
-          final LoopbackTcpWriter videoWriter,
-          final int snapsPerSecond,
-          final int crf,
-          final int width,
-          final int height
+      final String ffmpegPath,
+      final String output,
+      final int threads,
+      final LoopbackTcpWriter soundWriter,
+      final LoopbackTcpWriter videoWriter,
+      final int snapsPerSecond,
+      final int crf,
+      final int width,
+      final int height
   ) throws IOException {
     final List<String> args = new ArrayList<>();
 
@@ -205,8 +205,8 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
     args.add("-hide_banner");
 
     args.add("-threads");
-    args.add(Integer.toString(Math.max(0,threads)));
-            
+    args.add(Integer.toString(Math.max(0, threads)));
+
     args.add("-fflags");
     args.add("+flush_packets+genpts");
     args.add("-use_wallclock_as_timestamps");
@@ -284,12 +284,12 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
     args.add("fast_bilinear");
     args.add("-movflags");
     args.add("+faststart");
-    
+
     args.add("-g");
     args.add(Integer.toString(snapsPerSecond * 10));
     args.add("-bf");
     args.add("15");
-    
+
     args.add("-map");
     args.add("0:v");
     if (soundWriter != null) {
@@ -310,12 +310,12 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
 
     args.add("-avoid_negative_ts");
     args.add("disabled");
-    
-    if (crf>=0) {
-        args.add("-crf");
-        args.add(Integer.toString(crf));
-    }   
-    
+
+    if (crf >= 0) {
+      args.add("-crf");
+      args.add(Integer.toString(crf));
+    }
+
     args.add("-pcr_period");
     args.add("50");
 
@@ -325,21 +325,20 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
 
     LOGGER.info("Starting FFmpeg: {}", args);
 
-    final Process newProcess = new ProcessBuilder(args).redirectError(ProcessBuilder.Redirect.INHERIT)
-            .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-            .start();
-    return newProcess;
+    return new ProcessBuilder(args).redirectError(ProcessBuilder.Redirect.INHERIT)
+        .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+        .start();
   }
 
   @NonNull
   private byte[] extractRgb(@NonNull final BufferedImage intTypeBufferedImage) {
-    final int[] imageDataBuffer = ((DataBufferInt) intTypeBufferedImage.getRaster().getDataBuffer()).getData();
+    final int[] imageDataBuffer =
+        ((DataBufferInt) intTypeBufferedImage.getRaster().getDataBuffer()).getData();
     final int bufferLen = imageDataBuffer.length;
 
     final byte[] result = new byte[bufferLen * 3];
     int dataIndex = 0;
-    for (int i = 0; i < bufferLen; i++) {
-      final int argb = imageDataBuffer[i];
+    for (final int argb : imageDataBuffer) {
       result[dataIndex++] = (byte) (argb >> 16);
       result[dataIndex++] = (byte) (argb >> 8);
       result[dataIndex++] = (byte) argb;
@@ -348,7 +347,7 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
   }
 
   @Override
-  public void onGrabbed(final ScreenGrabber source, final byte [] rgbImageData) {
+  public void onGrabbed(final ScreenGrabber source, final byte[] rgbImageData) {
     final FfmpegNetCommunicator currentCommunicator = this.communicator.get();
     if (currentCommunicator != null) {
       currentCommunicator.getScreenWriter().add(rgbImageData);

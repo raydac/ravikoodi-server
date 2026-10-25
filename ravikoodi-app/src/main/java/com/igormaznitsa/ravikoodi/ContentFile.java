@@ -13,56 +13,57 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi;
 
 import java.nio.file.Path;
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 
 public final class ContentFile implements ContentTreeItem {
 
-    private final Path filePath;
-    private final String fileName;
-    private final MimeTypes.ContentType contentType;
+  private final Path filePath;
+  private final String fileName;
+  private final MimeTypes.ContentType contentType;
 
-    public ContentFile(@NonNull final Path file, final MimeTypes.ContentType contentType) {
-      this(fileNameOf(file), file, contentType);
-    }
+  public ContentFile(@NonNull final Path file, final MimeTypes.ContentType contentType) {
+    this(fileNameOf(file), file, contentType);
+  }
+
+  public ContentFile(@NonNull final String name, @NonNull final Path file,
+                     final MimeTypes.ContentType contentType) {
+    this.fileName = name;
+    this.filePath = file;
+    this.contentType = contentType;
+  }
 
   private static String fileNameOf(final Path file) {
     final Path fileName = file.getFileName();
     return fileName == null ? file.toString() : fileName.toString();
-    }
+  }
 
-    public ContentFile(@NonNull final String name, @NonNull final Path file, final MimeTypes.ContentType contentType) {
-        this.fileName = name;
-        this.filePath = file;
-        this.contentType = contentType;
-    }
+  public MimeTypes.@NonNull ContentType getContentType() {
+    return this.contentType;
+  }
 
-    @NonNull
-    public MimeTypes.ContentType getContentType() {
-        return this.contentType;
-    }
+  @NonNull
+  public Path getFilePath() {
+    return this.filePath;
+  }
 
-    @NonNull
-    public Path getFilePath() {
-        return this.filePath;
-    }
+  @NonNull
+  public String getFilePathAsString() {
+    return this.filePath.toString();
+  }
 
-    @NonNull
-    public String getFilePathAsString() {
-        return this.filePath.toString();
-    }
+  @Override
+  @NonNull
+  public String getFileNameAsString() {
+    return this.fileName;
+  }
 
-    @Override
-    @NonNull
-    public String getFileNameAsString() {
-        return this.fileName;
-    }
-
-    @Override
-    @NonNull
-    public String toString() {
-        return this.getFileNameAsString();
-    }
+  @Override
+  @NonNull
+  public String toString() {
+    return this.getFileNameAsString();
+  }
 }

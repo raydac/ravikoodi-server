@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.screencast;
 
 import ch.qos.logback.core.util.CloseUtil;
@@ -24,10 +25,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 public final class FfmpegNetCommunicator implements Closeable, NetConnection.NetConnectionListener {
 
@@ -44,26 +45,27 @@ public final class FfmpegNetCommunicator implements Closeable, NetConnection.Net
   private final AtomicBoolean started = new AtomicBoolean();
 
   public FfmpegNetCommunicator(
-          final boolean supportSound,
-          @NonNull
-          final BiConsumer<Integer, byte[]> resultDataConsumer,
-          @NonNull
-          final Supplier<Boolean> activityFlagSupplier,
-          @Nullable
-          final Consumer<FfmpegNetCommunicator> closeSignalConsumer
+      final boolean supportSound,
+      @NonNull final BiConsumer<Integer, byte[]> resultDataConsumer,
+      @NonNull final Supplier<Boolean> activityFlagSupplier,
+      @Nullable final Consumer<FfmpegNetCommunicator> closeSignalConsumer
   ) throws IOException {
     if (supportSound) {
-      this.soundWriter = Optional.of(new LoopbackTcpWriter("tcp-sound-writer", MAX_DATAFLOW_TIMEOUT, 3, activityFlagSupplier));
+      this.soundWriter = Optional.of(
+          new LoopbackTcpWriter("tcp-sound-writer", MAX_DATAFLOW_TIMEOUT, 3, activityFlagSupplier));
     } else {
       this.soundWriter = Optional.empty();
     }
     this.closeSignalConsumer = closeSignalConsumer;
-    this.screenWriter = new LoopbackTcpWriter("tcp-screen-writer", MAX_DATAFLOW_TIMEOUT, 3, activityFlagSupplier);
-    this.resultReader = new LoopbackTcpReader("tcp-result-reader", MAX_DATAFLOW_TIMEOUT, 512 * 1024, resultDataConsumer, activityFlagSupplier);
+    this.screenWriter =
+        new LoopbackTcpWriter("tcp-screen-writer", MAX_DATAFLOW_TIMEOUT, 3, activityFlagSupplier);
+    this.resultReader = new LoopbackTcpReader("tcp-result-reader", MAX_DATAFLOW_TIMEOUT, 512 * 1024,
+        resultDataConsumer, activityFlagSupplier);
   }
 
   @Override
-  public void onDataFlowTimeout(@NonNull final NetConnection source, @NonNull final Duration timeout) {
+  public void onDataFlowTimeout(@NonNull final NetConnection source,
+                                @NonNull final Duration timeout) {
     LOGGER.warn("Detected too long inactivity for connection: {}", source);
     CloseUtil.closeQuietly(this);
   }

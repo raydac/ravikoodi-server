@@ -34,7 +34,7 @@ public final class UrlFile {
   private final int savedPairs;
 
   public UrlFile(final File file) throws IOException {
-      this(Files.readAllLines(file.toPath(), Charset.defaultCharset()));
+    this(Files.readAllLines(file.toPath(), Charset.defaultCharset()));
   }
 
   public UrlFile(final List<String> text) {

@@ -114,7 +114,8 @@ final class LinuxBrowserDropSite {
     }
 
     pointProxyAtShell(content, shell);
-    LOGGER.info("Browser drops on the content window are forwarded to the shell");
+    LOGGER.info(
+        "(publishWithToolkit) Browser drops on the content window are forwarded to the shell");
     return true;
   }
 
@@ -176,12 +177,12 @@ final class LinuxBrowserDropSite {
       final ShellContent windows = site.get();
       writeProxy(windows.content(), windows.shell());
       writeProxy(windows.shell(), windows.shell());
-      LOGGER.info("Browser drops on the content window are forwarded to the shell");
+      LOGGER.info(
+          "(publishWithXprop) Browser drops on the content window are forwarded to the shell");
     } catch (final InterruptedException ex) {
       Thread.currentThread().interrupt();
-      LOGGER.warn("Cannot publish the X11 drop site: {}", ex.toString());
     } catch (final IOException ex) {
-      LOGGER.warn("Cannot publish the X11 drop site: {}", ex.toString());
+      LOGGER.warn("(publishWithXprop) Cannot publish the X11 drop site: {}", ex.toString());
     }
   }
 

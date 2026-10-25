@@ -10,31 +10,31 @@ import lombok.NoArgsConstructor;
 public class PlayerProperties {
 
   static final String[] ALL_NAMES = {
-    "type", 
-    "partymode", 
-    "speed", 
-    "time", 
-    "percentage", 
-    "totaltime", 
-    "playlistid", 
-    "position", 
-    "repeat", 
-    "shuffled", 
-    "canseek", 
-    "canchangespeed", 
-    "canmove", 
-    "canzoom", 
-    "canrotate", 
-    "canshuffle", 
-    "canrepeat", 
-    "currentaudiostream", 
-    "audiostreams", 
-    "subtitleenabled", 
-    "currentsubtitle", 
-    "subtitles", 
-    "live"
+      "type",
+      "partymode",
+      "speed",
+      "time",
+      "percentage",
+      "totaltime",
+      "playlistid",
+      "position",
+      "repeat",
+      "shuffled",
+      "canseek",
+      "canchangespeed",
+      "canmove",
+      "canzoom",
+      "canrotate",
+      "canshuffle",
+      "canrepeat",
+      "currentaudiostream",
+      "audiostreams",
+      "subtitleenabled",
+      "currentsubtitle",
+      "subtitles",
+      "live"
   };
-  
+
   private final String type;
   private final boolean partymode;
   private final long speed;
@@ -58,5 +58,5 @@ public class PlayerProperties {
   private final Subtitle currentsubtitle;
   private final Subtitle[] subtitles;
   private final boolean live;
-  
+
 }

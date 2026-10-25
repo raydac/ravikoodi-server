@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi;
 
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 
 public interface GuiMessager {
 
-    void showInfoMessage(@NonNull String title, @NonNull String message);
+  void showInfoMessage(@NonNull String title, @NonNull String message);
 
-    void showErrorMessage(@NonNull String title, @NonNull String message);
+  void showErrorMessage(@NonNull String title, @NonNull String message);
 
-    void showWarningMessage(@NonNull String title, @NonNull String message);
+  void showWarningMessage(@NonNull String title, @NonNull String message);
 }

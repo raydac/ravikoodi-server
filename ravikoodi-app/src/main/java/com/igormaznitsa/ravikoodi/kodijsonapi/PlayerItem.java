@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PlayerItem {
   static final String[] ALL_NAMES = {
-    "file",
+      "file",
   };
 
   private final PlaylistFileItem item;

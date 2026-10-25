@@ -13,21 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Locale;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
 public class DonationController {
 
   private final Logger LOGGER = LoggerFactory.getLogger(DonationController.class);
-  
+
+  public DonationController() {
+  }
+
+  public void openDonationUrl() {
+    final Provider provider;
+    if ("RU".equalsIgnoreCase(Locale.getDefault().getCountry()) &&
+        "RU".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
+      provider = Provider.YOO_MONEY;
+    } else {
+      provider = Provider.PAYPAL;
+    }
+    LOGGER.info("Selected donation provider: {}", provider);
+    Utils.showURLExternal(provider.getUrl());
+  }
+
   public enum Provider {
     PAYPAL("https://www.arthursacresanimalsanctuary.org/donate"),
     YOO_MONEY("https://www.arthursacresanimalsanctuary.org/donate");
@@ -46,19 +62,5 @@ public class DonationController {
     public URL getUrl() {
       return this.url;
     }
-  }
-
-  public DonationController() {
-  }
-
-  public void openDonationUrl() {
-    final Provider provider;
-    if ("RU".equalsIgnoreCase(Locale.getDefault().getCountry()) && "RU".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-      provider = Provider.YOO_MONEY;
-    } else {
-      provider = Provider.PAYPAL;
-    }
-    LOGGER.info("Selected donation provider: {}", provider);
-    Utils.showURLExternal(provider.getUrl());
   }
 }

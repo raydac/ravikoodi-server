@@ -6,16 +6,6 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class PlayerSeekPercentageReq2 extends PlayerIdReq {
 
-    public static class Percentage {
-
-        @JsonProperty("percentage")
-        private final double percentage;
-
-        public Percentage(final double percentage) {
-            this.percentage = percentage;
-        }
-    }
-
     @JsonProperty("value")
     private final Percentage percentage;
 
@@ -26,5 +16,15 @@ public class PlayerSeekPercentageReq2 extends PlayerIdReq {
 
     public Percentage getPercentage() {
         return this.percentage;
+    }
+
+    public static class Percentage {
+
+        @JsonProperty("percentage")
+        private final double percentage;
+
+        public Percentage(final double percentage) {
+            this.percentage = percentage;
+        }
     }
 }

@@ -13,21 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.ytloader;
 
 public enum YtMode {
-    KODI_PLUGIN("KODI plugin"),
-    DIRECT_URL("Direct URL");
+  KODI_PLUGIN("KODI plugin"),
+  DIRECT_URL("Direct URL");
 
-    private final String text;
+  private final String text;
 
-    private YtMode(final String text) {
-        this.text = text;
-    }
+  private YtMode(final String text) {
+    this.text = text;
+  }
 
-    @Override
-    public String toString() {
-        return this.text;
-    }
+  @Override
+  public String toString() {
+    return this.text;
+  }
 
 }

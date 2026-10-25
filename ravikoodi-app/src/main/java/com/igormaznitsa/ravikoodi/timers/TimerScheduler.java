@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi.timers;
 
 import com.igormaznitsa.ravikoodi.ApplicationPreferences;
 import com.igormaznitsa.ravikoodi.GuiMessager;
 import com.igormaznitsa.ravikoodi.KodiComm;
-import com.igormaznitsa.ravikoodi.prefs.TimerResource;
 import com.igormaznitsa.ravikoodi.UploadingFileRegistry;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ActivePlayerInfo;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerItem;
 import com.igormaznitsa.ravikoodi.kodijsonapi.Playlist;
+import com.igormaznitsa.ravikoodi.prefs.TimerResource;
 import java.io.File;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,11 +41,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -79,7 +79,7 @@ public class TimerScheduler {
     public void reloadTimers() {
         synchronized (this.timers) {
             LOGGER.info("Cancelling {} current timers", this.timers.size());
-            timers.forEach(x -> x.cancel());
+            timers.forEach(ScheduledTimer::cancel);
             timers.clear();
             final AtomicLong counter = new AtomicLong(1L);
 
@@ -96,7 +96,7 @@ public class TimerScheduler {
                         x,
                         this.executor)
                 )
-                .collect(Collectors.toList()));
+                .toList());
 
             LOGGER.info("Detected {} active timers", this.timers.size());
 
@@ -108,9 +108,13 @@ public class TimerScheduler {
                 }
             });
 
-            final long numberOfTimersWithResource = prefereceTimers.stream().filter(x -> x.isEnabled() && x.getResourcePath() != null).count();
+            final long numberOfTimersWithResource =
+                prefereceTimers.stream().filter(x -> x.isEnabled() && x.getResourcePath() != null)
+                    .count();
             if (numberOfTimersWithResource > 0) {
-                this.guiMessager.showInfoMessage("Timers", String.format("Activated %d timers of %d", this.timers.size(), numberOfTimersWithResource));
+                this.guiMessager.showInfoMessage("Timers",
+                    String.format("Activated %d timers of %d", this.timers.size(),
+                        numberOfTimersWithResource));
             }
         }
     }
@@ -123,7 +127,8 @@ public class TimerScheduler {
         private final KodiComm kodiComm;
         private final ScheduledExecutorService executorService;
         private final TimerResource timer;
-        private final AtomicReference<ScheduledFuture<?>> scheduledFutureRef = new AtomicReference<>();
+        private final AtomicReference<ScheduledFuture<?>> scheduledFutureRef =
+            new AtomicReference<>();
         private final AtomicReference<String> lastUuid = new AtomicReference<>();
         private final UploadingFileRegistry fileRegistry;
         private final AtomicReference<Playlist> playlist = new AtomicReference<>();
@@ -146,9 +151,9 @@ public class TimerScheduler {
         }
 
         private ScheduledFuture<?> scheduleStart() {
-            return this.scheduleForTime(Objects.requireNonNull(this.timer.getFrom()), time -> {
-                LOGGER.info("Scheduling start of timer {} for {}", this.id, time.format(DATETIME_FORMATTER));
-            }, this::onStart);
+            return this.scheduleForTime(Objects.requireNonNull(this.timer.getFrom()),
+                time -> LOGGER.info("Scheduling start of timer {} for {}", this.id,
+                    time.format(DATETIME_FORMATTER)), this::onStart);
         }
 
         void cancel() {
@@ -164,9 +169,9 @@ public class TimerScheduler {
                 return null;
             }
 
-            return this.scheduleForTime(endTime, time -> {
-                LOGGER.info("Scheduling end of timer {} for {}", this.id, time.format(DATETIME_FORMATTER));
-            }, this::onEnd);
+            return this.scheduleForTime(endTime,
+                time -> LOGGER.info("Scheduling end of timer {} for {}", this.id,
+                    time.format(DATETIME_FORMATTER)), this::onEnd);
         }
 
         private ScheduledFuture<?> scheduleForTime(
@@ -193,36 +198,42 @@ public class TimerScheduler {
             LOGGER.info("Starting {} timer", this.id);
 
             if (!this.resource.isFile()) {
-                LOGGER.error("Can't find resource file for timer {}: {}", this.timer, this.resource);
-                this.guiMessager.showWarningMessage("Error", "Can't find resource file: " + this.resource);
+                LOGGER.error("Can't find resource file for timer {}: {}", this.timer,
+                    this.resource);
+                this.guiMessager.showWarningMessage("Error",
+                    "Can't find resource file: " + this.resource);
                 return;
             }
 
             try {
                 if (this.timer.isReplay()) {
-                    this.kodiComm.openFileAsPlaylistThroughRegistry(this.resource.toPath(), null).ifPresent(pair -> {
-                        LOGGER.info("Opened file {} in playlist {}", pair.getRight(), pair.getLeft());
-                        this.lastUuid.set(pair.getRight());
-                        this.playlist.set(pair.getLeft());
-                        if (this.timer.getTo() == null) {
-                            this.scheduledFutureRef.set(scheduleStart());
-                        } else {
-                            this.scheduledFutureRef.set(scheduleEnd());
-                        }
-                    });
+                    this.kodiComm.openFileAsPlaylistThroughRegistry(this.resource.toPath(), null)
+                        .ifPresent(pair -> {
+                            LOGGER.info("Opened file {} in playlist {}", pair.getRight(),
+                                pair.getLeft());
+                            this.lastUuid.set(pair.getRight());
+                            this.playlist.set(pair.getLeft());
+                            if (this.timer.getTo() == null) {
+                                this.scheduledFutureRef.set(scheduleStart());
+                            } else {
+                                this.scheduledFutureRef.set(scheduleEnd());
+                            }
+                        });
                 } else {
-                    this.kodiComm.openFileThroughRegistry(this.resource.toPath(), null).ifPresent(uuid -> {
-                        this.lastUuid.set(uuid);
-                        this.playlist.set(null);
-                        if (this.timer.getTo() == null) {
-                            this.scheduledFutureRef.set(scheduleStart());
-                        } else {
-                            this.scheduledFutureRef.set(scheduleEnd());
-                        }
-                    });
+                    this.kodiComm.openFileThroughRegistry(this.resource.toPath(), null)
+                        .ifPresent(uuid -> {
+                            this.lastUuid.set(uuid);
+                            this.playlist.set(null);
+                            if (this.timer.getTo() == null) {
+                                this.scheduledFutureRef.set(scheduleStart());
+                            } else {
+                                this.scheduledFutureRef.set(scheduleEnd());
+                            }
+                        });
                 }
             } catch (Throwable ex) {
-                this.guiMessager.showErrorMessage("Error", "Can't start timer " + this.timer + ": " + ex.getMessage());
+                this.guiMessager.showErrorMessage("Error",
+                    "Can't start timer " + this.timer + ": " + ex.getMessage());
             }
         }
 
@@ -271,11 +282,14 @@ public class TimerScheduler {
                         LOGGER.warn("Can't find active player for timer {}", this);
                     } else {
                         foundPlayer.ifPresent(info -> {
-                            LOGGER.info("Detected started player {} for timer {}", info.getPlayerid(), this);
+                            LOGGER.info("Detected started player {} for timer {}",
+                                info.getPlayerid(), this);
                             try {
                                 this.kodiComm.doPlayerStop(info);
                             } catch (Throwable ex) {
-                                this.guiMessager.showErrorMessage("Error", "Error during timer stop " + ex.getMessage() + ": " + ex.getMessage());
+                                this.guiMessager.showErrorMessage("Error",
+                                    "Error during timer stop " + ex.getMessage() + ": " +
+                                        ex.getMessage());
                             }
                         });
                     }
@@ -284,10 +298,12 @@ public class TimerScheduler {
                         LOGGER.info("Opening empty playlist {} to set repeat off", savedPlaylist);
                         this.kodiComm.makeKodiService().ifPresent(service -> {
                             try {
-                                final String result = service.doPlayerOpenPlaylist(savedPlaylist, Collections.singletonMap("repeat", "off"));
+                                final String result = service.doPlayerOpenPlaylist(savedPlaylist,
+                                    Collections.singletonMap("repeat", "off"));
                                 LOGGER.info("Result for open empty playlist: {}", result);
                             } catch (Throwable ex) {
-                                LOGGER.error("Can't open empty playlist {} for error", savedPlaylist, ex);
+                                LOGGER.error("Can't open empty playlist {} for error",
+                                    savedPlaylist, ex);
                             }
                         });
                     }
@@ -300,7 +316,8 @@ public class TimerScheduler {
 
         public void init() {
             if (!this.resource.isFile()) {
-                throw new IllegalArgumentException("Can't find timer resource file: " + this.resource.getAbsolutePath());
+                throw new IllegalArgumentException(
+                    "Can't find timer resource file: " + this.resource.getAbsolutePath());
             }
 
             if (!this.scheduledFutureRef.compareAndSet(null, this.scheduleStart())) {

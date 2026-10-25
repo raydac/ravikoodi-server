@@ -13,33 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi;
 
+import com.igormaznitsa.ravikoodi.prefs.StaticResource;
 import jakarta.annotation.PostConstruct;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
 public class StaticFileRegistry {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StaticFileRegistry.class);
-
+    private final Map<String, UploadFileRecord> records = new ConcurrentHashMap<>();
     @Autowired
     private MimeTypes mimeTypes;
-
     @Autowired
     private ApplicationPreferences applicationPreferences;
-
-    private final Map<String, UploadFileRecord> records = new ConcurrentHashMap<>();
 
     public StaticFileRegistry() {
 
@@ -49,14 +48,16 @@ public class StaticFileRegistry {
     public void onPostConstruct() {
         this.refresh();
     }
-    
+
     public Optional<UploadFileRecord> findFile(@NonNull final String uid) {
         return Optional.ofNullable(this.records.get(uid));
     }
 
-    public UploadFileRecord registerFile(@NonNull final String uid, @NonNull final Path file, @Nullable final byte[] data) {
+    public UploadFileRecord registerFile(@NonNull final String uid, @NonNull final Path file,
+                                         @Nullable final byte[] data) {
         LOGGER.info("Registering file {} as static resource: {}", file, uid);
-        final UploadFileRecord newRecord = new UploadFileRecord(uid, file, this.mimeTypes.findMimeTypeForFile(file), data);
+        final UploadFileRecord newRecord =
+            new UploadFileRecord(uid, file, this.mimeTypes.findMimeTypeForFile(file), data);
         this.records.put(uid, newRecord);
         return newRecord;
     }
@@ -74,21 +75,24 @@ public class StaticFileRegistry {
         LOGGER.info("Refreshing static resources");
         this.records.clear();
         this.applicationPreferences.getStaticResources()
-                .stream()
-            .filter(r -> r.isEnabled())
-                .forEach(r -> {
-                  final File resourceFile = r.getResourcePath();
-                  if (resourceFile == null) {
+            .stream()
+            .filter(StaticResource::isEnabled)
+            .forEach(r -> {
+                final File resourceFile = r.getResourcePath();
+                if (resourceFile == null) {
                     return;
-                  }
-            try {
-              final Path path = resourceFile.toPath();
-                final UploadFileRecord record = new UploadFileRecord(r.getId(), path, this.mimeTypes.findMimeTypeForFile(path), null);
-                this.records.put(r.getId(), record);
-                LOGGER.info("Registered static resource {}: {}", r.getId(), record);
-            } catch (Exception ex) {
-                LOGGER.error("Error during registration static resource: {}", r, ex);
-            }
+                }
+                try {
+                    final Path path = resourceFile.toPath();
+                    final UploadFileRecord record =
+                        new UploadFileRecord(r.getId(), path,
+                            this.mimeTypes.findMimeTypeForFile(path),
+                            null);
+                    this.records.put(r.getId(), record);
+                    LOGGER.info("Registered static resource {}: {}", r.getId(), record);
+                } catch (Exception ex) {
+                    LOGGER.error("Error during registration static resource: {}", r, ex);
+                }
         });
     }
 

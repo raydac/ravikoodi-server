@@ -13,34 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.igormaznitsa.ravikoodi;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
 
 public final class ContentFolder implements ContentTreeItem {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ContentFolder.class);
-    
+
     private final Path filePath;
     private final String fileName;
     private final List<ContentTreeItem> files = new ArrayList<>();
 
     public ContentFolder(@NonNull final Path filePath) throws IOException {
         this.filePath = filePath;
-      final Path pathName = this.filePath.getFileName();
-      this.fileName = pathName == null ? this.filePath.toString() : pathName.toString();
+        final Path pathName = this.filePath.getFileName();
+        this.fileName = pathName == null ? this.filePath.toString() : pathName.toString();
 
-        Files.list(filePath).filter(f -> {
-            return Files.isReadable(f) && (Files.isDirectory(f) || MimeTypes.ContentType.findType(f) != MimeTypes.ContentType.UNKNOWN);
-        }).peek(f -> {
+        Files.list(filePath).filter(f -> Files.isReadable(f) && (Files.isDirectory(f) ||
+            MimeTypes.ContentType.findType(f) != MimeTypes.ContentType.UNKNOWN)).peek(f -> {
             if (Files.isDirectory(f)) {
                 try {
                     this.files.add(new ContentFolder(f));
@@ -52,7 +51,7 @@ public final class ContentFolder implements ContentTreeItem {
             }
         }).count();
 
-        Collections.sort(this.files, CONTENT_ITEM_COMPARATOR);
+        this.files.sort(CONTENT_ITEM_COMPARATOR);
     }
 
     @Override
@@ -63,9 +62,9 @@ public final class ContentFolder implements ContentTreeItem {
 
     @NonNull
     public List<ContentTreeItem> getFiles() {
-      return List.copyOf(this.files);
+        return List.copyOf(this.files);
     }
-    
+
     @NonNull
     public Path getFilePath() {
         return this.filePath;
