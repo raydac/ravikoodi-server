@@ -1,6 +1,7 @@
 package com.igormaznitsa.ravikoodi.kodijsonapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.HashMap;
 import java.util.Map;
 
 public class PlayerOpenPlaylistReq {
@@ -13,7 +14,7 @@ public class PlayerOpenPlaylistReq {
 
     public PlayerOpenPlaylistReq(final Playlist playlist, final Map<String, String> options) {
         this.item = new PlayerOpenPlaylistItem(playlist);
-        this.options = options;
+      this.options = options == null ? null : new HashMap<>(options);
     }
 
 }

@@ -16,8 +16,10 @@
 package com.igormaznitsa.ravikoodi.kodijsonapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import org.springframework.lang.NonNull;
 
+@EqualsAndHashCode(callSuper = true)
 public class PlayerRepeatReq extends PlayerIdReq {
     @JsonProperty("repeat")
     protected String repeat;

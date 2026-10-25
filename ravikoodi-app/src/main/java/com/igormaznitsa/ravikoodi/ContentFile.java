@@ -25,7 +25,12 @@ public final class ContentFile implements ContentTreeItem {
     private final MimeTypes.ContentType contentType;
 
     public ContentFile(@NonNull final Path file, final MimeTypes.ContentType contentType) {
-        this(file.getFileName().toString(), file, contentType);
+      this(fileNameOf(file), file, contentType);
+    }
+
+  private static String fileNameOf(final Path file) {
+    final Path fileName = file.getFileName();
+    return fileName == null ? file.toString() : fileName.toString();
     }
 
     public ContentFile(@NonNull final String name, @NonNull final Path file, final MimeTypes.ContentType contentType) {

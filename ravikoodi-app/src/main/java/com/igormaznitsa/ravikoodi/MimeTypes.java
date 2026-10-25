@@ -77,6 +77,16 @@ public class MimeTypes {
     public int compareTo(@NonNull final MimeRecord o) {
       return this.extension.compareTo(o.extension);
     }
+
+    @Override
+    public boolean equals(final Object other) {
+      return other instanceof MimeRecord that && this.extension.equals(that.extension);
+    }
+
+    @Override
+    public int hashCode() {
+      return this.extension.hashCode();
+    }
   }
 
   private static final Map<String, MimeRecord> EXTENSIONS = new HashMap<String, MimeRecord>();

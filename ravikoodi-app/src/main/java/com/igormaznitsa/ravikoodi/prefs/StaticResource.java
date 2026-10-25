@@ -99,5 +99,15 @@ public final class StaticResource implements Comparable<StaticResource> {
     public int compareTo(@NonNull final StaticResource that) {
         return this.id.compareTo(that.id);
     }
+
+  @Override
+  public boolean equals(final Object other) {
+    return other instanceof StaticResource that && this.id.equals(that.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return this.id.hashCode();
+  }
     
 }

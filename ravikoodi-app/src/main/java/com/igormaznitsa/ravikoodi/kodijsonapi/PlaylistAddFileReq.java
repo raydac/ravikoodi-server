@@ -16,7 +16,9 @@
 package com.igormaznitsa.ravikoodi.kodijsonapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 
+@EqualsAndHashCode(callSuper = true)
 public class PlaylistAddFileReq extends PlaylistIdReq {
 
     @JsonProperty("item")
@@ -24,7 +26,15 @@ public class PlaylistAddFileReq extends PlaylistIdReq {
 
     public PlaylistAddFileReq(final Playlist playlist, final PlaylistFileItem item) {
         super(playlist);
-        this.item = item;
+      this.item = copyOf(item);
+    }
+
+  private static PlaylistFileItem copyOf(final PlaylistFileItem item) {
+    final PlaylistFileItem copy = new PlaylistFileItem();
+    copy.setFile(item.getFile());
+    copy.setType(item.getType());
+    copy.setLabel(item.getLabel());
+    return copy;
     }
 
 }

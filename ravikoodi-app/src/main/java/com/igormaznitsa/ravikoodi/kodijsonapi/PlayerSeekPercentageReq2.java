@@ -1,7 +1,9 @@
 package com.igormaznitsa.ravikoodi.kodijsonapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 
+@EqualsAndHashCode(callSuper = true)
 public class PlayerSeekPercentageReq2 extends PlayerIdReq {
 
     public static class Percentage {

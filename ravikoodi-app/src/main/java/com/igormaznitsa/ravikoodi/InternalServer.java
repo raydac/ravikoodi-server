@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -101,7 +102,8 @@ public class InternalServer {
   @NonNull
   public String makeUrlFor(@NonNull final UploadFileRecord record) {
     try {
-      final String name = record.getFile().getFileName().toString();
+      final Path fileName = record.getFile().getFileName();
+      final String name = fileName == null ? "file" : fileName.toString();
       final String encodedFileName = URLEncoder.encode(name, "UTF-8");
       final String pathPrefix = makeUrlPrefix(PATH_VFILES);
       return String.format("%s/%s/%s",

@@ -1,6 +1,7 @@
 package com.igormaznitsa.ravikoodi.kodijsonapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.HashMap;
 import java.util.Map;
 
 public class PlayerOpenFilePathReq {
@@ -14,6 +15,6 @@ public class PlayerOpenFilePathReq {
   
   public PlayerOpenFilePathReq(final String filePath, final Map<String,String> options) {
     this.item = new PlayerOpenFileItem(filePath);
-    this.options = options;
+    this.options = options == null ? null : new HashMap<>(options);
   }
 }

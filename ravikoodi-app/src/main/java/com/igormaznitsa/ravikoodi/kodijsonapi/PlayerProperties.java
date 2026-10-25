@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(force = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PlayerProperties {
-  
-  public static final String[] ALL_NAMES = {
+
+  static final String[] ALL_NAMES = {
     "type", 
     "partymode", 
     "speed", 

@@ -112,7 +112,7 @@ public final class ScreenGrabber implements Closeable {
   }
 
   public Rectangle getBounds() {
-    return this.targetSize;
+    return new Rectangle(this.targetSize);
   }
 
   public boolean isShowCursor() {

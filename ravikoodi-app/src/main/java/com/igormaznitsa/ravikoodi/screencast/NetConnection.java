@@ -18,7 +18,6 @@ package com.igormaznitsa.ravikoodi.screencast;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.springframework.lang.NonNull;
 
@@ -36,10 +35,10 @@ public abstract class NetConnection implements Closeable {
 
   protected final Duration dataFlowTimeout;
   protected final String id;
-  
-  public NetConnection(@NonNull final String id, @NonNull final Duration dataFlowTimeout) {
-    this.id = Objects.requireNonNull(id);
-    this.dataFlowTimeout = Objects.requireNonNull(dataFlowTimeout);
+
+  protected NetConnection(final String id, final Duration dataFlowTimeout) {
+    this.id = id;
+    this.dataFlowTimeout = dataFlowTimeout;
   }
   
   @NonNull

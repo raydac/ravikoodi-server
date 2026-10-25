@@ -18,8 +18,8 @@ package com.igormaznitsa.ravikoodi.screencast.screensrc;
 import ch.qos.logback.core.util.CloseUtil;
 import com.igormaznitsa.ravikoodi.ApplicationPreferences;
 import com.igormaznitsa.ravikoodi.screencast.LoopbackTcpReader;
-import static com.igormaznitsa.ravikoodi.screencast.screensrc.AbstractScreenSource.MOUSE_ICON;
 import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.MouseInfo;
@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
-public class FfmpegScreenSource extends AbstractScreenSource {
+public final class FfmpegScreenSource extends AbstractScreenSource {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FfmpegScreenSource.class);
 
@@ -91,10 +91,18 @@ public class FfmpegScreenSource extends AbstractScreenSource {
   public FfmpegScreenSource(@NonNull final ApplicationPreferences preferences, final boolean showPointer) throws IOException {
     super(showPointer);
     this.sourceDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-    final AffineTransform affineTransform = this.sourceDevice.getDefaultConfiguration().getDefaultTransform();
+    final GraphicsConfiguration configuration = this.sourceDevice.getDefaultConfiguration();
+    if (configuration == null) {
+      throw new IllegalStateException("Default screen configuration is not available");
+    }
+    final AffineTransform affineTransform = configuration.getDefaultTransform();
     this.scaleX = affineTransform.getScaleX();
     this.scaleY = affineTransform.getScaleY();
-    this.screenBounds = scale(this.sourceDevice.getDefaultConfiguration().getBounds(), this.scaleX, this.scaleY);
+    final Rectangle scaledBounds = scale(configuration.getBounds(), this.scaleX, this.scaleY);
+    if (scaledBounds == null) {
+      throw new IllegalStateException("Screen bounds are not available");
+    }
+    this.screenBounds = new Rectangle(scaledBounds);
     this.targetSize = calculateTargetSize(preferences.getQuality(), this.screenBounds);
     this.aspectWidth = (double) this.targetSize.width / (double) this.screenBounds.width;
     this.aspectHeight = (double) this.targetSize.height / (double) this.screenBounds.height;
@@ -341,7 +349,7 @@ public class FfmpegScreenSource extends AbstractScreenSource {
   @Override
   @NonNull
   public Rectangle getBounds() {
-    return this.targetSize;
+    return new Rectangle(this.targetSize);
   }
 
   @NonNull

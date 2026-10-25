@@ -2,7 +2,6 @@ package com.igormaznitsa.ravikoodi;
 
 import com.igormaznitsa.ravikoodi.kodijsonapi.ActivePlayerInfo;
 import com.igormaznitsa.ravikoodi.kodijsonapi.AudioStream;
-import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerItem;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerProperties;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerSeekResult;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlaylistFileItem;
@@ -26,7 +25,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
-import javax.swing.plaf.basic.BasicProgressBarUI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,8 +143,6 @@ public final class PlayerPanel extends javax.swing.JPanel {
       this.labelTitle.setIcon(null);
       this.labelTitle.setToolTipText(playerType);
     }
-
-    final PlayerPanel thePanel = this;
 
     this.progressTime.addMouseListener(new MouseAdapter() {
       final int defaultDismissTimeout = ToolTipManager.sharedInstance().getDismissDelay();
@@ -342,8 +338,7 @@ public final class PlayerPanel extends javax.swing.JPanel {
   }
 
   private PlaylistFileItem currentItem() throws Throwable {
-    final PlayerItem playerItem = this.kodiComm.getPlayerItem(this.playerInfo);
-    return playerItem == null ? null : playerItem.getItem();
+    return this.kodiComm.getPlayerItem(this.playerInfo).getItem();
   }
 
   private void restoreDetailsRequest(final boolean requestedDetails) {
@@ -700,7 +695,6 @@ public final class PlayerPanel extends javax.swing.JPanel {
   }//GEN-LAST:event_progressTimeMouseClicked
 
   private double getProgressPercentAtPoint(final Point point) {
-    BasicProgressBarUI barui = (BasicProgressBarUI) this.progressTime.getUI();
     return point.getX() / this.progressTime.getWidth();
   }
 

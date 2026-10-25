@@ -20,11 +20,11 @@ import com.igormaznitsa.ravikoodi.kodijsonapi.AudioStream;
 import com.igormaznitsa.ravikoodi.kodijsonapi.KodiService;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerItem;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerProperties;
-import com.igormaznitsa.ravikoodi.kodijsonapi.RepeatValue;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerSeekResult;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlayerSpeedIncDecReq;
 import com.igormaznitsa.ravikoodi.kodijsonapi.Playlist;
 import com.igormaznitsa.ravikoodi.kodijsonapi.PlaylistFileItem;
+import com.igormaznitsa.ravikoodi.kodijsonapi.RepeatValue;
 import com.igormaznitsa.ravikoodi.kodijsonapi.Subtitle;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -36,8 +36,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -197,7 +195,6 @@ public class KodiComm {
                                                           final Map<String, String>... options) throws Throwable {
         final String uid = UUID.randomUUID().toString();
         final UploadFileRecord record = this.fileRegstry.registerFile(uid, path, data);
-        final AtomicReference<Throwable> error = new AtomicReference<>();
         final String fileUrl = this.internalServer.makeUrlFor(record);
         LOGGER.info("Opening file {} as {}, uuid={}", path, fileUrl, uid);
         return Optional.ofNullable(this.doPlayerOpenFile(fileUrl, options) ? uid : null);
@@ -210,7 +207,6 @@ public class KodiComm {
         @NonNull final Map<String, String>... options) throws Throwable {
         final String uid = UUID.randomUUID().toString();
         final UploadFileRecord record = this.fileRegstry.registerFile(uid, path, data);
-        final AtomicReference<Throwable> error = new AtomicReference<>();
         final String fileUrl = this.internalServer.makeUrlFor(record);
         LOGGER.info("Opening file as playlist {} as {} through playlist, uuid={}", path, fileUrl, uid);
 

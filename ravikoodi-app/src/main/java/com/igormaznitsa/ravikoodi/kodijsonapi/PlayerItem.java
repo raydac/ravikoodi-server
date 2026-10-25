@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(force = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PlayerItem {
-  public static final String [] ALL_NAMES = {
+  static final String[] ALL_NAMES = {
     "file",
   };
 

@@ -102,7 +102,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 @org.springframework.stereotype.Component
-public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorListener, InternalServer.InternalServerListener {
+public final class MainFrame extends javax.swing.JFrame
+    implements TreeModel, FlavorListener, InternalServer.InternalServerListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MainFrame.class);
 
@@ -1206,8 +1207,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
   }//GEN-LAST:event_menuHelpDonationActionPerformed
 
     private void menuTimersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuTimersActionPerformed
-        final String filePath = this.preferences.getFileRoot();
-        final File root = filePath == null ? null : new File(filePath);
+        final File root = new File(this.preferences.getFileRoot());
         final TimersTable timersTable = new TimersTable(root, this.preferences.getTimers());
         if (JOptionPane.showConfirmDialog(this, timersTable, "Timers", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
             final List<TimerResource> newTimers = timersTable.getTimers();
@@ -1330,8 +1330,7 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
     }//GEN-LAST:event_menuOpenYoutubeLinkActionPerformed
 
     private void menuStaticContentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuStaticContentActionPerformed
-        final String filePath = this.preferences.getFileRoot();
-        final File root = filePath == null ? null : new File(filePath);
+        final File root = new File(this.preferences.getFileRoot());
 
         final PublishedFilesTable publishedFilesTable = new PublishedFilesTable(this.server.makeUrlPrefix(InternalServer.PATH_RESOURCES), root, this.preferences.getStaticResources());
         if (JOptionPane.showConfirmDialog(this, publishedFilesTable, "Published files", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
@@ -1621,7 +1620,11 @@ public class MainFrame extends javax.swing.JFrame implements TreeModel, FlavorLi
 
     @Override
     public String toString() {
-        return this.currentRootFolder == null ? "NOT SELECTED" : this.currentRootFolder.getFileName().toString();
+        if (this.currentRootFolder == null) {
+            return "NOT SELECTED";
+        }
+        final Path folderName = this.currentRootFolder.getFileName();
+        return folderName == null ? this.currentRootFolder.toString() : folderName.toString();
     }
 
     public static void openInSystem(@NonNull final ContentFile file) {

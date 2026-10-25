@@ -16,6 +16,7 @@
 package com.igormaznitsa.ravikoodi;
 
 import jakarta.annotation.PostConstruct;
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
@@ -74,10 +75,14 @@ public class StaticFileRegistry {
         this.records.clear();
         this.applicationPreferences.getStaticResources()
                 .stream()
-                .filter(r -> r.isEnabled() && r.getResourcePath() != null)
+            .filter(r -> r.isEnabled())
                 .forEach(r -> {
+                  final File resourceFile = r.getResourcePath();
+                  if (resourceFile == null) {
+                    return;
+                  }
             try {
-                final Path path = r.getResourcePath().toPath();
+              final Path path = resourceFile.toPath();
                 final UploadFileRecord record = new UploadFileRecord(r.getId(), path, this.mimeTypes.findMimeTypeForFile(path), null);
                 this.records.put(r.getId(), record);
                 LOGGER.info("Registered static resource {}: {}", r.getId(), record);

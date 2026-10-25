@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 
-public class LoopbackTcpReader extends NetConnection {
+public final class LoopbackTcpReader extends NetConnection {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LoopbackTcpReader.class);
 
@@ -58,7 +58,8 @@ public class LoopbackTcpReader extends NetConnection {
           @NonNull
           final Supplier<Boolean> active
   ) throws IOException {
-    super(id, dataFlowTimeout);
+    super(Objects.requireNonNull(id, "id"),
+        Objects.requireNonNull(dataFlowTimeout, "dataFlowTimeout"));
     this.active = Objects.requireNonNull(active);
     this.serverSocket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress());
     this.thread = new Thread(this::doWork, id + this.serverSocket.getLocalPort());

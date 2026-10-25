@@ -15,9 +15,6 @@
  */
 package com.igormaznitsa.ravikoodi;
 
-import com.igormaznitsa.ravikoodi.ContentFile;
-import com.igormaznitsa.ravikoodi.ContentTreeItem;
-import com.igormaznitsa.ravikoodi.MimeTypes;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +35,8 @@ public final class ContentFolder implements ContentTreeItem {
 
     public ContentFolder(@NonNull final Path filePath) throws IOException {
         this.filePath = filePath;
-        this.fileName = this.filePath.getFileName().toString();
+      final Path pathName = this.filePath.getFileName();
+      this.fileName = pathName == null ? this.filePath.toString() : pathName.toString();
 
         Files.list(filePath).filter(f -> {
             return Files.isReadable(f) && (Files.isDirectory(f) || MimeTypes.ContentType.findType(f) != MimeTypes.ContentType.UNKNOWN);
@@ -65,7 +63,7 @@ public final class ContentFolder implements ContentTreeItem {
 
     @NonNull
     public List<ContentTreeItem> getFiles() {
-        return this.files;
+      return List.copyOf(this.files);
     }
     
     @NonNull

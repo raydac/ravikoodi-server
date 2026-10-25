@@ -72,7 +72,7 @@ public final class RobotScreenSource extends AbstractScreenSource {
   @Override
   @NonNull
   public Rectangle getBounds() {
-    return this.screenBounds;
+    return new Rectangle(this.screenBounds);
   }
 
   @Override
@@ -121,6 +121,8 @@ public final class RobotScreenSource extends AbstractScreenSource {
             }
           }
           break;
+          default:
+            break;
         }
       } else if (dataBuffer instanceof DataBufferUShort) {
         final short[] imageDataBuffer = ((DataBufferUShort) image.getRaster().getDataBuffer()).getData();
@@ -157,6 +159,8 @@ public final class RobotScreenSource extends AbstractScreenSource {
             }
           }
           break;
+          default:
+            break;
         }
       } else if (dataBuffer instanceof DataBufferByte) {
         final byte[] imageDataBuffer = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();

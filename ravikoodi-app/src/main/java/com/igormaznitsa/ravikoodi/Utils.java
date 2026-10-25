@@ -104,8 +104,8 @@ public final class Utils {
 
     @NonNull
     public static String getFileExtension(@NonNull final Path path) {
-        final String fileName = path.getFileName() == null ? "" : path.getFileName().toString();
-        return getExtension(fileName);
+      final Path fileName = path.getFileName();
+      return getExtension(fileName == null ? "" : fileName.toString());
     }
 
     @NonNull

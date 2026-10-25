@@ -139,19 +139,19 @@ public final class JHtmlLabel extends JLabel {
   }
 
   public JHtmlLabel(@Nullable final String text, final int horizontalAlignment) {
-    this(text, null, horizontalAlignment);
+    this(text == null ? "" : text, null, horizontalAlignment);
   }
 
   public JHtmlLabel(@Nullable final String text) {
-    this(text, null, LEADING);
+    this(text == null ? "" : text, null, LEADING);
   }
 
   public JHtmlLabel(@Nullable final Icon image, final int horizontalAlignment) {
-    this(null, image, horizontalAlignment);
+    this("", image, horizontalAlignment);
   }
 
   public JHtmlLabel(@Nullable final Icon image) {
-    this(null, image, CENTER);
+    this("", image, CENTER);
   }
 
   public JHtmlLabel() {

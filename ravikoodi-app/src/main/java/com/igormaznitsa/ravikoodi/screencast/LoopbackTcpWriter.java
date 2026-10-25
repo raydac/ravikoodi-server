@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 
-public class LoopbackTcpWriter extends NetConnection {
+public final class LoopbackTcpWriter extends NetConnection {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LoopbackTcpWriter.class);
 
@@ -52,7 +52,8 @@ public class LoopbackTcpWriter extends NetConnection {
           @NonNull
           final Supplier<Boolean> active
   ) throws IOException {
-    super(id, dataFlowTimeout);
+    super(Objects.requireNonNull(id, "id"),
+        Objects.requireNonNull(dataFlowTimeout, "dataFlowTimeout"));
     this.active = Objects.requireNonNull(active);
     this.buffer = new PreemptiveBuffer(maxQueuedItems);
     this.serverSocket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress());

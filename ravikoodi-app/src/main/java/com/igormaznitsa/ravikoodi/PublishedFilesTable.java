@@ -58,9 +58,8 @@ public class PublishedFilesTable extends JPanel {
             @Override
             public String getToolTipText(final MouseEvent e) {
                 String tip = null;
-                java.awt.Point p = e.getPoint();
+              final java.awt.Point p = e.getPoint();
                 final int rowIndex = rowAtPoint(p);
-                final int colIndex = columnAtPoint(p);
 
                 try {
                     if (rowIndex >= 0) {
@@ -127,11 +126,16 @@ public class PublishedFilesTable extends JPanel {
             if (indexes.length > 0) {
                 final StaticResource staticResource = ((StaticResourcesTableModel) this.resourceTable.getModel()).resources.get(indexes[0]);
                 final File file = staticResource.getResourcePath();
-                if (file.isFile()) {
+              if (file == null) {
+                JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(this),
+                    "Can't find file: not set", "Error", JOptionPane.ERROR_MESSAGE);
+              } else if (file.isFile()) {
                     final ContentFile contentFile = new ContentFile(file.toPath(), MimeTypes.ContentType.findType(file));
                     MainFrame.openInSystem(contentFile);
                 } else {
-                    JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(this), "Can't find file: "+file.getAbsolutePath(), "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(this),
+                    "Can't find file: " + file.getAbsolutePath(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
                 }
             }
         });

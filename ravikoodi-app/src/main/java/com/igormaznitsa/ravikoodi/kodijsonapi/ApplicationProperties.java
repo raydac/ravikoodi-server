@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(force = true)
 public class ApplicationProperties {
 
-  public static final String[] ALL_NAMES = {"name", "muted", "volume", "version"};
+  static final String[] ALL_NAMES = {"name", "muted", "volume", "version"};
 
   private final String name;
   private final boolean muted;

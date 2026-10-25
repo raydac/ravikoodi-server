@@ -13,10 +13,17 @@ public class AboutPanel extends javax.swing.JPanel {
   
   public AboutPanel(@NonNull final DonationController donationController, @NonNull final BuildProperties buildProperties) {
     initComponents();
-    this.labelText.setText(this.labelText.getText()
-            .replace("${version}", buildProperties.getVersion())
-            .replace("${title}", "Ravikoodi content server")
-    );
+    final String template = this.labelText.getText();
+    String version = buildProperties.getVersion();
+    if (version == null) {
+      version = "";
+    }
+    if (template != null) {
+      this.labelText.setText(template
+          .replace("${version}", version)
+          .replace("${title}", "Ravikoodi content server")
+      );
+    }
     this.labelText.addLinkListener((@NonNull final JHtmlLabel source, @NonNull final String link) -> {
       if ("open_donation".equalsIgnoreCase(link)) {
         donationController.openDonationUrl();

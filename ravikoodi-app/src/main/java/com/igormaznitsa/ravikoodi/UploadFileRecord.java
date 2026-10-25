@@ -148,7 +148,9 @@ public final class UploadFileRecord {
     @NonNull
     @Override
     public String toString() {
-        return String.format("FileRecord(%s,file=%s)", this.id, this.file.getFileName().toString());
+      final Path fileName = this.file.getFileName();
+      return String.format("FileRecord(%s,file=%s)", this.id,
+          fileName == null ? this.file : fileName);
     }
     
 }

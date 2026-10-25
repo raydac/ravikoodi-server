@@ -133,7 +133,10 @@ public class YtLinkExtractor {
                                 resultConsumer.accept(youTubeVideoId, url, null);
                             } else {
                                 LOGGER.error("URL for {} is null!", youTubeVideoId);
-                                resultConsumer.accept(youTubeVideoId, url, new NullPointerException("URL is null for found link of video '" + youTubeVideoId + "'"));
+                                resultConsumer.accept(youTubeVideoId, null,
+                                    new NullPointerException(
+                                        "URL is null for found link of video '" + youTubeVideoId +
+                                            "'"));
                             }
                         }
                     }

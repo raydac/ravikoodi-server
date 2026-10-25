@@ -7,7 +7,7 @@ import java.util.Optional;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
-public class HttpRange {
+public final class HttpRange {
 
   private final String unit;
   private final long start;

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Injected services, request options, and form models are shared on purpose. -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- Swing editors and live capture objects must return the instance the caller drives. -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP"/>
+        <Or>
+            <Class name="com.igormaznitsa.ravikoodi.FilePathCellEditor"/>
+            <Class name="com.igormaznitsa.ravikoodi.InternalServer"/>
+            <Class name="com.igormaznitsa.ravikoodi.OptionsPanel"/>
+            <Class name="com.igormaznitsa.ravikoodi.screencast.FfmpegNetCommunicator"/>
+            <Class name="com.igormaznitsa.ravikoodi.screencast.JavaSoundAdapter$SoundPort"/>
+            <Class name="com.igormaznitsa.ravikoodi.timers.TimersTable$LocalTimeCellEditor"/>
+            <And>
+                <Class name="com.igormaznitsa.ravikoodi.screencast.screensrc.FfmpegScreenSource"/>
+                <Method name="getSourceDevice"/>
+            </And>
+            <And>
+                <Class name="com.igormaznitsa.ravikoodi.screencast.screensrc.RobotScreenSource"/>
+                <Method name="getSourceDevice"/>
+            </And>
+        </Or>
+    </Match>
+</FindBugsFilter>

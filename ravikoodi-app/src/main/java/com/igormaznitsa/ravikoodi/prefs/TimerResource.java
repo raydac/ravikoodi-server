@@ -142,15 +142,35 @@ public final class TimerResource implements Comparable<TimerResource> {
         this.name = Objects.requireNonNull(value);
     }
 
+  private static int compareStart(final LocalTime left, final LocalTime right) {
+    if (left == null && right == null) {
+      return 0;
+    }
+    if (left == null) {
+            return -1;
+        }
+    if (right == null) {
+      return 1;
+    }
+    return left.compareTo(right);
+  }
+
     @Override
     public int compareTo(@NonNull final TimerResource that) {
-        if (this.from == null) {
-            return -1;
-        }
-        if (that.from == null) {
-            return -1;
-        }
-        return this.from.isBefore(that.from) ? -1 : 1;
+      final int byStart = compareStart(this.from, that.from);
+      return byStart != 0 ? byStart : this.name.compareTo(that.name);
+    }
+
+  @Override
+  public boolean equals(final Object other) {
+    return other instanceof TimerResource that
+        && this.name.equals(that.name)
+        && Objects.equals(this.from, that.from);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.name, this.from);
     }
     
 }
