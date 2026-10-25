@@ -3,7 +3,7 @@
 RAVIKOODI_HOME="$(dirname ${BASH_SOURCE[0]})"
 JAVA_HOME=$RAVIKOODI_HOME/jre
 
-JAVA_FLAGS="-server -Xverify:none -Xms512m -Xmx1024m --add-opens=java.base/java.util=ALL-UNNAMED"
+JAVA_FLAGS="-Xms512m -Xmx1024m --add-opens=java.base/java.util=ALL-UNNAMED"
 
 JAVA_RUN=$JAVA_HOME/bin/java
 

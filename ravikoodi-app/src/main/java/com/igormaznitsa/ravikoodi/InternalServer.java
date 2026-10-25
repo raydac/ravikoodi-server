@@ -2,15 +2,17 @@ package com.igormaznitsa.ravikoodi;
 
 import com.igormaznitsa.ravikoodi.screencast.PreemptiveBuffer;
 import com.sun.net.httpserver.Headers;
+import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -111,9 +113,10 @@ public class InternalServer {
     }
   }
 
-  private void addStandardHeaders(final Headers headers, final UploadFileRecord record, final boolean head) {
+  private static void addStandardHeaders(final Headers headers, final UploadFileRecord record,
+                                         final long contentLength, final boolean head) {
     headers.set("Content-Type", record.getMimeType());
-    headers.set("Content-Length", Long.toString(record.getFile().toFile().length()));
+    headers.set("Content-Length", Long.toString(contentLength));
     headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
     headers.set("Pragma", "no-cache");
     headers.set("Content-Transfer-Encoding", "binary");
@@ -137,6 +140,108 @@ public class InternalServer {
       response.set("Keep-Alive", "max");
     }
     response.set("Accept-Ranges", "none");
+  }
+
+  // Pass -1 so the server sends no body; 0 would select chunked encoding.
+  private static void sendWithoutBody(final HttpExchange exchange, final int status)
+      throws IOException {
+    exchange.sendResponseHeaders(status, -1);
+  }
+
+  private static int statusOf(final HttpRange range) {
+    return range.coversEntireContent() ? 200 : 206;
+  }
+
+  private static int statusForOpenFailure(final IOException failure) {
+    if (failure instanceof FileNotFoundException || failure instanceof NoSuchFileException) {
+      return 404;
+    }
+    return 500;
+  }
+
+  private static void rejectUnsatisfiable(final HttpExchange exchange, final HttpRange range)
+      throws IOException {
+    LOGGER.info("Unsatisfiable range {}", range);
+    final Headers headers = exchange.getResponseHeaders();
+    headers.set("Accept-Ranges", "bytes");
+    headers.set("Content-Range", range.toStringForHeader());
+    sendWithoutBody(exchange, 416);
+  }
+
+  private static void writeSuccessHeaders(final HttpExchange exchange,
+                                          final UploadFileRecord record, final HttpRange range,
+                                          final boolean head) {
+    addStandardHeaders(exchange.getResponseHeaders(), record, range.getLength(), head);
+    if (!range.coversEntireContent()) {
+      exchange.getResponseHeaders().set("Content-Range", range.toStringForHeader());
+    }
+  }
+
+  static void respondWithPayload(final HttpExchange exchange, final UploadFileRecord record)
+      throws IOException {
+    final String method = exchange.getRequestMethod();
+    final boolean head = "head".equalsIgnoreCase(method);
+    if (!head && !"get".equalsIgnoreCase(method)) {
+      sendWithoutBody(exchange, 400);
+      return;
+    }
+
+    final HttpRange range;
+    try {
+      range =
+          new HttpRange(exchange.getRequestHeaders().getFirst("Range"), record.getPayloadSize());
+    } catch (final IOException ex) {
+      LOGGER.warn("Can't read payload size for {}", record, ex);
+      sendWithoutBody(exchange, statusForOpenFailure(ex));
+      return;
+    }
+    if (range.isUnsatisfiable()) {
+      rejectUnsatisfiable(exchange, range);
+      return;
+    }
+
+    if (!range.coversEntireContent()) {
+      LOGGER.info("Partial request {} {}", record, range);
+    }
+
+    if (head || range.getLength() == 0L) {
+      writeSuccessHeaders(exchange, record, range, head);
+      sendWithoutBody(exchange, statusOf(range));
+      return;
+    }
+
+    try (InputStream in = record.openFrom(range.getStart())) {
+      writeSuccessHeaders(exchange, record, range, false);
+      LOGGER.info("Start sending {} range {}, length {}", record, range, range.getLength());
+      exchange.sendResponseHeaders(statusOf(range), range.getLength());
+      writeRange(in, exchange.getResponseBody(), range);
+      LOGGER.info("Complete sending {} range {}", record, range);
+    } catch (final IOException ex) {
+      if (exchange.getResponseCode() >= 0) {
+        LOGGER.info("Playback connection closed for {}: {}", record, ex.toString());
+        return;
+      }
+      LOGGER.error("Can't read {}", record, ex);
+      sendWithoutBody(exchange, statusForOpenFailure(ex));
+    }
+  }
+
+  private static void writeRange(final InputStream in, final OutputStream out,
+                                 final HttpRange range) throws IOException {
+    final byte[] buffer = new byte[64 * 1024];
+    long remaining = range.getLength();
+    while (remaining > 0L && !Thread.currentThread().isInterrupted()) {
+      final int read = in.read(buffer, 0, (int) Math.min(buffer.length, remaining));
+      if (read < 0) {
+        break;
+      }
+      out.write(buffer, 0, read);
+      out.flush();
+      remaining -= read;
+    }
+    if (remaining > 0L) {
+      LOGGER.warn("Short payload for {}, {} bytes left unread", range, remaining);
+    }
   }
 
   public boolean isScreencastFlowActive() {
@@ -200,6 +305,9 @@ public class InternalServer {
               LOGGER.info("Screen cast retranslation ended, waitDataEnd={}, thread interrupted = {}", waitDataEndDetected, Thread.currentThread().isInterrupted());
               listeners.forEach(x -> x.onScreencastEnded(InternalServer.this));
             }
+          } else {
+            LOGGER.warn("Unsupported screen cast method {}", exchange.getRequestMethod());
+            exchange.sendResponseHeaders(405, -1);
           }
         } else if (PATH_VFILES.equals(pathPrePreLast) || PATH_RESOURCES.equals(pathPreLast)) {
 
@@ -229,53 +337,9 @@ public class InternalServer {
           } else {
             record.incUploadsCounter();
             try {
-              if ("head".equalsIgnoreCase(exchange.getRequestMethod())) {
-                addStandardHeaders(exchange.getResponseHeaders(), record, true);
-                exchange.sendResponseHeaders(200, -1);
-              } else if ("get".equalsIgnoreCase(exchange.getRequestMethod())) {
-
-                final long fileSize = record.getPredefinedData().isPresent() ? record.getPredefinedData().get().length : Files.size(record.getFile());
-                final HttpRange range = new HttpRange(exchange.getRequestHeaders().getFirst("Range"), fileSize);
-
-                addStandardHeaders(exchange.getResponseHeaders(), record, false);
-
-                if (range.getStart() > fileSize || range.getStart() > range.getEnd() || range.getEnd() > fileSize) {
-                  exchange.sendResponseHeaders(416,  -1);
-                  return;
-                } else if (range.getStart() > 0 || range.getEnd() < (fileSize - 1)) {
-                  LOGGER.info("Request for {}, range {}", uid, range);
-                  exchange.getResponseHeaders().set("Content-Range", range.toStringForHeader());
-                  exchange.sendResponseHeaders(206,range.getLength());
-                } else {
-                  exchange.sendResponseHeaders(200, fileSize);
-                }
-
-                final OutputStream out = exchange.getResponseBody();
-                final byte[] buffer = new byte[64 * 1024];
-
-                try (final InputStream in = record.getAsInputStream()) {
-                  long pos = range.getStart();
-
-                  if (pos != in.skip(pos)) {
-                    exchange.sendResponseHeaders(500, -1);
-                    LOGGER.error("Can't skip {} bytes in file", pos);
-                    return;
-                  }
-
-                  LOGGER.info("Start sending data for {} ({}) to device, requested range = {}, expected length = {} bytes", uid, record.getFile(), range, range.getLength());
-
-                  while (pos <= range.getEnd() && !Thread.currentThread().isInterrupted()) {
-                    final long rangeEndPos = range.getEnd() - pos + 1;
-                    final int read = in.read(buffer, 0, Math.min(rangeEndPos > (long)Integer.MAX_VALUE ? buffer.length : (int) rangeEndPos, buffer.length));
-                    if (read < 0) {
-                      break;
-                    }
-                    out.write(buffer, 0, read);
-                    out.flush();
-                    pos += read;
-                  }
-                }
-                LOGGER.info("Complete '{}' writing in range {}", uid, range);
+              final String method = exchange.getRequestMethod();
+              if ("head".equalsIgnoreCase(method) || "get".equalsIgnoreCase(method)) {
+                respondWithPayload(exchange, record);
               } else {
                 LOGGER.warn("Bad request : {}", exchange.getRequestURI());
                 exchange.sendResponseHeaders(400, -1);

@@ -17,11 +17,14 @@ package com.igormaznitsa.ravikoodi;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -52,13 +55,56 @@ public final class UploadFileRecord {
     public void setValidUntil(final long time){
         this.validUntil.set(time);
     }
-    
+
+  public long getPayloadSize() throws IOException {
+    if (this.predefinedData != null) {
+      return this.predefinedData.length;
+    }
+    return Files.size(this.file);
+  }
+
     public InputStream getAsInputStream() throws IOException {
-        if (this.predefinedData == null) {
-            final long length = Files.size(this.file);
-            return new BufferedInputStream(new FileInputStream(this.file.toFile()), (int) Math.min(262144L, length));
-        } else {
-            return new ByteArrayInputStream(this.predefinedData);
+      return this.openFrom(0L);
+    }
+
+  public InputStream openFrom(final long offset) throws IOException {
+    if (offset < 0L) {
+      throw new IllegalArgumentException("offset must not be negative");
+    }
+    if (this.predefinedData != null) {
+      return this.openPredefined(offset);
+    }
+    return this.openFile(offset);
+  }
+
+  private InputStream openPredefined(final long offset) throws EOFException {
+    if (offset > this.predefinedData.length) {
+      throw new EOFException("offset past payload");
+    }
+    final ByteArrayInputStream in = new ByteArrayInputStream(this.predefinedData);
+    if (offset > 0L && in.skip(offset) != offset) {
+      throw new EOFException("offset past payload");
+    }
+    return in;
+  }
+
+  private InputStream openFile(final long offset) throws IOException {
+    final FileChannel channel = FileChannel.open(this.file, StandardOpenOption.READ);
+    boolean transferred = false;
+    try {
+      if (offset > channel.size()) {
+        throw new EOFException("offset past payload");
+      }
+      channel.position(offset);
+      final int bufferSize = (int) Math.min(262144L, Math.max(1L, channel.size() - offset));
+      final InputStream stream =
+          new BufferedInputStream(Channels.newInputStream(channel), bufferSize);
+      transferred = true;
+      return stream;
+    } finally {
+      if (!transferred) {
+        channel.close();
+      }
         }
     }
 

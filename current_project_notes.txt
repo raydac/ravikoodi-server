@@ -1,0 +1,33 @@
+## 1. Implementation Progress
+- HTTP byte-range serving for `/vfile` and `/res` now follows RFC 9110 positioning: open ranges, suffix ranges, end past EOF clamped, unsatisfiable ranges return 416 with `Content-Range: bytes */size`.
+- Playback reads start at the requested offset through `FileChannel` (or the in-memory payload), and `Content-Length` is the selected slice, including HEAD and clipboard/in-memory payloads.
+- Covered by `HttpRangeTest` and `InternalServerRangeTest`.
+
+## 2. Architecture & Technical Discoveries
+- Kodi seeks by sending `Range: bytes=<offset>-` (sometimes a closed or overshot end) to the embedded `com.sun.net.httpserver` handler in `InternalServer`.
+- `sendResponseHeaders(status, length)` overwrites `Content-Length` on GET. HEAD does not: the header must be set to the selected length and the length argument must be `-1`. Passing `0` selects chunked encoding.
+- In-memory payloads (`UploadFileRecord.predefinedData`, used for the clipboard screenshot) are the body. `File.length()` on the placeholder path is not the size.
+- `Accept-Ranges: bytes` is what tells the player that seeking is allowed. Screencast stays `Accept-Ranges: none`.
+
+## 3. Technical Debt & Refactoring
+- `MainFrame.startPlaying` registers a file, then `KodiComm.openFileThroughRegistry` registers a second id and that second URL is what Kodi opens. On failure only the first id is unregistered.
+- `.webm` is mapped to `video/x-ms-wmv` in `MimeTypes`.
+- File-handler path parsing is still string-split on the raw request URI.
+
+## 4. Current Work In Progress
+- Byte-range positioning fix is in the working tree and tested. Not committed.
+
+## 5. Known Issues & Limitations
+- Multipart ranges (`bytes=0-1,2-3`) are ignored and the whole payload is returned. One range is what players send for seek.
+- A short read after headers are sent still ends the connection early; the player must retry.
+
+## 6. Open Questions & Pending Decisions
+- None for the range fix.
+
+## 7. Useful References
+- `mvn22 -pl ravikoodi-app -am test -Dtest=HttpRangeTest,InternalServerRangeTest`
+- RFC 9110 byte ranges: open `bytes=start-`, closed `bytes=start-end`, suffix `bytes=-n`, unsatisfiable `416` + `bytes */size`.
+
+## 8. User Advice and Recommendations
+- Use `mvn22`, not `mvn`.
+- Changelog entries are user-facing and live under `1.2.2 (SNAPSHOT)` in `changelog.txt`.
