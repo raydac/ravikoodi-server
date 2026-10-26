@@ -117,7 +117,6 @@ public class KodiService {
       case HOME -> makeJsonRpcClient().invoke("Input.Home", new Empty(), String.class);
       case SEND_TEXT -> makeJsonRpcClient().invoke("Input.SendText",
           new Text(args.length > 0 ? String.valueOf(args[0]) : ""), String.class);
-      default -> throw new Error("Unexpected event " + event);
     };
   }
 

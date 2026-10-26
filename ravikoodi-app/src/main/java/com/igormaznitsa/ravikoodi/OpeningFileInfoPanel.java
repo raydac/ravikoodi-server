@@ -1,17 +1,25 @@
 package com.igormaznitsa.ravikoodi;
 
+import static java.util.Objects.requireNonNull;
+
 import java.awt.Color;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.jspecify.annotations.NonNull;
 
-public final class OpeningFileInfoPanel extends javax.swing.JPanel {
+public final class OpeningFileInfoPanel extends JPanel {
 
-  private javax.swing.JLabel labelMain;
-  private javax.swing.JPanel panelContent;
+  private JLabel labelMain;
+  private JPanel panelContent;
 
   public OpeningFileInfoPanel() {
     initComponents();
@@ -67,27 +75,28 @@ public final class OpeningFileInfoPanel extends javax.swing.JPanel {
 
   @SuppressWarnings("unchecked")
   private void initComponents() {
-    java.awt.GridBagConstraints gridBagConstraints;
+    GridBagConstraints gridBagConstraints;
 
-    panelContent = new javax.swing.JPanel();
-    labelMain = new javax.swing.JLabel();
+    panelContent = new JPanel();
+    labelMain = new JLabel();
 
-    setBackground(new java.awt.Color(0, 0, 0));
-    setLayout(new java.awt.GridBagLayout());
+    setBackground(new Color(0, 0, 0));
+    setLayout(new GridBagLayout());
 
-    panelContent.setLayout(new java.awt.GridBagLayout());
+    panelContent.setLayout(new GridBagLayout());
 
-    labelMain.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/loader.gif")));
+    labelMain.setIcon(new ImageIcon(
+        requireNonNull(getClass().getResource("/icons/loader.gif"))));
     labelMain.setText("...");
-    labelMain.setBorder(javax.swing.BorderFactory.createCompoundBorder(
-        javax.swing.BorderFactory.createEtchedBorder(),
-        javax.swing.BorderFactory.createEmptyBorder(16, 16, 16, 16)));
-    gridBagConstraints = new java.awt.GridBagConstraints();
+    labelMain.setBorder(BorderFactory.createCompoundBorder(
+        BorderFactory.createEtchedBorder(),
+        BorderFactory.createEmptyBorder(16, 16, 16, 16)));
+    gridBagConstraints = new GridBagConstraints();
     gridBagConstraints.gridx = 0;
     gridBagConstraints.gridy = 0;
     panelContent.add(labelMain, gridBagConstraints);
 
-    gridBagConstraints = new java.awt.GridBagConstraints();
+    gridBagConstraints = new GridBagConstraints();
     gridBagConstraints.gridx = 1;
     gridBagConstraints.gridy = 1;
     add(panelContent, gridBagConstraints);

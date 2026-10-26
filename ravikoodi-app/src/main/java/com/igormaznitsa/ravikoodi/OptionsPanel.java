@@ -9,6 +9,13 @@ import com.igormaznitsa.ravikoodi.screencast.JavaSoundAdapter;
 import com.igormaznitsa.ravikoodi.ytloader.YtMode;
 import com.igormaznitsa.ravikoodi.ytloader.YtQuality;
 import com.igormaznitsa.ravikoodi.ytloader.YtVideoType;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.net.MalformedURLException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -21,9 +28,22 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JSpinner;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
@@ -37,69 +57,69 @@ public class OptionsPanel extends javax.swing.JPanel {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OptionsPanel.class);
     private final Data currentData;
-    private javax.swing.JButton buttonTestKodiConnection;
-    private javax.swing.JCheckBox checkGrabCursor;
-    private javax.swing.JCheckBox checkKodiSsl;
-    private javax.swing.JCheckBox checkServerSsl;
-    private javax.swing.JComboBox<YtMode> comboBoxYoutubeMode;
-    private javax.swing.JComboBox<YtQuality> comboBoxYoutubePreferredQuality;
-    private javax.swing.JComboBox<YtVideoType> comboBoxYoutubeRequiredFormat;
-    private javax.swing.JComboBox<String> comboGrabberType;
-    private javax.swing.JComboBox<String> comboInterface;
-    private javax.swing.JComboBox<String> comboQuality;
-    private javax.swing.JComboBox<String> comboSoundLine;
-    private javax.swing.JComboBox<String> comboSpeedProfile;
-    private javax.swing.Box.Filler filler1;
-    private javax.swing.Box.Filler filler2;
-    private javax.swing.Box.Filler filler3;
-    private javax.swing.Box.Filler filler4;
-    private javax.swing.Box.Filler filler5;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel10;
-    private javax.swing.JLabel jLabel11;
-    private javax.swing.JLabel jLabel12;
-    private javax.swing.JLabel jLabel13;
-    private javax.swing.JLabel jLabel14;
-    private javax.swing.JLabel jLabel15;
-    private javax.swing.JLabel jLabel16;
-    private javax.swing.JLabel jLabel17;
-    private javax.swing.JLabel jLabel18;
-    private javax.swing.JLabel jLabel19;
-    private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
-    private javax.swing.JLabel jLabel8;
-    private javax.swing.JLabel jLabel9;
-    private javax.swing.JLabel labelKodiAddress;
-    private javax.swing.JLabel labelKodiName;
-    private javax.swing.JLabel labelKodiPassword;
-    private javax.swing.JLabel labelKodiPort;
-    private javax.swing.JLabel labelKodiRpcTimeout;
-    private javax.swing.JLabel labelScaleUi;
-    private javax.swing.JPanel panelGeneral;
-    private javax.swing.JPanel panelKodiOptions;
-    private javax.swing.JPanel panelScreenCast;
-    private javax.swing.JPanel panelServerOptions;
-    private javax.swing.JSpinner spinnerBandwidth;
-    private javax.swing.JSpinner spinnerCrf;
-    private javax.swing.JSpinner spinnerGrabThreads;
-    private javax.swing.JSpinner spinnerKodiPort;
-    private javax.swing.JSpinner spinnerRpcTimeout;
-    private javax.swing.JSpinner spinnerScaleUi;
-    private javax.swing.JSpinner spinnerServerPort;
-    private javax.swing.JSpinner spinnerSnapsPerSecond;
-    private javax.swing.JSpinner spinnerSoundOffset;
-    private javax.swing.JPanel tabGeneral;
-    private javax.swing.JTabbedPane tabPanel;
-    private javax.swing.JPanel tabScreencast;
-    private javax.swing.JPanel tabYoutube;
-    private javax.swing.JTextField textFieldFfmpeg;
-    private javax.swing.JTextField textFieldKodiAddress;
-    private javax.swing.JTextField textFieldKodiName;
-    private javax.swing.JTextField textFieldKodiPassword;
+    private JButton buttonTestKodiConnection;
+    private JCheckBox checkGrabCursor;
+    private JCheckBox checkKodiSsl;
+    private JCheckBox checkServerSsl;
+    private JComboBox<YtMode> comboBoxYoutubeMode;
+    private JComboBox<YtQuality> comboBoxYoutubePreferredQuality;
+    private JComboBox<YtVideoType> comboBoxYoutubeRequiredFormat;
+    private JComboBox<String> comboGrabberType;
+    private JComboBox<String> comboInterface;
+    private JComboBox<String> comboQuality;
+    private JComboBox<String> comboSoundLine;
+    private JComboBox<String> comboSpeedProfile;
+    private Box.Filler filler1;
+    private Box.Filler filler2;
+    private Box.Filler filler3;
+    private Box.Filler filler4;
+    private Box.Filler filler5;
+    private JLabel jLabel1;
+    private JLabel jLabel10;
+    private JLabel jLabel11;
+    private JLabel jLabel12;
+    private JLabel jLabel13;
+    private JLabel jLabel14;
+    private JLabel jLabel15;
+    private JLabel jLabel16;
+    private JLabel jLabel17;
+    private JLabel jLabel18;
+    private JLabel jLabel19;
+    private JLabel jLabel2;
+    private JLabel jLabel3;
+    private JLabel jLabel4;
+    private JLabel jLabel5;
+    private JLabel jLabel6;
+    private JLabel jLabel7;
+    private JLabel jLabel8;
+    private JLabel jLabel9;
+    private JLabel labelKodiAddress;
+    private JLabel labelKodiName;
+    private JLabel labelKodiPassword;
+    private JLabel labelKodiPort;
+    private JLabel labelKodiRpcTimeout;
+    private JLabel labelScaleUi;
+    private JPanel panelGeneral;
+    private JPanel panelKodiOptions;
+    private JPanel panelScreenCast;
+    private JPanel panelServerOptions;
+    private JSpinner spinnerBandwidth;
+    private JSpinner spinnerCrf;
+    private JSpinner spinnerGrabThreads;
+    private JSpinner spinnerKodiPort;
+    private JSpinner spinnerRpcTimeout;
+    private JSpinner spinnerScaleUi;
+    private JSpinner spinnerServerPort;
+    private JSpinner spinnerSnapsPerSecond;
+    private JSpinner spinnerSoundOffset;
+    private JPanel tabGeneral;
+    private JTabbedPane tabPanel;
+    private JPanel tabScreencast;
+    private JPanel tabYoutube;
+    private JTextField textFieldFfmpeg;
+    private JTextField textFieldKodiAddress;
+    private JTextField textFieldKodiName;
+    private JTextField textFieldKodiPassword;
 
     public OptionsPanel(@NonNull final Data data, @NonNull final JavaSoundAdapter soundAdapter) {
         this.currentData = data;
@@ -200,178 +220,178 @@ public class OptionsPanel extends javax.swing.JPanel {
 
     @SuppressWarnings("unchecked")
     private void initComponents() {
-        java.awt.GridBagConstraints gridBagConstraints;
+        GridBagConstraints gridBagConstraints;
 
-        tabPanel = new javax.swing.JTabbedPane();
-        tabGeneral = new javax.swing.JPanel();
-        panelGeneral = new javax.swing.JPanel();
-        labelScaleUi = new javax.swing.JLabel();
-        spinnerScaleUi = new javax.swing.JSpinner();
+        tabPanel = new JTabbedPane();
+        tabGeneral = new JPanel();
+        panelGeneral = new JPanel();
+        labelScaleUi = new JLabel();
+        spinnerScaleUi = new JSpinner();
         filler1 =
-            new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0),
-                new java.awt.Dimension(32767, 0));
-        jLabel15 = new javax.swing.JLabel();
-        panelServerOptions = new javax.swing.JPanel();
-        jLabel1 = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
-        spinnerServerPort = new javax.swing.JSpinner();
-        comboInterface = new javax.swing.JComboBox<>();
+            new Box.Filler(new Dimension(0, 0), new Dimension(0, 0),
+                new Dimension(32767, 0));
+        jLabel15 = new JLabel();
+        panelServerOptions = new JPanel();
+        jLabel1 = new JLabel();
+        jLabel2 = new JLabel();
+        spinnerServerPort = new JSpinner();
+        comboInterface = new JComboBox<>();
         filler2 =
-            new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0),
-                new java.awt.Dimension(32767, 0));
-        jLabel3 = new javax.swing.JLabel();
-        checkServerSsl = new javax.swing.JCheckBox();
-        panelKodiOptions = new javax.swing.JPanel();
-        labelKodiAddress = new javax.swing.JLabel();
-        labelKodiPort = new javax.swing.JLabel();
-        labelKodiName = new javax.swing.JLabel();
-        labelKodiPassword = new javax.swing.JLabel();
-        textFieldKodiAddress = new javax.swing.JTextField();
-        textFieldKodiName = new javax.swing.JTextField();
-        textFieldKodiPassword = new javax.swing.JTextField();
-        spinnerKodiPort = new javax.swing.JSpinner();
-        buttonTestKodiConnection = new javax.swing.JButton();
-        jLabel4 = new javax.swing.JLabel();
-        checkKodiSsl = new javax.swing.JCheckBox();
-        labelKodiRpcTimeout = new javax.swing.JLabel();
-        spinnerRpcTimeout = new javax.swing.JSpinner();
+            new Box.Filler(new Dimension(0, 0), new Dimension(0, 0),
+                new Dimension(32767, 0));
+        jLabel3 = new JLabel();
+        checkServerSsl = new JCheckBox();
+        panelKodiOptions = new JPanel();
+        labelKodiAddress = new JLabel();
+        labelKodiPort = new JLabel();
+        labelKodiName = new JLabel();
+        labelKodiPassword = new JLabel();
+        textFieldKodiAddress = new JTextField();
+        textFieldKodiName = new JTextField();
+        textFieldKodiPassword = new JTextField();
+        spinnerKodiPort = new JSpinner();
+        buttonTestKodiConnection = new JButton();
+        jLabel4 = new JLabel();
+        checkKodiSsl = new JCheckBox();
+        labelKodiRpcTimeout = new JLabel();
+        spinnerRpcTimeout = new JSpinner();
         filler3 =
-            new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0),
-                new java.awt.Dimension(0, 32767));
-        tabScreencast = new javax.swing.JPanel();
-        panelScreenCast = new javax.swing.JPanel();
-        jLabel5 = new javax.swing.JLabel();
-        textFieldFfmpeg = new javax.swing.JTextField();
-        jLabel6 = new javax.swing.JLabel();
-        spinnerSnapsPerSecond = new javax.swing.JSpinner();
-        jLabel7 = new javax.swing.JLabel();
-        checkGrabCursor = new javax.swing.JCheckBox();
-        jLabel8 = new javax.swing.JLabel();
-        comboSoundLine = new javax.swing.JComboBox<>();
-        jLabel9 = new javax.swing.JLabel();
-        spinnerBandwidth = new javax.swing.JSpinner();
-        jLabel10 = new javax.swing.JLabel();
-        comboQuality = new javax.swing.JComboBox<>();
-        jLabel11 = new javax.swing.JLabel();
-        spinnerSoundOffset = new javax.swing.JSpinner();
-        jLabel12 = new javax.swing.JLabel();
-        comboSpeedProfile = new javax.swing.JComboBox<>();
-        jLabel13 = new javax.swing.JLabel();
-        comboGrabberType = new javax.swing.JComboBox<>();
-        jLabel14 = new javax.swing.JLabel();
-        spinnerGrabThreads = new javax.swing.JSpinner();
-        jLabel16 = new javax.swing.JLabel();
-        spinnerCrf = new javax.swing.JSpinner();
-        tabYoutube = new javax.swing.JPanel();
-        jLabel17 = new javax.swing.JLabel();
-        jLabel18 = new javax.swing.JLabel();
-        jLabel19 = new javax.swing.JLabel();
+            new Box.Filler(new Dimension(0, 0), new Dimension(0, 0),
+                new Dimension(0, 32767));
+        tabScreencast = new JPanel();
+        panelScreenCast = new JPanel();
+        jLabel5 = new JLabel();
+        textFieldFfmpeg = new JTextField();
+        jLabel6 = new JLabel();
+        spinnerSnapsPerSecond = new JSpinner();
+        jLabel7 = new JLabel();
+        checkGrabCursor = new JCheckBox();
+        jLabel8 = new JLabel();
+        comboSoundLine = new JComboBox<>();
+        jLabel9 = new JLabel();
+        spinnerBandwidth = new JSpinner();
+        jLabel10 = new JLabel();
+        comboQuality = new JComboBox<>();
+        jLabel11 = new JLabel();
+        spinnerSoundOffset = new JSpinner();
+        jLabel12 = new JLabel();
+        comboSpeedProfile = new JComboBox<>();
+        jLabel13 = new JLabel();
+        comboGrabberType = new JComboBox<>();
+        jLabel14 = new JLabel();
+        spinnerGrabThreads = new JSpinner();
+        jLabel16 = new JLabel();
+        spinnerCrf = new JSpinner();
+        tabYoutube = new JPanel();
+        jLabel17 = new JLabel();
+        jLabel18 = new JLabel();
+        jLabel19 = new JLabel();
         filler4 =
-            new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0),
-                new java.awt.Dimension(0, 32767));
-        comboBoxYoutubePreferredQuality = new javax.swing.JComboBox<>();
-        comboBoxYoutubeRequiredFormat = new javax.swing.JComboBox<>();
+            new Box.Filler(new Dimension(0, 0), new Dimension(0, 0),
+                new Dimension(0, 32767));
+        comboBoxYoutubePreferredQuality = new JComboBox<>();
+        comboBoxYoutubeRequiredFormat = new JComboBox<>();
         filler5 =
-            new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0),
-                new java.awt.Dimension(32767, 0));
-        comboBoxYoutubeMode = new javax.swing.JComboBox<>();
+            new Box.Filler(new Dimension(0, 0), new Dimension(0, 0),
+                new Dimension(32767, 0));
+        comboBoxYoutubeMode = new JComboBox<>();
 
-        setLayout(new java.awt.BorderLayout());
+        setLayout(new BorderLayout());
 
-        tabGeneral.setLayout(new java.awt.GridBagLayout());
+        tabGeneral.setLayout(new GridBagLayout());
 
         panelGeneral.setBorder(javax.swing.BorderFactory.createTitledBorder("UI"));
-        panelGeneral.setLayout(new java.awt.GridBagLayout());
+        panelGeneral.setLayout(new GridBagLayout());
 
         labelScaleUi.setText("Scale UI: ");
         labelScaleUi.setToolTipText("Zoom all interface elements");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelGeneral.add(labelScaleUi, gridBagConstraints);
 
-        spinnerScaleUi.setModel(new javax.swing.SpinnerNumberModel(1, 0, 5, 1));
-        spinnerScaleUi.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+        spinnerScaleUi.setModel(new SpinnerNumberModel(1, 0, 5, 1));
+        spinnerScaleUi.addChangeListener(new ChangeListener() {
+            public void stateChanged(ChangeEvent evt) {
                 spinnerScaleUiStateChanged(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panelGeneral.add(spinnerScaleUi, gridBagConstraints);
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 1111.0;
         panelGeneral.add(filler1, gridBagConstraints);
 
-        jLabel15.setForeground(new java.awt.Color(255, 0, 0));
+        jLabel15.setForeground(new Color(255, 0, 0));
         jLabel15.setText(" Requires restart ");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 0;
         panelGeneral.add(jLabel15, gridBagConstraints);
 
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         tabGeneral.add(panelGeneral, gridBagConstraints);
 
         panelServerOptions.setBorder(javax.swing.BorderFactory.createTitledBorder("Local server"));
-        panelServerOptions.setLayout(new java.awt.GridBagLayout());
+        panelServerOptions.setLayout(new GridBagLayout());
 
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel1.setText("Host:");
         jLabel1.setToolTipText("Network interface to listen incoming connections");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelServerOptions.add(jLabel1, gridBagConstraints);
 
         jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel2.setText("Port:");
         jLabel2.setToolTipText("Port to listen incoming connections");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelServerOptions.add(jLabel2, gridBagConstraints);
 
-        spinnerServerPort.setModel(new javax.swing.SpinnerNumberModel(0, 0, 65535, 1));
+        spinnerServerPort.setModel(new SpinnerNumberModel(0, 0, 65535, 1));
         spinnerServerPort.setToolTipText("Local port, 0 means auto choice");
-        spinnerServerPort.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+        spinnerServerPort.addChangeListener(new ChangeListener() {
+            public void stateChanged(ChangeEvent evt) {
                 spinnerServerPortStateChanged(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelServerOptions.add(spinnerServerPort, gridBagConstraints);
 
-        comboInterface.setModel(new javax.swing.DefaultComboBoxModel<>(
+        comboInterface.setModel(new DefaultComboBoxModel<>(
             new String[] {"Item 1", "Item 2", "Item 3", "Item 4"}));
-        comboInterface.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+        comboInterface.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
                 comboInterfaceActionPerformed(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 1000.0;
         panelServerOptions.add(comboInterface, gridBagConstraints);
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.weightx = 1000.0;
@@ -379,173 +399,173 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         jLabel3.setText("Use SSL:");
         jLabel3.setToolTipText("If turned on then internal server will be working in SSL mode");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelServerOptions.add(jLabel3, gridBagConstraints);
 
         checkServerSsl.setToolTipText("Use HTTPS connectins");
-        checkServerSsl.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+        checkServerSsl.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
                 checkServerSslActionPerformed(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panelServerOptions.add(checkServerSsl, gridBagConstraints);
 
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = GridBagConstraints.NORTHWEST;
         tabGeneral.add(panelServerOptions, gridBagConstraints);
 
         panelKodiOptions.setBorder(
             javax.swing.BorderFactory.createTitledBorder("KODI HTTP control"));
-        panelKodiOptions.setLayout(new java.awt.GridBagLayout());
+        panelKodiOptions.setLayout(new GridBagLayout());
 
         labelKodiAddress.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         labelKodiAddress.setText("Address:");
         labelKodiAddress.setToolTipText("Network address of KODI device");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(labelKodiAddress, gridBagConstraints);
 
         labelKodiPort.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         labelKodiPort.setText("Port:");
         labelKodiPort.setToolTipText("Network port of KODI device");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(labelKodiPort, gridBagConstraints);
 
         labelKodiName.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         labelKodiName.setText("Name:");
         labelKodiName.setToolTipText("Login for KODI device");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(labelKodiName, gridBagConstraints);
 
-        labelKodiPassword.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        labelKodiPassword.setHorizontalAlignment(SwingConstants.RIGHT);
         labelKodiPassword.setText("Password:");
         labelKodiPassword.setToolTipText("Password for KODI device");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 4;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(labelKodiPassword, gridBagConstraints);
 
         textFieldKodiAddress.setToolTipText("Network address of KODI HTTP service");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(textFieldKodiAddress, gridBagConstraints);
 
         textFieldKodiName.setToolTipText(
             "Authorization name for connection, must be the same as in KODI HTTP service");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 3;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(textFieldKodiName, gridBagConstraints);
 
         textFieldKodiPassword.setToolTipText(
             "Authorization password, must be the same as defined for KODI HTTP service");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 4;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(textFieldKodiPassword, gridBagConstraints);
 
-        spinnerKodiPort.setModel(new javax.swing.SpinnerNumberModel(0, 0, 65535, 1));
+        spinnerKodiPort.setModel(new SpinnerNumberModel(0, 0, 65535, 1));
         spinnerKodiPort.setToolTipText("Port of KODI HTTP service");
-        spinnerKodiPort.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+        spinnerKodiPort.addChangeListener(new ChangeListener() {
+            public void stateChanged(ChangeEvent evt) {
                 spinnerKodiPortStateChanged(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(spinnerKodiPort, gridBagConstraints);
 
         buttonTestKodiConnection.setText("Test");
         buttonTestKodiConnection.setToolTipText("Do test request to KODI with provided parameters");
-        buttonTestKodiConnection.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+        buttonTestKodiConnection.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
                 buttonTestKodiConnectionActionPerformed(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 6;
         gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(buttonTestKodiConnection, gridBagConstraints);
 
-        jLabel4.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jLabel4.setHorizontalAlignment(SwingConstants.RIGHT);
         jLabel4.setText("Use SSL:");
         jLabel4.setToolTipText("If turned on then all requests to KODI device will be through SSL");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 5;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(jLabel4, gridBagConstraints);
 
         checkKodiSsl.setToolTipText("Make requests to KODI through HTTPS");
-        checkKodiSsl.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+        checkKodiSsl.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
                 checkKodiSslActionPerformed(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 5;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panelKodiOptions.add(checkKodiSsl, gridBagConstraints);
 
-        labelKodiRpcTimeout.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        labelKodiRpcTimeout.setHorizontalAlignment(SwingConstants.RIGHT);
         labelKodiRpcTimeout.setText("RPC Timeout (ms):");
         labelKodiRpcTimeout.setToolTipText("Timeout for network requests");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(labelKodiRpcTimeout, gridBagConstraints);
 
         spinnerRpcTimeout.setModel(
-            new javax.swing.SpinnerNumberModel(Long.valueOf(100L), Long.valueOf(1L),
+            new SpinnerNumberModel(Long.valueOf(100L), Long.valueOf(1L),
                 Long.valueOf(60000L), Long.valueOf(1L)));
         spinnerRpcTimeout.setToolTipText("Timeout allowed for RPC Json call to KODI player");
-        spinnerRpcTimeout.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+        spinnerRpcTimeout.addChangeListener(new ChangeListener() {
+            public void stateChanged(ChangeEvent evt) {
                 spinnerRpcTimeoutStateChanged(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelKodiOptions.add(spinnerRpcTimeout, gridBagConstraints);
 
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         tabGeneral.add(panelKodiOptions, gridBagConstraints);
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
         gridBagConstraints.weighty = 1000.0;
@@ -553,277 +573,277 @@ public class OptionsPanel extends javax.swing.JPanel {
 
         tabPanel.addTab("General", tabGeneral);
 
-        tabScreencast.setLayout(new java.awt.BorderLayout());
+        tabScreencast.setLayout(new BorderLayout());
 
-        panelScreenCast.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 8, 8, 8));
-        panelScreenCast.setLayout(new java.awt.GridBagLayout());
+        panelScreenCast.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        panelScreenCast.setLayout(new GridBagLayout());
 
-        jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jLabel5.setHorizontalAlignment(SwingConstants.RIGHT);
         jLabel5.setText("FFmpeg command:");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = GridBagConstraints.EAST;
         panelScreenCast.add(jLabel5, gridBagConstraints);
 
         textFieldFfmpeg.setColumns(32);
         textFieldFfmpeg.setToolTipText("FFmpeg execution path");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         gridBagConstraints.weightx = 1.0;
         panelScreenCast.add(textFieldFfmpeg, gridBagConstraints);
 
-        jLabel6.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jLabel6.setHorizontalAlignment(SwingConstants.RIGHT);
         jLabel6.setText("Frame rate:");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelScreenCast.add(jLabel6, gridBagConstraints);
 
-        spinnerSnapsPerSecond.setModel(new javax.swing.SpinnerNumberModel(1, 1, 50, 1));
-        spinnerSnapsPerSecond.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+        spinnerSnapsPerSecond.setModel(new SpinnerNumberModel(1, 1, 50, 1));
+        spinnerSnapsPerSecond.addChangeListener(new ChangeListener() {
+            public void stateChanged(ChangeEvent evt) {
                 spinnerSnapsPerSecondStateChanged(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 3;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panelScreenCast.add(spinnerSnapsPerSecond, gridBagConstraints);
 
-        jLabel7.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jLabel7.setHorizontalAlignment(SwingConstants.RIGHT);
         jLabel7.setText("Grab cursor:");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 9;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panelScreenCast.add(jLabel7, gridBagConstraints);
 
-        checkGrabCursor.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+        checkGrabCursor.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
                 checkGrabCursorActionPerformed(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 9;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panelScreenCast.add(checkGrabCursor, gridBagConstraints);
 
         jLabel8.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel8.setText("Sound source:");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 7;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panelScreenCast.add(jLabel8, gridBagConstraints);
 
-        comboSoundLine.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] {"none"}));
+        comboSoundLine.setModel(new DefaultComboBoxModel<>(new String[] {"none"}));
         comboSoundLine.setToolTipText("Line to grab sound data");
-        comboSoundLine.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+        comboSoundLine.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
                 comboSoundLineActionPerformed(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 7;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panelScreenCast.add(comboSoundLine, gridBagConstraints);
 
         jLabel9.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel9.setText("Bandwidth (Mbits):");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 4;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = GridBagConstraints.EAST;
         panelScreenCast.add(jLabel9, gridBagConstraints);
 
-        spinnerBandwidth.setModel(new javax.swing.SpinnerNumberModel(1, 1, 64, 1));
+        spinnerBandwidth.setModel(new SpinnerNumberModel(1, 1, 64, 1));
         spinnerBandwidth.setToolTipText("Preferred bandwidth for video (Megabits)");
-        spinnerBandwidth.addChangeListener(new javax.swing.event.ChangeListener() {
+        spinnerBandwidth.addChangeListener(new ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
                 spinnerBandwidthStateChanged(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 4;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panelScreenCast.add(spinnerBandwidth, gridBagConstraints);
 
         jLabel10.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel10.setText("Quality:");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 6;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelScreenCast.add(jLabel10, gridBagConstraints);
 
-        comboQuality.setModel(new javax.swing.DefaultComboBoxModel<>(
+        comboQuality.setModel(new DefaultComboBoxModel<>(
             new String[] {"Item 1", "Item 2", "Item 3", "Item 4"}));
-        comboQuality.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+        comboQuality.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
                 comboQualityActionPerformed(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 6;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panelScreenCast.add(comboQuality, gridBagConstraints);
 
         jLabel11.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel11.setText("Sound offset (sec):");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 8;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelScreenCast.add(jLabel11, gridBagConstraints);
 
         spinnerSoundOffset.setModel(
-            new javax.swing.SpinnerNumberModel(Float.valueOf(0.0f), Float.valueOf(-59.0f),
+            new SpinnerNumberModel(Float.valueOf(0.0f), Float.valueOf(-59.0f),
                 Float.valueOf(59.0f), Float.valueOf(0.01f)));
         spinnerSoundOffset.setToolTipText("Time-offset of sound");
-        spinnerSoundOffset.addChangeListener(new javax.swing.event.ChangeListener() {
+        spinnerSoundOffset.addChangeListener(new ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
                 spinnerSoundOffsetStateChanged(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 8;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panelScreenCast.add(spinnerSoundOffset, gridBagConstraints);
 
         jLabel12.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel12.setText("Codec profile:");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelScreenCast.add(jLabel12, gridBagConstraints);
 
-        comboSpeedProfile.setModel(new javax.swing.DefaultComboBoxModel<>(
+        comboSpeedProfile.setModel(new DefaultComboBoxModel<>(
             new String[] {"Item 1", "Item 2", "Item 3", "Item 4"}));
-        comboSpeedProfile.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+        comboSpeedProfile.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
                 comboSpeedProfileActionPerformed(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panelScreenCast.add(comboSpeedProfile, gridBagConstraints);
 
         jLabel13.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel13.setText("Grabber type:");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 5;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelScreenCast.add(jLabel13, gridBagConstraints);
 
-        comboGrabberType.setModel(new javax.swing.DefaultComboBoxModel<>(
+        comboGrabberType.setModel(new DefaultComboBoxModel<>(
             new String[] {"Item 1", "Item 2", "Item 3", "Item 4"}));
-        comboGrabberType.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+        comboGrabberType.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
                 comboGrabberTypeActionPerformed(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 5;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panelScreenCast.add(comboGrabberType, gridBagConstraints);
 
         jLabel14.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel14.setText("Threads:");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelScreenCast.add(jLabel14, gridBagConstraints);
 
-        spinnerGrabThreads.setModel(new javax.swing.SpinnerNumberModel(0, 0, 99, 1));
-        spinnerGrabThreads.addChangeListener(new javax.swing.event.ChangeListener() {
+        spinnerGrabThreads.setModel(new SpinnerNumberModel(0, 0, 99, 1));
+        spinnerGrabThreads.addChangeListener(new ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
                 spinnerGrabThreadsStateChanged(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panelScreenCast.add(spinnerGrabThreads, gridBagConstraints);
 
         jLabel16.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel16.setText("CRF:");
         jLabel16.setToolTipText(
             "Constant Rate Factor, if -1 - turn off, 0 - lossless, 51 - worst quality");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 10;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         panelScreenCast.add(jLabel16, gridBagConstraints);
 
-        spinnerCrf.setModel(new javax.swing.SpinnerNumberModel(-1, -1, 51, 1));
+        spinnerCrf.setModel(new SpinnerNumberModel(-1, -1, 51, 1));
         spinnerCrf.setToolTipText("");
-        spinnerCrf.addChangeListener(new javax.swing.event.ChangeListener() {
+        spinnerCrf.addChangeListener(new ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
                 spinnerCrfStateChanged(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 10;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.anchor = GridBagConstraints.NORTHWEST;
         panelScreenCast.add(spinnerCrf, gridBagConstraints);
 
-        tabScreencast.add(panelScreenCast, java.awt.BorderLayout.NORTH);
+        tabScreencast.add(panelScreenCast, BorderLayout.NORTH);
 
         tabPanel.addTab("Screencast", tabScreencast);
 
         tabYoutube.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 8, 8, 8));
-        tabYoutube.setLayout(new java.awt.GridBagLayout());
+        tabYoutube.setLayout(new GridBagLayout());
 
         jLabel17.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel17.setText("Youtube URL mode:");
         jLabel17.setToolTipText("Mode to process Youtube URL");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         tabYoutube.add(jLabel17, gridBagConstraints);
 
         jLabel18.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel18.setText("Preferred video quality:");
         jLabel18.setToolTipText("Preferred quality of opened Youtube video through direct link");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         tabYoutube.add(jLabel18, gridBagConstraints);
 
         jLabel19.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabel19.setText("Required video format:");
         jLabel19.setToolTipText("Required video format to be opened through direct link");
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         tabYoutube.add(jLabel19, gridBagConstraints);
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
         gridBagConstraints.weighty = 1000.0;
@@ -833,58 +853,58 @@ public class OptionsPanel extends javax.swing.JPanel {
             Arrays.stream(YtQuality.values()).filter(x -> x != YtQuality.UNKNOWN)
                 .toArray(x -> new YtQuality[x]))
         );
-        comboBoxYoutubePreferredQuality.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+        comboBoxYoutubePreferredQuality.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
                 comboBoxYoutubePreferredQualityActionPerformed(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         tabYoutube.add(comboBoxYoutubePreferredQuality, gridBagConstraints);
 
         comboBoxYoutubeRequiredFormat.setModel(new DefaultComboBoxModel<>(
             Arrays.stream(YtVideoType.values()).filter(x -> x != YtVideoType.UNKNOWN)
                 .toArray(x -> new YtVideoType[x]))
         );
-        comboBoxYoutubeRequiredFormat.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+        comboBoxYoutubeRequiredFormat.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
                 comboBoxYoutubeRequiredFormatActionPerformed(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         tabYoutube.add(comboBoxYoutubeRequiredFormat, gridBagConstraints);
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.weightx = 1000.0;
         tabYoutube.add(filler5, gridBagConstraints);
 
         comboBoxYoutubeMode.setModel(new DefaultComboBoxModel<>(YtMode.values()));
-        comboBoxYoutubeMode.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+        comboBoxYoutubeMode.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
                 comboBoxYoutubeModeActionPerformed(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         tabYoutube.add(comboBoxYoutubeMode, gridBagConstraints);
 
         tabPanel.addTab("Youtube", tabYoutube);
 
-        add(tabPanel, java.awt.BorderLayout.CENTER);
+        add(tabPanel, BorderLayout.CENTER);
     }
 
-    private void comboInterfaceActionPerformed(java.awt.event.ActionEvent evt) {
+    private void comboInterfaceActionPerformed(ActionEvent evt) {
         this.currentData.setServerHost(this.comboInterface.getSelectedItem().toString());
     }
 
@@ -896,7 +916,7 @@ public class OptionsPanel extends javax.swing.JPanel {
         this.currentData.setKodiPort((Integer) this.spinnerKodiPort.getValue());
     }
 
-    private void buttonTestKodiConnectionActionPerformed(java.awt.event.ActionEvent evt) {
+    private void buttonTestKodiConnectionActionPerformed(ActionEvent evt) {
         try {
             final KodiService testKodiService = new KodiService(
                 new KodiAddress(
@@ -920,15 +940,15 @@ public class OptionsPanel extends javax.swing.JPanel {
         }
     }
 
-    private void checkServerSslActionPerformed(java.awt.event.ActionEvent evt) {
+    private void checkServerSslActionPerformed(ActionEvent evt) {
         this.currentData.setServerSsl(this.checkServerSsl.isSelected());
     }
 
-    private void checkKodiSslActionPerformed(java.awt.event.ActionEvent evt) {
+    private void checkKodiSslActionPerformed(ActionEvent evt) {
         this.currentData.setKodiSsl(this.checkKodiSsl.isSelected());
     }
 
-    private void checkGrabCursorActionPerformed(java.awt.event.ActionEvent evt) {
+    private void checkGrabCursorActionPerformed(ActionEvent evt) {
         this.currentData.setGrabCursor(this.checkGrabCursor.isSelected());
     }
 
@@ -936,7 +956,7 @@ public class OptionsPanel extends javax.swing.JPanel {
         this.currentData.setSnapsPerSecond((Integer) this.spinnerSnapsPerSecond.getValue());
     }
 
-    private void comboSoundLineActionPerformed(java.awt.event.ActionEvent evt) {
+    private void comboSoundLineActionPerformed(ActionEvent evt) {
         this.currentData.setSoundInput(this.comboSoundLine.getSelectedIndex() == 0 ? "" :
             this.comboSoundLine.getSelectedItem().toString());
         if (this.comboSoundLine.getSelectedIndex() == 0) {
@@ -948,7 +968,7 @@ public class OptionsPanel extends javax.swing.JPanel {
         }
     }
 
-    private void comboQualityActionPerformed(java.awt.event.ActionEvent evt) {
+    private void comboQualityActionPerformed(ActionEvent evt) {
         this.currentData.setQuality(
             Quality.findForViewName(this.comboQuality.getSelectedItem().toString()));
     }
@@ -961,12 +981,12 @@ public class OptionsPanel extends javax.swing.JPanel {
         this.currentData.setSoundOffset((Float) this.spinnerSoundOffset.getValue());
     }
 
-    private void comboSpeedProfileActionPerformed(java.awt.event.ActionEvent evt) {
+    private void comboSpeedProfileActionPerformed(ActionEvent evt) {
         this.currentData.setSpeedProfile(
             SpeedProfile.findForViewName(this.comboSpeedProfile.getSelectedItem().toString()));
     }
 
-    private void comboGrabberTypeActionPerformed(java.awt.event.ActionEvent evt) {
+    private void comboGrabberTypeActionPerformed(ActionEvent evt) {
         this.currentData.setGrabberType(
             GrabberType.findForName(this.comboGrabberType.getSelectedItem().toString()));
     }
@@ -979,26 +999,26 @@ public class OptionsPanel extends javax.swing.JPanel {
         this.currentData.setCrf((Integer) this.spinnerCrf.getValue());
     }
 
-    private void spinnerScaleUiStateChanged(javax.swing.event.ChangeEvent evt) {
+    private void spinnerScaleUiStateChanged(ChangeEvent evt) {
         this.currentData.setScaleUi((Integer) this.spinnerScaleUi.getValue());
     }
 
-    private void spinnerRpcTimeoutStateChanged(javax.swing.event.ChangeEvent evt) {
+    private void spinnerRpcTimeoutStateChanged(ChangeEvent evt) {
         this.currentData.setJsonRequestTimeout(
             ((Number) this.spinnerRpcTimeout.getValue()).longValue());
     }
 
-    private void comboBoxYoutubePreferredQualityActionPerformed(java.awt.event.ActionEvent evt) {
+    private void comboBoxYoutubePreferredQualityActionPerformed(ActionEvent evt) {
         this.currentData.setYoutubePreferredQuality(
             (YtQuality) this.comboBoxYoutubePreferredQuality.getSelectedItem());
     }
 
-    private void comboBoxYoutubeRequiredFormatActionPerformed(java.awt.event.ActionEvent evt) {
+    private void comboBoxYoutubeRequiredFormatActionPerformed(ActionEvent evt) {
         this.currentData.setYoutubeRequiredFormat(
             (YtVideoType) this.comboBoxYoutubeRequiredFormat.getSelectedItem());
     }
 
-    private void comboBoxYoutubeModeActionPerformed(java.awt.event.ActionEvent evt) {
+    private void comboBoxYoutubeModeActionPerformed(ActionEvent evt) {
         this.currentData.setYoutubeOpenUrlMode((YtMode) this.comboBoxYoutubeMode.getSelectedItem());
         this.onUpdatedYoutubeMode();
     }

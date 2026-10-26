@@ -73,13 +73,21 @@ import javax.imageio.ImageIO;
 import javax.swing.ButtonGroup;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu.Separator;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JToggleButton;
+import javax.swing.JToolBar;
 import javax.swing.JTree;
 import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
@@ -146,37 +154,37 @@ public final class MainFrame extends javax.swing.JFrame
     private YtLinkExtractor youTubeLinkExtractor;
     private File lastSelectedFileFolder = null;
     private WeakReference<FfmpegWrapper> lastFFmpegWrapper;
-    private javax.swing.JButton buttonImageFromClipboard;
-    private javax.swing.JButton buttonOpenSelectedFileInSystem;
-    private javax.swing.JButton buttonPlaySelected;
-    private javax.swing.JButton buttonRefreshFolder;
-    private javax.swing.JButton buttonSelectFolder;
-    private javax.swing.JScrollPane fileTreeScrollPane;
-    private javax.swing.JPopupMenu.Separator jSeparator1;
-    private javax.swing.JToolBar jToolBar1;
-    private javax.swing.JSplitPane mainPanelSplit;
-    private javax.swing.JMenuItem menuAbout;
-    private javax.swing.JMenuItem menuExit;
-    private javax.swing.JMenu menuFile;
-    private javax.swing.JMenuItem menuFileOpenURL;
-    private javax.swing.JMenu menuHelp;
-    private javax.swing.JMenuItem menuHelpDonation;
-    private javax.swing.JMenu menuLookAndFeel;
-    private javax.swing.JMenuBar menuMain;
-    private javax.swing.JMenu menuMisc;
-    private javax.swing.JMenuItem menuMiscDecodeYoutubeUrl;
-    private javax.swing.JMenuItem menuOpenFile;
-    private javax.swing.JMenuItem menuOpenYoutubeLink;
-    private javax.swing.JMenuItem menuSelectFolder;
-    private javax.swing.JMenuItem menuStaticContent;
-    private javax.swing.JMenuItem menuTimers;
-    private javax.swing.JMenu menuTools;
-    private javax.swing.JMenuItem menuToolsOptions;
-    private javax.swing.JPanel panelFileTree;
-    private javax.swing.JPanel panelMain;
-    private javax.swing.JPanel panelPlayers;
-    private javax.swing.JToggleButton toggleButtonScreencast;
-    private javax.swing.JTree treeVideoFiles;
+    private JButton buttonImageFromClipboard;
+    private JButton buttonOpenSelectedFileInSystem;
+    private JButton buttonPlaySelected;
+    private JButton buttonRefreshFolder;
+    private JButton buttonSelectFolder;
+    private JScrollPane fileTreeScrollPane;
+    private Separator jSeparator1;
+    private JToolBar jToolBar1;
+    private JSplitPane mainPanelSplit;
+    private JMenuItem menuAbout;
+    private JMenuItem menuExit;
+    private JMenu menuFile;
+    private JMenuItem menuFileOpenURL;
+    private JMenu menuHelp;
+    private JMenuItem menuHelpDonation;
+    private JMenu menuLookAndFeel;
+    private JMenuBar menuMain;
+    private JMenu menuMisc;
+    private JMenuItem menuMiscDecodeYoutubeUrl;
+    private JMenuItem menuOpenFile;
+    private JMenuItem menuOpenYoutubeLink;
+    private JMenuItem menuSelectFolder;
+    private JMenuItem menuStaticContent;
+    private JMenuItem menuTimers;
+    private JMenu menuTools;
+    private JMenuItem menuToolsOptions;
+    private JPanel panelFileTree;
+    private JPanel panelMain;
+    private JPanel panelPlayers;
+    private JToggleButton toggleButtonScreencast;
+    private JTree treeVideoFiles;
 
     public MainFrame() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
@@ -684,37 +692,37 @@ public final class MainFrame extends javax.swing.JFrame
     @SuppressWarnings("unchecked")
     private void initComponents() {
 
-        mainPanelSplit = new javax.swing.JSplitPane();
-        panelFileTree = new javax.swing.JPanel();
-        fileTreeScrollPane = new javax.swing.JScrollPane();
-        treeVideoFiles = new javax.swing.JTree();
-        jToolBar1 = new javax.swing.JToolBar();
-        buttonSelectFolder = new javax.swing.JButton();
-        buttonRefreshFolder = new javax.swing.JButton();
-        buttonOpenSelectedFileInSystem = new javax.swing.JButton();
-        buttonImageFromClipboard = new javax.swing.JButton();
-        buttonPlaySelected = new javax.swing.JButton();
-        toggleButtonScreencast = new javax.swing.JToggleButton();
+        mainPanelSplit = new JSplitPane();
+        panelFileTree = new JPanel();
+        fileTreeScrollPane = new JScrollPane();
+        treeVideoFiles = new JTree();
+        jToolBar1 = new JToolBar();
+        buttonSelectFolder = new JButton();
+        buttonRefreshFolder = new JButton();
+        buttonOpenSelectedFileInSystem = new JButton();
+        buttonImageFromClipboard = new JButton();
+        buttonPlaySelected = new JButton();
+        toggleButtonScreencast = new JToggleButton();
         panelMain = this.makeMainPanel();
-        panelPlayers = new javax.swing.JPanel();
-        menuMain = new javax.swing.JMenuBar();
-        menuFile = new javax.swing.JMenu();
-        menuSelectFolder = new javax.swing.JMenuItem();
-        menuFileOpenURL = new javax.swing.JMenuItem();
-        menuOpenFile = new javax.swing.JMenuItem();
-        menuOpenYoutubeLink = new javax.swing.JMenuItem();
-        jSeparator1 = new javax.swing.JPopupMenu.Separator();
-        menuExit = new javax.swing.JMenuItem();
-        menuTools = new javax.swing.JMenu();
-        menuTimers = new javax.swing.JMenuItem();
-        menuStaticContent = new javax.swing.JMenuItem();
-        menuLookAndFeel = new javax.swing.JMenu();
-        menuToolsOptions = new javax.swing.JMenuItem();
-        menuMisc = new javax.swing.JMenu();
-        menuMiscDecodeYoutubeUrl = new javax.swing.JMenuItem();
-        menuHelp = new javax.swing.JMenu();
-        menuHelpDonation = new javax.swing.JMenuItem();
-        menuAbout = new javax.swing.JMenuItem();
+        panelPlayers = new JPanel();
+        menuMain = new JMenuBar();
+        menuFile = new JMenu();
+        menuSelectFolder = new JMenuItem();
+        menuFileOpenURL = new JMenuItem();
+        menuOpenFile = new JMenuItem();
+        menuOpenYoutubeLink = new JMenuItem();
+        jSeparator1 = new Separator();
+        menuExit = new JMenuItem();
+        menuTools = new JMenu();
+        menuTimers = new JMenuItem();
+        menuStaticContent = new JMenuItem();
+        menuLookAndFeel = new JMenu();
+        menuToolsOptions = new JMenuItem();
+        menuMisc = new JMenu();
+        menuMiscDecodeYoutubeUrl = new JMenuItem();
+        menuHelp = new JMenu();
+        menuHelpDonation = new JMenuItem();
+        menuAbout = new JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -902,7 +910,7 @@ public final class MainFrame extends javax.swing.JFrame
         pack();
     }
 
-    private void buttonSelectFolderActionPerformed(java.awt.event.ActionEvent evt) {
+    private void buttonSelectFolderActionPerformed(ActionEvent evt) {
         final JFileChooser chooser = new JFileChooser();
         chooser.setCurrentDirectory(new File(System.getProperty("user.home")));
         chooser.setDialogTitle("Select video folder");
@@ -916,7 +924,7 @@ public final class MainFrame extends javax.swing.JFrame
         }
     }
 
-    private void menuToolsOptionsActionPerformed(java.awt.event.ActionEvent evt) {
+    private void menuToolsOptionsActionPerformed(ActionEvent evt) {
         final OptionsPanel.Data container = new OptionsPanel.Data(this.preferences);
         if (JOptionPane.showConfirmDialog(this, Utils.makeOwningDialogResizable(
                 new JScrollPane(new OptionsPanel(container, this.soundAdapter))), "Options",
@@ -938,7 +946,7 @@ public final class MainFrame extends javax.swing.JFrame
         }
     }
 
-    private void buttonPlaySelectedActionPerformed(java.awt.event.ActionEvent evt) {
+    private void buttonPlaySelectedActionPerformed(ActionEvent evt) {
         final TreePath selected = this.treeVideoFiles.getSelectionPath();
         if (selected != null && selected.getLastPathComponent() instanceof ContentFile videoFile) {
             if (this.fileRegstry.isFileAtPlay(videoFile.getFilePath())) {
@@ -951,22 +959,22 @@ public final class MainFrame extends javax.swing.JFrame
         }
     }
 
-    private void buttonOpenSelectedFileInSystemActionPerformed(java.awt.event.ActionEvent evt) {
+    private void buttonOpenSelectedFileInSystemActionPerformed(ActionEvent evt) {
         final TreePath path = this.treeVideoFiles.getSelectionPath();
         if (path.getLastPathComponent() instanceof ContentFile) {
             openInSystem((ContentFile) path.getLastPathComponent());
         }
     }
 
-    private void menuExitActionPerformed(java.awt.event.ActionEvent evt) {
+    private void menuExitActionPerformed(ActionEvent evt) {
         this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
     }
 
-    private void menuSelectFolderActionPerformed(java.awt.event.ActionEvent evt) {
+    private void menuSelectFolderActionPerformed(ActionEvent evt) {
         this.buttonSelectFolder.doClick();
     }
 
-    private void buttonImageFromClipboardActionPerformed(java.awt.event.ActionEvent evt) {
+    private void buttonImageFromClipboardActionPerformed(ActionEvent evt) {
         try {
             final Image image =
                 (Image) Toolkit.getDefaultToolkit().getSystemClipboard()
@@ -1006,7 +1014,7 @@ public final class MainFrame extends javax.swing.JFrame
         }
     }
 
-    private void menuOpenFileActionPerformed(java.awt.event.ActionEvent evt) {
+    private void menuOpenFileActionPerformed(ActionEvent evt) {
         final File folder;
 
         if (this.lastSelectedFileFolder == null) {
@@ -1040,7 +1048,7 @@ public final class MainFrame extends javax.swing.JFrame
         }
     }
 
-    private void menuAboutActionPerformed(java.awt.event.ActionEvent evt) {
+    private void menuAboutActionPerformed(ActionEvent evt) {
         JOptionPane.showMessageDialog(this,
             new AboutPanel(this.donationController, this.buildProperties), "About",
             JOptionPane.PLAIN_MESSAGE);
@@ -1096,7 +1104,7 @@ public final class MainFrame extends javax.swing.JFrame
         });
     }
 
-    private void menuFileOpenURLActionPerformed(java.awt.event.ActionEvent evt) {
+    private void menuFileOpenURLActionPerformed(ActionEvent evt) {
         final Icon icon = new ImageIcon(Utils.loadImage("32_url_link.png"));
         final Object text =
             JOptionPane.showInputDialog(this, "Entered URL will be opened with KODI player",
@@ -1124,11 +1132,11 @@ public final class MainFrame extends javax.swing.JFrame
         this.openUrlLink(uri.toASCIIString());
     }
 
-    private void buttonRefreshFolderActionPerformed(java.awt.event.ActionEvent evt) {
+    private void buttonRefreshFolderActionPerformed(ActionEvent evt) {
         this.setFileRoot(this.currentRootFolder.toString());
     }
 
-    private void toggleButtonScreencastActionPerformed(java.awt.event.ActionEvent evt) {
+    private void toggleButtonScreencastActionPerformed(ActionEvent evt) {
         if (this.toggleButtonScreencast.isSelected()) {
             this.toggleButtonScreencast.setEnabled(false);
             if (JOptionPane.showConfirmDialog(this, "Do you want begin screencast?", "Confirmation",
@@ -1214,11 +1222,11 @@ public final class MainFrame extends javax.swing.JFrame
         this.updateToolButtons();
     }
 
-    private void menuHelpDonationActionPerformed(java.awt.event.ActionEvent evt) {
+    private void menuHelpDonationActionPerformed(ActionEvent evt) {
         this.donationController.openDonationUrl();
     }
 
-    private void menuTimersActionPerformed(java.awt.event.ActionEvent evt) {
+    private void menuTimersActionPerformed(ActionEvent evt) {
         final File root = new File(this.preferences.getFileRoot());
         final TimersTable timersTable = new TimersTable(root, this.preferences.getTimers());
         if (JOptionPane.showConfirmDialog(this, timersTable, "Timers", JOptionPane.OK_CANCEL_OPTION,
@@ -1351,7 +1359,7 @@ public final class MainFrame extends javax.swing.JFrame
         }
     }
 
-    private void menuOpenYoutubeLinkActionPerformed(java.awt.event.ActionEvent evt) {
+    private void menuOpenYoutubeLinkActionPerformed(ActionEvent evt) {
         final Icon icon = new ImageIcon(Utils.loadImage("32_youtube.png"));
         final String text = (String) JOptionPane.showInputDialog(this,
             "Entered Youtube URL will be opened with KODI player", "Open Youtube link",
@@ -1362,7 +1370,7 @@ public final class MainFrame extends javax.swing.JFrame
         this.openYoutubeLink(text);
     }
 
-    private void menuStaticContentActionPerformed(java.awt.event.ActionEvent evt) {
+    private void menuStaticContentActionPerformed(ActionEvent evt) {
         final File root = new File(this.preferences.getFileRoot());
 
         final PublishedFilesTable publishedFilesTable =
@@ -1376,7 +1384,7 @@ public final class MainFrame extends javax.swing.JFrame
         }
     }
 
-    private void menuMiscDecodeYoutubeUrlActionPerformed(java.awt.event.ActionEvent evt) {
+    private void menuMiscDecodeYoutubeUrlActionPerformed(ActionEvent evt) {
         final String youtubeLinkUrl = JOptionPane.showInputDialog(this, "Enter Youtube URL", "");
         if (youtubeLinkUrl == null || youtubeLinkUrl.isBlank()) {
             return;
