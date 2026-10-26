@@ -1,11 +1,18 @@
 package com.igormaznitsa.ravikoodi;
 
+import static java.util.stream.Collectors.joining;
+
 import java.io.File;
 import java.nio.file.Path;
+import java.text.Collator;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
@@ -13,7 +20,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class MimeTypes {
 
+  private static final int MAX_FILTER_LABEL_LENGTH = 40;
   private static final Map<String, MimeRecord> EXTENSIONS = new HashMap<>();
+  private static final List<ExtensionGroup> GROUPS = new ArrayList<>();
 
   static {
     addRecord(new String[] {"mpg", "mpeg", "mp1", "mp2", "mp4", "m1v", "m1a", "m2a", "mpa", "mpv"},
@@ -54,6 +63,9 @@ public class MimeTypes {
 
   private static void addRecord(@NonNull final String[] extensions, @NonNull final String mime,
                                 @NonNull final ContentType type) {
+    if (extensions.length > 0) {
+      GROUPS.add(new ExtensionGroup(extensions, type));
+    }
     for (final String e : extensions) {
       final MimeRecord newRecord = new MimeRecord(e, mime, type);
       if (EXTENSIONS.put(newRecord.getExtension(), newRecord) != null) {
@@ -62,39 +74,49 @@ public class MimeTypes {
     }
   }
 
-  public FileFilter makeFileFilter(final ContentType contentType) {
+  private static FileNameExtensionFilter categoryFilter(final ContentType contentType) {
+    final String[] extensions = GROUPS.stream()
+        .filter(group -> group.type() == contentType)
+        .flatMap(group -> Arrays.stream(group.extensions()))
+        .toArray(String[]::new);
+    return new FileNameExtensionFilter(contentType.getFilterName(), extensions);
+  }
 
-    final StringBuilder extensions = new StringBuilder();
-    final Map<String, MimeRecord> records = new HashMap<>();
+  private static List<FileNameExtensionFilter> extensionFilters() {
+    final Collator order = Collator.getInstance(Locale.ROOT);
+    return GROUPS.stream()
+        .flatMap(group -> filtersForGroup(group).stream())
+        .sorted((left, right) -> order.compare(left.getDescription(), right.getDescription()))
+        .toList();
+  }
 
-    EXTENSIONS
-        .entrySet()
-        .stream()
-        .filter(x -> x.getValue().getContentType() == contentType)
-        .peek(x -> {
-          if (!extensions.isEmpty()) {
-            extensions.append(',');
-          }
-          extensions.append("*.").append(x.getKey());
-          records.put(x.getKey(), x.getValue());
-        })
-        .count();
+  private static List<FileNameExtensionFilter> filtersForGroup(final ExtensionGroup group) {
+    if (group.extensions().length == 0) {
+      return List.of();
+    }
+    final String combined = filterLabel(group.extensions()[0], group.extensions());
+    if (combined.length() <= MAX_FILTER_LABEL_LENGTH) {
+      return List.of(new FileNameExtensionFilter(combined, group.extensions()));
+    }
+    return Arrays.stream(group.extensions())
+        .map(extension -> new FileNameExtensionFilter(filterLabel(extension, extension), extension))
+        .toList();
+  }
 
-    final String extensionList = extensions.toString();
+  private static String filterLabel(final String name, final String... extensions) {
+    final String listed = Arrays.stream(extensions)
+        .map(extension -> "*." + extension)
+        .collect(joining(", "));
+    return name.toUpperCase(Locale.ROOT) + " (" + listed + ')';
+  }
 
-    return new FileFilter() {
-
-      @Override
-      public boolean accept(@NonNull final File f) {
-        return f.isDirectory() ||
-            records.containsKey(Utils.getFileExtension(f).toLowerCase(Locale.ENGLISH));
-      }
-
-      @Override
-      public String getDescription() {
-        return contentType.getDescription() + " (" + extensionList + ')';
-      }
-    };
+  public List<FileFilter> makeOpenFileFilters() {
+    final List<FileFilter> filters = new ArrayList<>();
+    filters.add(categoryFilter(ContentType.VIDEO));
+    filters.add(categoryFilter(ContentType.AUDIO));
+    filters.add(categoryFilter(ContentType.PICTURE));
+    filters.addAll(extensionFilters());
+    return List.copyOf(filters);
   }
 
   @Nullable
@@ -115,15 +137,17 @@ public class MimeTypes {
   }
 
   public enum ContentType {
-    VIDEO("Video files"),
-    AUDIO("Audio files"),
-    PICTURE("Picture files"),
-    UNKNOWN("Unknown files");
+    VIDEO("Video files", "Video"),
+    AUDIO("Audio files", "Audio"),
+    PICTURE("Picture files", "Picture"),
+    UNKNOWN("Unknown files", "Unknown");
 
     private final String description;
+    private final String filterName;
 
-    private ContentType(@NonNull final String description) {
+    ContentType(@NonNull final String description, @NonNull final String filterName) {
       this.description = description;
+      this.filterName = filterName;
     }
 
     @NonNull
@@ -145,6 +169,17 @@ public class MimeTypes {
       return this.description;
     }
 
+    @NonNull
+    public String getFilterName() {
+      return this.filterName;
+    }
+
+  }
+
+  private record ExtensionGroup(@NonNull String[] extensions, @NonNull ContentType type) {
+    private ExtensionGroup {
+      extensions = extensions.clone();
+    }
   }
 
   public static final class MimeRecord implements Comparable<MimeRecord> {

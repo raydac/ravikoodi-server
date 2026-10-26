@@ -1,4 +1,5 @@
 ## 1. Implementation Progress
+- File open dialog uses `FileNameExtensionFilter`: Video, Audio, and Picture, then one short filter per format such as `MP4 (*.mp4)`. Long mime groups are split so a label stays within 40 characters.
 - SpotBugs `verify` findings are fixed in code. `spotbugs-exclude.xml` keeps only shared collaborators, Swing editors, and live capture objects.
 - Chrome/Chromium link drops on Linux: the content window's `XdndProxy` points at the shell, which already has `XdndAware`. The drop reads `text/uri-list`, `text/x-moz-url`, `text/html`, and `text/plain;charset=utf-8`. `text/uri-list` alone is a file list in the JDK, so http(s) links were discarded.
 - Player panel reloads title, duration, and streams when the Kodi item identity (file, label, type) changes, including a new link dropped onto an already playing item. Follow-up reads run at 400 ms and 1200 ms after open.
@@ -25,6 +26,7 @@
 - Nullness annotations are `org.jspecify.annotations.NonNull` and `Nullable`. Spring's `org.springframework.lang` copies are deprecated. `jspecify` comes from the Spring Boot BOM.
 
 ## 4. Current Work In Progress
+- Open-file dialog filters come from `MimeTypes.makeOpenFileFilters()`. Broad filters are the single words Video, Audio, Picture. Format filters use the standard `Name (*.ext)` label. Covered by `MimeTypesTest`.
 - SpotBugs check is clean after the fixes. `mvn22 -pl ravikoodi-app -am verify`.
 - Chromium drops fail on the packaged app because the content window is not an XDnD target. The workspace now publishes `XdndProxy` after the frame is shown. Parser covered by `LinuxBrowserDropSiteTest`. A live Chromium drag still has to be tried on a rebuilt launch.
 - Player-panel refresh after a new link is in the working tree. Not committed.

@@ -1,4 +1,5 @@
 # __1.2.2 (SNAPSHOT)__
+  - file open dialog offers Video, Audio, and Picture, plus a separate filter for each extension
   - timers with the same start time, or with no start time, sort in a stable order
   - links dragged from Chrome and Chromium on Linux can be dropped onto the window
   - player panel shows the newly opened link instead of the previous item

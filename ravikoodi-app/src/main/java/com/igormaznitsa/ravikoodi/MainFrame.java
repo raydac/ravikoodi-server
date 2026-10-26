@@ -2,6 +2,7 @@ package com.igormaznitsa.ravikoodi;
 
 import static com.igormaznitsa.ravikoodi.ContentTreeItem.CONTENT_ITEM_COMPARATOR;
 import static com.igormaznitsa.ravikoodi.Utils.isBlank;
+import static java.util.Objects.requireNonNull;
 import static javax.swing.tree.TreeSelectionModel.SINGLE_TREE_SELECTION;
 
 import com.github.kiulian.downloader.downloader.YoutubeCallback;
@@ -26,6 +27,7 @@ import com.igormaznitsa.ravikoodi.ytloader.YtQuality;
 import com.igormaznitsa.ravikoodi.ytloader.YtVideoType;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Graphics;
@@ -41,6 +43,8 @@ import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetDropEvent;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
@@ -90,12 +94,15 @@ import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.JTree;
 import javax.swing.LookAndFeel;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.WindowConstants;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.TreeModelEvent;
 import javax.swing.event.TreeModelListener;
 import javax.swing.event.TreeSelectionEvent;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
@@ -724,126 +731,136 @@ public final class MainFrame extends javax.swing.JFrame
         menuHelpDonation = new JMenuItem();
         menuAbout = new JMenuItem();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         mainPanelSplit.setDividerLocation(255);
 
-        panelFileTree.setLayout(new java.awt.BorderLayout());
+        panelFileTree.setLayout(new BorderLayout());
 
-        treeVideoFiles.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
+        treeVideoFiles.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent evt) {
                 treeVideoFilesMouseClicked(evt);
             }
         });
         fileTreeScrollPane.setViewportView(treeVideoFiles);
 
-        panelFileTree.add(fileTreeScrollPane, java.awt.BorderLayout.CENTER);
+        panelFileTree.add(fileTreeScrollPane, BorderLayout.CENTER);
 
         jToolBar1.setFloatable(false);
         jToolBar1.setRollover(true);
 
         buttonSelectFolder.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/folders_explorer.png")));
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/folders_explorer.png"))));
         buttonSelectFolder.setToolTipText("Select root content folder");
         buttonSelectFolder.setFocusable(false);
-        buttonSelectFolder.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        buttonSelectFolder.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        buttonSelectFolder.setHorizontalTextPosition(SwingConstants.CENTER);
+        buttonSelectFolder.setVerticalTextPosition(SwingConstants.BOTTOM);
         buttonSelectFolder.addActionListener(this::buttonSelectFolderActionPerformed);
         jToolBar1.add(buttonSelectFolder);
 
         buttonRefreshFolder.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/arrow_refresh.png")));
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/arrow_refresh.png"))));
         buttonRefreshFolder.setToolTipText("Refresh folder");
         buttonRefreshFolder.setFocusable(false);
-        buttonRefreshFolder.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        buttonRefreshFolder.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        buttonRefreshFolder.setHorizontalTextPosition(SwingConstants.CENTER);
+        buttonRefreshFolder.setVerticalTextPosition(SwingConstants.BOTTOM);
         buttonRefreshFolder.addActionListener(this::buttonRefreshFolderActionPerformed);
         jToolBar1.add(buttonRefreshFolder);
 
         buttonOpenSelectedFileInSystem.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/32_vlc.png")));
+            new ImageIcon(requireNonNull(getClass().getResource("/icons/32_vlc.png"))));
         buttonOpenSelectedFileInSystem.setToolTipText("Open selected file in system");
         buttonOpenSelectedFileInSystem.setEnabled(false);
         buttonOpenSelectedFileInSystem.setFocusable(false);
-        buttonOpenSelectedFileInSystem.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        buttonOpenSelectedFileInSystem.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        buttonOpenSelectedFileInSystem.setHorizontalTextPosition(SwingConstants.CENTER);
+        buttonOpenSelectedFileInSystem.setVerticalTextPosition(SwingConstants.BOTTOM);
         buttonOpenSelectedFileInSystem.addActionListener(
             this::buttonOpenSelectedFileInSystemActionPerformed);
         jToolBar1.add(buttonOpenSelectedFileInSystem);
 
         buttonImageFromClipboard.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/picture_insert.png")));
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/picture_insert.png"))));
         buttonImageFromClipboard.setToolTipText("Send clipboard image to KODI");
         buttonImageFromClipboard.setEnabled(false);
         buttonImageFromClipboard.setFocusable(false);
-        buttonImageFromClipboard.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        buttonImageFromClipboard.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        buttonImageFromClipboard.setHorizontalTextPosition(SwingConstants.CENTER);
+        buttonImageFromClipboard.setVerticalTextPosition(SwingConstants.BOTTOM);
         buttonImageFromClipboard.addActionListener(
             this::buttonImageFromClipboardActionPerformed);
         jToolBar1.add(buttonImageFromClipboard);
 
         buttonPlaySelected.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/control_play_blue.png")));
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/control_play_blue.png"))));
         buttonPlaySelected.setToolTipText("Play selected item on KODI");
         buttonPlaySelected.setEnabled(false);
         buttonPlaySelected.setFocusable(false);
-        buttonPlaySelected.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        buttonPlaySelected.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        buttonPlaySelected.setHorizontalTextPosition(SwingConstants.CENTER);
+        buttonPlaySelected.setVerticalTextPosition(SwingConstants.BOTTOM);
         buttonPlaySelected.addActionListener(this::buttonPlaySelectedActionPerformed);
         jToolBar1.add(buttonPlaySelected);
 
         toggleButtonScreencast.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/videodisplay.png")));
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/videodisplay.png"))));
         toggleButtonScreencast.setToolTipText("Stream screen to KODI");
         toggleButtonScreencast.setFocusable(false);
-        toggleButtonScreencast.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        toggleButtonScreencast.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        toggleButtonScreencast.setHorizontalTextPosition(SwingConstants.CENTER);
+        toggleButtonScreencast.setVerticalTextPosition(SwingConstants.BOTTOM);
         toggleButtonScreencast.addActionListener(this::toggleButtonScreencastActionPerformed);
         jToolBar1.add(toggleButtonScreencast);
 
-        panelFileTree.add(jToolBar1, java.awt.BorderLayout.NORTH);
+        panelFileTree.add(jToolBar1, BorderLayout.NORTH);
 
         mainPanelSplit.setLeftComponent(panelFileTree);
 
-        panelMain.setLayout(new java.awt.BorderLayout());
+        panelMain.setLayout(new BorderLayout());
 
         panelPlayers.setLayout(
             new javax.swing.BoxLayout(panelPlayers, javax.swing.BoxLayout.Y_AXIS));
-        panelMain.add(panelPlayers, java.awt.BorderLayout.PAGE_START);
+        panelMain.add(panelPlayers, BorderLayout.PAGE_START);
 
         mainPanelSplit.setRightComponent(panelMain);
 
-        getContentPane().add(mainPanelSplit, java.awt.BorderLayout.CENTER);
+        getContentPane().add(mainPanelSplit, BorderLayout.CENTER);
 
         menuFile.setText("File");
 
         menuSelectFolder.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/16_folders_explorer.png")));
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/16_folders_explorer.png"))));
         menuSelectFolder.setText("Select folder");
         menuSelectFolder.addActionListener(this::menuSelectFolderActionPerformed);
         menuFile.add(menuSelectFolder);
 
         menuFileOpenURL.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/16_world_link.png")));
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/16_world_link.png"))));
         menuFileOpenURL.setText("Open URL");
         menuFileOpenURL.addActionListener(this::menuFileOpenURLActionPerformed);
         menuFile.add(menuFileOpenURL);
 
         menuOpenFile.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/16_file_extension_cda.png")));
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/16_file_extension_cda.png"))));
         menuOpenFile.setText("Open file");
         menuOpenFile.addActionListener(this::menuOpenFileActionPerformed);
         menuFile.add(menuOpenFile);
 
         menuOpenYoutubeLink.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/16_youtube.png")));
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/16_youtube.png"))));
         menuOpenYoutubeLink.setText("Open Youtube");
         menuOpenYoutubeLink.addActionListener(this::menuOpenYoutubeLinkActionPerformed);
         menuFile.add(menuOpenYoutubeLink);
         menuFile.add(jSeparator1);
 
         menuExit.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/16_door_in.png")));
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/16_door_in.png"))));
         menuExit.setText("Exit");
         menuExit.addActionListener(this::menuExitActionPerformed);
         menuFile.add(menuExit);
@@ -852,25 +869,27 @@ public final class MainFrame extends javax.swing.JFrame
 
         menuTools.setText("Tools");
 
-        menuTimers.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icons/16_time.png")));
+        menuTimers.setIcon(new ImageIcon(
+            requireNonNull(getClass().getResource("/icons/16_time.png"))));
         menuTimers.setText("Timers");
         menuTimers.addActionListener(this::menuTimersActionPerformed);
         menuTools.add(menuTimers);
 
         menuStaticContent.setIcon(
-            new javax.swing.ImageIcon(
-                getClass().getResource("/icons/16_file_publish_sharepoint.png")));
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/16_file_publish_sharepoint.png"))));
         menuStaticContent.setText("Published files");
         menuStaticContent.addActionListener(this::menuStaticContentActionPerformed);
         menuTools.add(menuStaticContent);
 
         menuLookAndFeel.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/16_eye.png")));
+            new ImageIcon(requireNonNull(getClass().getResource("/icons/16_eye.png"))));
         menuLookAndFeel.setText("Look and Feel");
         menuTools.add(menuLookAndFeel);
 
         menuToolsOptions.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/16_setting_tools.png")));
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/16_setting_tools.png"))));
         menuToolsOptions.setText("Options");
         menuToolsOptions.addActionListener(this::menuToolsOptionsActionPerformed);
         menuTools.add(menuToolsOptions);
@@ -880,7 +899,8 @@ public final class MainFrame extends javax.swing.JFrame
         menuMisc.setText("Misc");
 
         menuMiscDecodeYoutubeUrl.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/16_youtube.png")));
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/16_youtube.png"))));
         menuMiscDecodeYoutubeUrl.setText("Decode Youtube URL");
         menuMiscDecodeYoutubeUrl.addActionListener(
             this::menuMiscDecodeYoutubeUrlActionPerformed);
@@ -891,14 +911,15 @@ public final class MainFrame extends javax.swing.JFrame
         menuHelp.setText("Help");
 
         menuHelpDonation.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/16_coins.png")));
+            new ImageIcon(requireNonNull(getClass().getResource("/icons/16_coins.png"))));
         menuHelpDonation.setText("Make donation");
         menuHelpDonation.setToolTipText("Make donation to the author of the application");
         menuHelpDonation.addActionListener(this::menuHelpDonationActionPerformed);
         menuHelp.add(menuHelpDonation);
 
         menuAbout.setIcon(
-            new javax.swing.ImageIcon(getClass().getResource("/icons/16_information.png")));
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/16_information.png"))));
         menuAbout.setText("About");
         menuAbout.addActionListener(this::menuAboutActionPerformed);
         menuHelp.add(menuAbout);
@@ -934,7 +955,7 @@ public final class MainFrame extends javax.swing.JFrame
         }
     }
 
-    private void treeVideoFilesMouseClicked(java.awt.event.MouseEvent evt) {
+    private void treeVideoFilesMouseClicked(MouseEvent evt) {
         if (!evt.isPopupTrigger() && evt.getClickCount() > 1) {
             final TreePath path = this.treeVideoFiles.getSelectionPath();
             if (path != null) {
@@ -959,8 +980,8 @@ public final class MainFrame extends javax.swing.JFrame
         }
     }
 
-    private void buttonOpenSelectedFileInSystemActionPerformed(ActionEvent evt) {
-        final TreePath path = this.treeVideoFiles.getSelectionPath();
+    private void buttonOpenSelectedFileInSystemActionPerformed(final ActionEvent evt) {
+        final TreePath path = requireNonNull(this.treeVideoFiles.getSelectionPath());
         if (path.getLastPathComponent() instanceof ContentFile) {
             openInSystem((ContentFile) path.getLastPathComponent());
         }
@@ -991,13 +1012,13 @@ public final class MainFrame extends javax.swing.JFrame
             if (image instanceof RenderedImage) {
                 rendered = (RenderedImage) image;
             } else {
-                final BufferedImage bufferimage =
+                final BufferedImage bufferImage =
                     new BufferedImage(image.getWidth(null), image.getHeight(null),
                         BufferedImage.TYPE_INT_RGB);
-                final Graphics g = bufferimage.createGraphics();
+                final Graphics g = bufferImage.createGraphics();
                 g.drawImage(image, 0, 0, null);
                 g.dispose();
-                rendered = bufferimage;
+                rendered = bufferImage;
             }
             LOGGER.info("Prepared clipboard image {}x{} to be sent", rendered.getWidth(),
                 rendered.getHeight());
@@ -1029,11 +1050,9 @@ public final class MainFrame extends javax.swing.JFrame
         fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         fileChooser.setAcceptAllFileFilterUsed(false);
 
-        for (final MimeTypes.ContentType c : MimeTypes.ContentType.values()) {
-            if (c != ContentType.UNKNOWN) {
-                fileChooser.addChoosableFileFilter(this.mimeTypes.makeFileFilter(c));
-            }
-        }
+        final List<FileFilter> filters = this.mimeTypes.makeOpenFileFilters();
+        filters.forEach(fileChooser::addChoosableFileFilter);
+        fileChooser.setFileFilter(filters.get(0));
 
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             final File fileToOpen = fileChooser.getSelectedFile();
