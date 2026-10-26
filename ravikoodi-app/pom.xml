@@ -30,7 +30,7 @@
     <properties>
         <embedded.jdk.provider>BELLSOFT</embedded.jdk.provider>
         <embedded.jdk.type>jdk</embedded.jdk.type>
-        <embedded.jdk.version>27.0.1.0.2+5</embedded.jdk.version>
+        <embedded.jdk.version>27.0.1.0.3+5</embedded.jdk.version>
         <spring.boot.version>4.1.2</spring.boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
