@@ -3,7 +3,8 @@
   - timers with the same start time, or with no start time, sort in a stable order
   - links dragged from Chrome and Chromium on Linux can be dropped onto the window
   - player panel shows the newly opened link instead of the previous item
-  - fixed seeking inside a served file when the player requests a byte range
+  - fixed seeking inside a served file so the player can request the next byte range without the video stopping
+  - Kodi status updates no longer log a Java warning about final fields
   - updated embedded JDK to 26.0.1+10
   - updated Spring Boot to 4.1.0
   - updated dependencies

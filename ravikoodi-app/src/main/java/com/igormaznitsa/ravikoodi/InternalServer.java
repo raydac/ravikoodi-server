@@ -153,12 +153,14 @@ public class InternalServer {
       writeSuccessHeaders(exchange, record, range, false);
       LOGGER.info("Start sending {} range {}, length {}", record, range, range.getLength());
       exchange.sendResponseHeaders(statusOf(range), range.getLength());
-      writeRange(in, exchange.getResponseBody(), range);
+      final OutputStream body = exchange.getResponseBody();
+      writeRange(in, body, range);
+      body.close();
       LOGGER.info("Complete sending {} range {}", record, range);
     } catch (final IOException ex) {
       if (exchange.getResponseCode() >= 0) {
         LOGGER.info("Playback connection closed for {}: {}", record, ex.toString());
-        return;
+        throw ex;
       }
       LOGGER.error("Can't read {}", record, ex);
       sendWithoutBody(exchange, statusForOpenFailure(ex));
@@ -169,17 +171,18 @@ public class InternalServer {
                                  final HttpRange range) throws IOException {
     final byte[] buffer = new byte[64 * 1024];
     long remaining = range.getLength();
-    while (remaining > 0L && !Thread.currentThread().isInterrupted()) {
+    while (remaining > 0L) {
+      if (Thread.currentThread().isInterrupted()) {
+        throw new IOException("playback response interrupted");
+      }
       final int read = in.read(buffer, 0, (int) Math.min(buffer.length, remaining));
       if (read < 0) {
-        break;
+        throw new IOException(
+            "playback file ended with %d bytes still expected".formatted(remaining));
       }
       out.write(buffer, 0, read);
       out.flush();
       remaining -= read;
-    }
-    if (remaining > 0L) {
-      LOGGER.warn("Short payload for {}, {} bytes left unread", range, remaining);
     }
   }
 
@@ -321,12 +324,14 @@ public class InternalServer {
           LOGGER.info("Request for static file resource: {}", uid);
           record = staticFileRegistry.findFile(uid).orElse(null);
         } else {
-          UploadFileRecord rec = fileRegistry.find(uid);
+          UploadFileRecord rec = this.fileRegistry.find(uid);
           if (rec == null) {
-            final UploadFileRecord removedRecord = removedFileRecords.remove(uid);
+            final UploadFileRecord removedRecord = this.removedFileRecords.remove(uid);
             if (removedRecord != null) {
               LOGGER.info("found among removed streams, restoring: {}", uid);
-              rec = fileRegistry.restoreRecord(removedRecord);
+              rec = this.fileRegistry.restoreRecord(removedRecord);
+            } else {
+              rec = this.fileRegistry.find(uid);
             }
           }
           record = rec;

@@ -5,10 +5,8 @@ import static java.time.temporal.ChronoUnit.MILLIS;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor(force = true)
 public class Time {
   public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 

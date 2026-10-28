@@ -59,35 +59,46 @@ public class UploadingFileRegistry {
       this.records.forEach((key, value) -> value.refreshValidTime());
     } else {
       final long time = System.currentTimeMillis();
-      final List<String> listOfTimeOut = this.records.entrySet()
+      final Map<String, UploadFileRecord> removedRecordsStore = this.removedFileRecordStore.get();
+      final List<String> expiredIds = this.records.entrySet()
           .stream()
-          .filter(x -> x.getValue().getUploadsCounter() == 0 && x.getValue().getValidUntil() < time)
+          .filter(entry -> this.isExpired(entry.getValue(), time))
           .map(Map.Entry::getKey)
           .toList();
 
-      final Map<String, UploadFileRecord> removedRecordsStore = this.removedFileRecordStore.get();
-      listOfTimeOut.forEach(x -> {
-        LOGGER.info("Collected file registry record '{}'", x);
-        if (removedRecordsStore != null) {
-          final UploadFileRecord removedRecord = this.records.remove(x);
-          if (removedRecord != null) {
-            removedRecordsStore.put(removedRecord.getId(), removedRecord);
-          }
-        }
-      });
+      expiredIds.forEach(id -> this.records.compute(id,
+          (key, record) -> this.collectIfExpired(removedRecordsStore, time, key, record)));
     }
+  }
+
+  private boolean isExpired(final UploadFileRecord record, final long now) {
+    return record.getUploadsCounter() == 0 && record.getValidUntil() < now;
+  }
+
+  private UploadFileRecord collectIfExpired(final Map<String, UploadFileRecord> removedRecords,
+                                            final long now, final String id,
+                                            final UploadFileRecord record) {
+    if (record == null || removedRecords == null || !this.isExpired(record, now)) {
+      return record;
+    }
+
+    LOGGER.info("Collected file registry record '{}'", id);
+    if (removedRecords != null) {
+      removedRecords.put(record.getId(), record);
+    }
+    return null;
   }
 
   @Nullable
   public UploadFileRecord restoreRecord(@NonNull final UploadFileRecord record) {
-    LOGGER.info("Restoring record: {}", record);
-    UploadFileRecord result = null;
-    if (this.records.putIfAbsent(record.getId(), record) == null) {
-      LOGGER.info("Record {} has been restored", record.getId());
-      record.refreshValidTime();
-      result = record;
+    final UploadFileRecord alreadyPresent = this.records.putIfAbsent(record.getId(), record);
+    if (alreadyPresent != null) {
+      return alreadyPresent;
     }
-    return result;
+
+    LOGGER.info("Record {} has been restored", record);
+    record.refreshValidTime();
+    return record;
   }
 
   public UploadFileRecord registerFile(@NonNull final String uid, @NonNull final Path file,

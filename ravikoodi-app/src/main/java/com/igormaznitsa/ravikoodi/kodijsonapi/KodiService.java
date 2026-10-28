@@ -1,6 +1,10 @@
 package com.igormaznitsa.ravikoodi.kodijsonapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.cfg.ConstructorDetector;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.googlecode.jsonrpc4j.JsonRpcClientException;
 import com.googlecode.jsonrpc4j.JsonRpcHttpClient;
 import com.igormaznitsa.ravikoodi.KodiAddress;
@@ -19,6 +23,14 @@ import org.slf4j.LoggerFactory;
 public class KodiService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(KodiService.class);
+  private static final ObjectMapper MAPPER = JsonMapper.builder()
+      .addModule(new ParameterNamesModule())
+      .constructorDetector(ConstructorDetector.USE_PROPERTIES_BASED)
+      .build();
+
+  static ObjectMapper mapper() {
+    return MAPPER;
+  }
 
   private final KodiAddress address;
   private final Duration requestTimeout;
@@ -229,7 +241,7 @@ public class KodiService {
               StandardCharsets.US_ASCII)));
     }
 
-    final JsonRpcHttpClient result = new JsonRpcHttpClient(this.url, headers);
+    final JsonRpcHttpClient result = new JsonRpcHttpClient(MAPPER, this.url, headers);
     result.setReadTimeoutMillis((int) this.requestTimeout.toMillis());
     result.setConnectionTimeoutMillis((int) this.requestTimeout.toMillis());
 

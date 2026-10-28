@@ -4,12 +4,16 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -253,6 +257,99 @@ public class InternalServerRangeTest {
     final Response response = request("GET", null);
 
     assertEquals(404, response.status);
+  }
+
+  private static void writeRangeRequest(final OutputStream out, final int port,
+                                        final String range) throws IOException {
+    final String request = """
+        GET /vfile/clip/clip.mp4 HTTP/1.1\r
+        Host: 127.0.0.1:%d\r
+        Range: %s\r
+        Connection: keep-alive\r
+        \r
+        """.formatted(port, range);
+    out.write(request.getBytes(UTF_8));
+    out.flush();
+  }
+
+  private static Received readHttpBody(final InputStream in) throws IOException {
+    final String status = readLine(in);
+    int contentLength = -1;
+    String line = readLine(in);
+    while (!line.isEmpty()) {
+      if (line.regionMatches(true, 0, "content-length:", 0, "content-length:".length())) {
+        contentLength = Integer.parseInt(line.substring(line.indexOf(':') + 1).strip());
+      }
+      line = readLine(in);
+    }
+    if (contentLength < 0) {
+      throw new IOException("response has no content length: " + status);
+    }
+    final byte[] body = in.readNBytes(contentLength);
+    if (body.length != contentLength) {
+      throw new IOException("short body for " + status);
+    }
+    return new Received(status, body);
+  }
+
+  private static String readLine(final InputStream in) throws IOException {
+    final StringBuilder line = new StringBuilder();
+    int previous = -1;
+    while (true) {
+      final int next = in.read();
+      if (next < 0) {
+        break;
+      }
+      if (previous == '\r' && next == '\n') {
+        break;
+      }
+      if (next != '\r') {
+        line.append((char) next);
+      }
+      previous = next;
+    }
+    return line.toString();
+  }
+
+  @Test
+  public void testSecondRangeReusesConnection() throws Exception {
+    final byte[] payload = payload(100);
+    final UploadFileRecord record = fileRecord(payload);
+    final HttpServer local = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    local.createContext("/", exchange -> InternalServer.respondWithPayload(exchange, record));
+    local.start();
+    try (Socket socket = new Socket()) {
+      socket.connect(local.getAddress(), 2000);
+      socket.setSoTimeout(2000);
+      final OutputStream out = socket.getOutputStream();
+      final InputStream in = socket.getInputStream();
+
+      writeRangeRequest(out, local.getAddress().getPort(), "bytes=0-9");
+      final Received first = readHttpBody(in);
+      assertTrue(first.status().contains("206"));
+      assertArrayEquals(Arrays.copyOfRange(payload, 0, 10), first.body());
+
+      writeRangeRequest(out, local.getAddress().getPort(), "bytes=40-49");
+      final Received second = readHttpBody(in);
+      assertTrue(second.status().contains("206"));
+      assertArrayEquals(Arrays.copyOfRange(payload, 40, 50), second.body());
+    } finally {
+      local.stop(0);
+    }
+  }
+
+  @Test
+  public void testRestoreReturnsRecordAlreadyPresent() {
+    final UploadingFileRegistry registry = new UploadingFileRegistry();
+    final UploadFileRecord record =
+        new UploadFileRecord("clip", Path.of("clip.mp4"), "video/mp4", null);
+
+    final UploadFileRecord restored = registry.restoreRecord(record);
+
+    assertSame(restored, registry.restoreRecord(record));
+  }
+
+  private record Received(String status, byte[] body) {
   }
 
   private record Response(int status, String contentLength, String contentRange,
