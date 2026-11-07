@@ -83,9 +83,7 @@ public class UploadingFileRegistry {
     }
 
     LOGGER.info("Collected file registry record '{}'", id);
-    if (removedRecords != null) {
-      removedRecords.put(record.getId(), record);
-    }
+    removedRecords.put(record.getId(), record);
     return null;
   }
 
