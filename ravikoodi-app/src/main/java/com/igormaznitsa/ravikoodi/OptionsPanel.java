@@ -6,12 +6,14 @@ import com.igormaznitsa.ravikoodi.ApplicationPreferences.SpeedProfile;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ApplicationProperties;
 import com.igormaznitsa.ravikoodi.kodijsonapi.KodiService;
 import com.igormaznitsa.ravikoodi.screencast.JavaSoundAdapter;
+import com.igormaznitsa.ravikoodi.ytloader.YoutubeAccount;
 import com.igormaznitsa.ravikoodi.ytloader.YtMode;
 import com.igormaznitsa.ravikoodi.ytloader.YtQuality;
 import com.igormaznitsa.ravikoodi.ytloader.YtVideoType;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -42,6 +44,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
@@ -57,6 +60,8 @@ public class OptionsPanel extends javax.swing.JPanel {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OptionsPanel.class);
     private final Data currentData;
+  private final YoutubeAccount youtubeAccount;
+  private JButton buttonRemoveYoutubeSession;
     private JButton buttonTestKodiConnection;
     private JCheckBox checkGrabCursor;
     private JCheckBox checkKodiSsl;
@@ -86,6 +91,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     private JLabel jLabel18;
     private JLabel jLabel19;
     private JLabel jLabel2;
+  private JLabel jLabel20;
     private JLabel jLabel3;
     private JLabel jLabel4;
     private JLabel jLabel5;
@@ -93,6 +99,7 @@ public class OptionsPanel extends javax.swing.JPanel {
     private JLabel jLabel7;
     private JLabel jLabel8;
     private JLabel jLabel9;
+  private JLabel labelYoutubeSession;
     private JLabel labelKodiAddress;
     private JLabel labelKodiName;
     private JLabel labelKodiPassword;
@@ -121,8 +128,12 @@ public class OptionsPanel extends javax.swing.JPanel {
     private JTextField textFieldKodiName;
     private JTextField textFieldKodiPassword;
 
-    public OptionsPanel(@NonNull final Data data, @NonNull final JavaSoundAdapter soundAdapter) {
+  public OptionsPanel(
+      @NonNull final Data data,
+      @NonNull final JavaSoundAdapter soundAdapter,
+      @NonNull final YoutubeAccount youtubeAccount) {
         this.currentData = data;
+    this.youtubeAccount = youtubeAccount;
         initComponents();
         this.comboSoundLine.setPrototypeDisplayValue("############################");
         final List<String> ne = new ArrayList<>();
@@ -206,12 +217,22 @@ public class OptionsPanel extends javax.swing.JPanel {
         DocumentWrapper.of(this.textFieldKodiPassword.getDocument(), x -> data.setKodiPassword(x));
 
         this.onUpdatedYoutubeMode();
+        this.refreshYoutubeSession();
     }
 
     private void onUpdatedYoutubeMode() {
         final YtMode mode = (YtMode) this.comboBoxYoutubeMode.getSelectedItem();
         this.comboBoxYoutubePreferredQuality.setEnabled(mode == YtMode.DIRECT_URL);
         this.comboBoxYoutubeRequiredFormat.setEnabled(mode == YtMode.DIRECT_URL);
+    }
+
+    private void refreshYoutubeSession() {
+        final boolean signedIn = this.youtubeAccount.isSignedIn();
+        this.labelYoutubeSession.setText(signedIn ? "Set" : "Not set");
+        this.buttonRemoveYoutubeSession.setText(signedIn ? "Remove" : "Set");
+        this.buttonRemoveYoutubeSession.setToolTipText(signedIn
+            ? "Remove the saved YouTube sign-in"
+            : "Sign in at google.com/device");
     }
 
     public Data getData() {
@@ -295,6 +316,9 @@ public class OptionsPanel extends javax.swing.JPanel {
             new Box.Filler(new Dimension(0, 0), new Dimension(0, 0),
                 new Dimension(32767, 0));
         comboBoxYoutubeMode = new JComboBox<>();
+      jLabel20 = new JLabel();
+      labelYoutubeSession = new JLabel();
+      buttonRemoveYoutubeSession = new JButton();
 
         setLayout(new BorderLayout());
 
@@ -843,9 +867,34 @@ public class OptionsPanel extends javax.swing.JPanel {
         gridBagConstraints.gridy = 2;
         gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         tabYoutube.add(jLabel19, gridBagConstraints);
+
+      jLabel20.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+      jLabel20.setText("Sign-in token:");
+      jLabel20.setToolTipText("Saved YouTube sign-in used when a video is refused");
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
+      gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+      tabYoutube.add(jLabel20, gridBagConstraints);
+
+        labelYoutubeSession.setText("Not set");
+        buttonRemoveYoutubeSession.setText("Set");
+      buttonRemoveYoutubeSession.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent evt) {
+          buttonRemoveYoutubeSessionActionPerformed(evt);
+        }
+      });
+      final JPanel youtubeSessionRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+      youtubeSessionRow.add(labelYoutubeSession);
+      youtubeSessionRow.add(buttonRemoveYoutubeSession);
+      gridBagConstraints = new GridBagConstraints();
+      gridBagConstraints.gridx = 1;
+      gridBagConstraints.gridy = 3;
+      gridBagConstraints.anchor = GridBagConstraints.WEST;
+      tabYoutube.add(youtubeSessionRow, gridBagConstraints);
+      gridBagConstraints = new GridBagConstraints();
+      gridBagConstraints.gridx = 0;
+      gridBagConstraints.gridy = 4;
         gridBagConstraints.weighty = 1000.0;
         tabYoutube.add(filler4, gridBagConstraints);
 
@@ -1021,6 +1070,23 @@ public class OptionsPanel extends javax.swing.JPanel {
     private void comboBoxYoutubeModeActionPerformed(ActionEvent evt) {
         this.currentData.setYoutubeOpenUrlMode((YtMode) this.comboBoxYoutubeMode.getSelectedItem());
         this.onUpdatedYoutubeMode();
+    }
+
+    private void buttonRemoveYoutubeSessionActionPerformed(ActionEvent evt) {
+        if (this.youtubeAccount.isSignedIn()) {
+            if (JOptionPane.showConfirmDialog(
+                this,
+                "Remove the saved YouTube sign-in?",
+                "YouTube",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) {
+                return;
+            }
+            this.youtubeAccount.signOut();
+        } else {
+            this.youtubeAccount.signIn(SwingUtilities.getWindowAncestor(this), false);
+        }
+        this.refreshYoutubeSession();
     }
 
     public static final class Data {

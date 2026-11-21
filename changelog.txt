@@ -8,6 +8,7 @@
   - updated embedded JDK to 27.0.1.1+5
   - updated Spring Boot to 4.2.0
   - updated dependencies
+  - YouTube settings show whether a sign-in is saved and can set or remove it. A refused video asks for a code from google.com/device, and the encrypted sign-in is kept with the other settings
 
 # __1.2.1 (19-feb-2026)__
   - improved Youtube video ID extractor

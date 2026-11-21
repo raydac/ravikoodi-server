@@ -22,6 +22,7 @@
 - `Accept-Ranges: bytes` is what tells the player that seeking is allowed. Screencast stays `Accept-Ranges: none`.
 - jsonrpc4j uses one `ObjectMapper`: `ParameterNamesModule` plus `ConstructorDetector.USE_PROPERTIES_BASED`. The compiler writes parameter names (`-parameters`). Lombok copies `@JsonProperty` onto generated constructors. Jackson 2.21 does not apply `@JsonProperty(defaultValue)` when a creator argument is absent, so `ListLimitsReturned` takes `Long` for `start` and `end` and uses 0 and -1 when those keys are missing.
 - `java-youtube-downloader` 4.0 replaces request/callback types with `YoutubeDownloader.builder()`, `videoInfoAsync`, and `playlist`. Formats are `muxed`, `videoOnly`, and `audioOnly`. There is no per-request client. The downloader tries its default profiles (visionOS, then Android VR). Samsung TV needs a JS challenge solver and is not used. Playlist videos load lazily and no longer expose `isPlayable`; direct playlist open takes the first listed video. `Empty` is a parameterless JSON-RPC body. Spring Boot 4.2 deprecates `jackson2.JsonComponent` for removal, and that annotation is not used.
+- YouTube sign-in follows the Kodi plugin device-code flow: `accounts.google.com/o/oauth2/device/code` with the YouTube TV client, then the user enters the code at google.com/device. The grant is AES-GCM encrypted and stored in the same Java preferences node as the other settings (`youtube.session`, `youtube.session.key`). The Youtube settings tab shows Set or Not set. The button is Set when no token is saved and starts device sign-in; Remove clears the grant immediately. The bearer token is added only to innertube calls whose `X-YouTube-Client-Name` is `7` (TVHTML5). A bot check or HTTP 401/403 opens the sign-in dialog and retries once.
 - `spring-boot-maven-plugin` `finalName` is read-only and ignored. The `publishsh` profile sets Maven `build/finalName` to `artifact-version.sh`, then renames that jar to drop `.jar`.
 
 ## 3. Technical Debt & Refactoring
@@ -40,8 +41,10 @@
 - Seek no longer leaves a finished range connection unable to accept the next request. Not committed.
 - Kodi reply types no longer use a forced no-arg constructor. Covered by `KodiJsonBindingTest`. Not committed. The packaged app in `~/Programs/ravikoodi` needs a rebuild.
 - Dependency bump to Spring Boot 4.2.0 and java-youtube-downloader 4.0.0 compiles, tests pass, and SpotBugs is clean. YouTube call sites use the 4.0 API. `publishsh` still emits the `.sh` archive. Not committed.
+- YouTube device sign-in is in the working tree: Misc → YouTube account, a refused video opens the code dialog, and the Youtube settings tab can set or remove the sign-in. Not committed.
 
 ## 5. Known Issues & Limitations
+- YouTube sign-in covers one TV client. A ciphered stream that still needs the JS player can come back with no URL and falls through to the unsigned clients. Kodi-plugin mode does not use this sign-in.
 - Multipart ranges (`bytes=0-1,2-3`) are ignored and the whole payload is returned. One range is what players send for seek.
 - A short read after headers are sent closes the connection so the player does not wait out its read timeout.
 

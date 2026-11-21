@@ -17,6 +17,8 @@
 package com.igormaznitsa.ravikoodi.ytloader;
 
 import com.github.kiulian.downloader.YoutubeDownloader;
+import com.github.kiulian.downloader.client.ClientProfiles;
+import com.github.kiulian.downloader.http.UrlConnectionTransport;
 import com.github.kiulian.downloader.model.playlist.Playlist;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.model.videos.formats.Format;
@@ -40,14 +42,53 @@ public class YtLinkExtractor {
   private static final Logger LOGGER = LoggerFactory.getLogger(YtLinkExtractor.class);
 
   private final ExecutorService executor;
-  private final YoutubeDownloader youtubeDownloader;
+  private final YoutubeSessionStore sessions;
+  private volatile YoutubeDownloader youtubeDownloader;
 
-  public YtLinkExtractor(@NonNull final ExecutorService executor) {
+  public YtLinkExtractor(
+      @NonNull final ExecutorService executor,
+      @NonNull final YoutubeSessionStore sessions) {
     this.executor = executor;
-    this.youtubeDownloader = YoutubeDownloader.builder()
-        .executor(executor)
+    this.sessions = sessions;
+  }
+
+  public void reload() {
+    final YoutubeDownloader previous;
+    synchronized (this) {
+      previous = this.youtubeDownloader;
+      this.youtubeDownloader = this.buildDownloader();
+    }
+    if (previous != null) {
+      previous.close();
+    }
+  }
+
+  private YoutubeDownloader downloader() {
+    final YoutubeDownloader current = this.youtubeDownloader;
+    if (current != null) {
+      return current;
+    }
+    synchronized (this) {
+      if (this.youtubeDownloader == null) {
+        this.youtubeDownloader = this.buildDownloader();
+      }
+      return this.youtubeDownloader;
+    }
+  }
+
+  private YoutubeDownloader buildDownloader() {
+    final YoutubeDownloader.Builder builder = YoutubeDownloader.builder()
+        .executor(this.executor)
         .retries(5)
-        .build();
+        .transport(new YoutubeAuthorizingTransport(
+            UrlConnectionTransport.create(), this.sessions::accessToken));
+    if (this.sessions.hasSession()) {
+      builder.clients(List.of(
+          YoutubeTvCredentials.playerProfile(),
+          ClientProfiles.VISIONOS,
+          ClientProfiles.ANDROID_VR));
+    }
+    return builder.build();
   }
 
   @NonNull
@@ -93,7 +134,7 @@ public class YtLinkExtractor {
       @NonNull final String youTubePlaylistId,
       @NonNull final TriConsumer<String, Playlist, Throwable> resultConsumer) {
     try {
-      final Playlist playlist = this.youtubeDownloader.playlist(youTubePlaylistId);
+      final Playlist playlist = this.downloader().playlist(youTubePlaylistId);
       LOGGER.info("Resolved Youtube playlist request {}, items {} ",
           youTubePlaylistId,
           playlist.details().videoCount());
@@ -105,7 +146,7 @@ public class YtLinkExtractor {
   }
 
   public YoutubeDownloader getYoutubeDownloader() {
-    return this.youtubeDownloader;
+    return this.downloader();
   }
 
   public void findVideoUrlAsync(
@@ -117,7 +158,7 @@ public class YtLinkExtractor {
 
     final CompletableFuture<VideoInfo> pending;
     try {
-      pending = this.youtubeDownloader.videoInfoAsync(youTubeVideoId);
+      pending = this.downloader().videoInfoAsync(youTubeVideoId);
     } catch (RuntimeException error) {
       LOGGER.error("Can't request youtube video '{}'", youTubeVideoId, error);
       resultConsumer.accept(youTubeVideoId, null, error);

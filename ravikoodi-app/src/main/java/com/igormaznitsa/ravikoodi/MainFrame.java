@@ -18,6 +18,8 @@ import com.igormaznitsa.ravikoodi.screencast.JavaSoundAdapter;
 import com.igormaznitsa.ravikoodi.screencast.ScreenGrabber;
 import com.igormaznitsa.ravikoodi.timers.TimerScheduler;
 import com.igormaznitsa.ravikoodi.timers.TimersTable;
+import com.igormaznitsa.ravikoodi.ytloader.YoutubeAccount;
+import com.igormaznitsa.ravikoodi.ytloader.YoutubeAuthRequired;
 import com.igormaznitsa.ravikoodi.ytloader.YtLinkExtractor;
 import com.igormaznitsa.ravikoodi.ytloader.YtQuality;
 import com.igormaznitsa.ravikoodi.ytloader.YtVideoType;
@@ -155,6 +157,8 @@ public final class MainFrame extends javax.swing.JFrame
     private KodiComm kodiComm;
     @Autowired
     private YtLinkExtractor youTubeLinkExtractor;
+    @Autowired
+    private YoutubeAccount youtubeAccount;
     private File lastSelectedFileFolder = null;
     private WeakReference<FfmpegWrapper> lastFFmpegWrapper;
     private JButton buttonImageFromClipboard;
@@ -176,6 +180,7 @@ public final class MainFrame extends javax.swing.JFrame
     private JMenuBar menuMain;
     private JMenu menuMisc;
     private JMenuItem menuMiscDecodeYoutubeUrl;
+    private JMenuItem menuYoutubeAccount;
     private JMenuItem menuOpenFile;
     private JMenuItem menuOpenYoutubeLink;
     private JMenuItem menuSelectFolder;
@@ -346,7 +351,8 @@ public final class MainFrame extends javax.swing.JFrame
                     case JOptionPane.YES_OPTION: {
                         final OptionsPanel.Data container = new OptionsPanel.Data(this.preferences);
                         if (JOptionPane.showConfirmDialog(this, Utils.makeOwningDialogResizable(
-                                new JScrollPane(new OptionsPanel(container, this.soundAdapter))),
+                                new JScrollPane(new OptionsPanel(container, this.soundAdapter,
+                                    this.youtubeAccount))),
                             "Options",
                             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) ==
                             JOptionPane.OK_OPTION) {
@@ -723,6 +729,7 @@ public final class MainFrame extends javax.swing.JFrame
         menuToolsOptions = new JMenuItem();
         menuMisc = new JMenu();
         menuMiscDecodeYoutubeUrl = new JMenuItem();
+        menuYoutubeAccount = new JMenuItem();
         menuHelp = new JMenu();
         menuHelpDonation = new JMenuItem();
         menuAbout = new JMenuItem();
@@ -902,6 +909,13 @@ public final class MainFrame extends javax.swing.JFrame
             this::menuMiscDecodeYoutubeUrlActionPerformed);
         menuMisc.add(menuMiscDecodeYoutubeUrl);
 
+        menuYoutubeAccount.setIcon(
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/16_youtube.png"))));
+        menuYoutubeAccount.setText("YouTube account");
+        menuYoutubeAccount.addActionListener(event -> this.youtubeAccount.signIn(this, false));
+        menuMisc.add(menuYoutubeAccount);
+
         menuMain.add(menuMisc);
 
         menuHelp.setText("Help");
@@ -944,7 +958,8 @@ public final class MainFrame extends javax.swing.JFrame
     private void menuToolsOptionsActionPerformed(ActionEvent evt) {
         final OptionsPanel.Data container = new OptionsPanel.Data(this.preferences);
         if (JOptionPane.showConfirmDialog(this, Utils.makeOwningDialogResizable(
-                new JScrollPane(new OptionsPanel(container, this.soundAdapter))), "Options",
+                new JScrollPane(new OptionsPanel(container, this.soundAdapter, this.youtubeAccount))),
+            "Options",
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
             container.save(this.preferences);
             this.server.restartServer();
@@ -1276,16 +1291,34 @@ public final class MainFrame extends javax.swing.JFrame
         buffer.append("</ul>");
     }
 
-    private void onResolvedYoutubeUrlLink(@NonNull final String youTubeVideoId,
-                                          @Nullable final String url,
-                                          @Nullable final Throwable error) {
+    private void onResolvedYoutubeUrlLink(
+        @NonNull final String youTubeVideoId,
+        @Nullable final String url,
+        @Nullable final Throwable error,
+        final boolean allowSignIn,
+        @Nullable final YtQuality preferredQuality,
+        @Nullable final YtVideoType requiredFormat) {
         if (error == null) {
             SwingUtilities.invokeLater(() -> this.openUrlLink(url));
-        } else {
-            SwingUtilities.invokeLater(
-                () -> JOptionPane.showMessageDialog(MainFrame.this, error.getMessage(),
-                    "Error '" + youTubeVideoId + '\'', JOptionPane.ERROR_MESSAGE));
+            return;
         }
+        if (allowSignIn && preferredQuality != null && requiredFormat != null
+            && YoutubeAuthRequired.matches(error)) {
+            SwingUtilities.invokeLater(() -> {
+                if (this.youtubeAccount.signIn(this, true)) {
+                    this.youTubeLinkExtractor.findVideoUrlAsync(
+                        youTubeVideoId,
+                        preferredQuality,
+                        requiredFormat,
+                        (id, resolved, failure) -> this.onResolvedYoutubeUrlLink(
+                            id, resolved, failure, false, preferredQuality, requiredFormat));
+                }
+            });
+            return;
+        }
+        SwingUtilities.invokeLater(
+            () -> JOptionPane.showMessageDialog(MainFrame.this, error.getMessage(),
+                "Error '" + youTubeVideoId + '\'', JOptionPane.ERROR_MESSAGE));
     }
 
     private void openYoutubeLink(@NonNull final String youtubeLinkUrl) {
@@ -1383,11 +1416,38 @@ public final class MainFrame extends javax.swing.JFrame
         return StringEscapeUtils.escapeHtml3(value == null ? "" : value);
     }
 
+    private void reportYoutubeFailure(
+        @NonNull final String youTubeId,
+        @NonNull final Throwable error,
+        final boolean allowSignIn,
+        @NonNull final Runnable retry) {
+        if (allowSignIn && YoutubeAuthRequired.matches(error)) {
+            SwingUtilities.invokeLater(() -> {
+                if (this.youtubeAccount.signIn(this, true)) {
+                    retry.run();
+                }
+            });
+            return;
+        }
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+            this, error.getMessage(), "Error '" + youTubeId + '\'', JOptionPane.ERROR_MESSAGE));
+    }
+
     private void openYoutubeThroughDirectLinkSearch(
         @NonNull final String youTubeVideoId,
         @NonNull final YtQuality preferredQuality,
         @NonNull final YtVideoType requiredFormat,
         final boolean throughPlayList) {
+        this.openYoutubeThroughDirectLinkSearch(
+            youTubeVideoId, preferredQuality, requiredFormat, throughPlayList, true);
+    }
+
+    private void openYoutubeThroughDirectLinkSearch(
+        @NonNull final String youTubeVideoId,
+        @NonNull final YtQuality preferredQuality,
+        @NonNull final YtVideoType requiredFormat,
+        final boolean throughPlayList,
+        final boolean allowSignIn) {
         LOGGER.info(
             "Opening youtube (playlist flag is {}) through direct link search, preffered quality is {}, required format is {}: {}",
             throughPlayList, preferredQuality, requiredFormat, youTubeVideoId);
@@ -1395,10 +1455,10 @@ public final class MainFrame extends javax.swing.JFrame
             this.youTubeLinkExtractor.findPlayListInfoAsync(youTubeVideoId,
                 (playListId, playlist, error) -> {
                     if (error != null) {
-                        SwingUtilities.invokeLater(
-                            () -> JOptionPane.showMessageDialog(MainFrame.this, error.getMessage(),
-                                "Error '" + youTubeLinkExtractor + '\'',
-                                JOptionPane.ERROR_MESSAGE));
+                        this.reportYoutubeFailure(
+                            youTubeVideoId, error, allowSignIn,
+                            () -> this.openYoutubeThroughDirectLinkSearch(
+                                youTubeVideoId, preferredQuality, requiredFormat, true, false));
                         return;
                     }
 
@@ -1428,13 +1488,16 @@ public final class MainFrame extends javax.swing.JFrame
                         this.youTubeLinkExtractor.findVideoUrlAsync(
                             firstVideo.videoId(),
                             preferredQuality, requiredFormat,
-                            this::onResolvedYoutubeUrlLink);
+                            (id, resolved, failure) -> this.onResolvedYoutubeUrlLink(
+                                id, resolved, failure, allowSignIn, preferredQuality,
+                                requiredFormat));
                     });
                 });
         } else {
             this.youTubeLinkExtractor.findVideoUrlAsync(youTubeVideoId, preferredQuality,
                 requiredFormat,
-                this::onResolvedYoutubeUrlLink);
+                (id, resolved, failure) -> this.onResolvedYoutubeUrlLink(
+                    id, resolved, failure, allowSignIn, preferredQuality, requiredFormat));
         }
     }
 
@@ -1453,29 +1516,34 @@ public final class MainFrame extends javax.swing.JFrame
             return;
         }
 
+        this.decodeYoutubeVideo(youTubeVideoId, true);
+    }
+
+    private void decodeYoutubeVideo(@NonNull final String youTubeVideoId,
+                                    final boolean allowSignIn) {
         try {
             this.youTubeLinkExtractor.getYoutubeDownloader()
                 .videoInfoAsync(youTubeVideoId)
                 .whenComplete((videoInfo, error) ->
-                    this.showDecodedYoutubeFormats(youTubeVideoId, videoInfo, error));
+                    this.showDecodedYoutubeFormats(youTubeVideoId, videoInfo, error, allowSignIn));
         } catch (RuntimeException error) {
-            this.showDecodedYoutubeFormats(youTubeVideoId, null, error);
+            this.showDecodedYoutubeFormats(youTubeVideoId, null, error, allowSignIn);
         }
     }
 
     private void showDecodedYoutubeFormats(
         @NonNull final String youTubeVideoId,
         @Nullable final VideoInfo videoInfo,
-        @Nullable final Throwable error) {
+        @Nullable final Throwable error,
+        final boolean allowSignIn) {
         if (error != null || videoInfo == null) {
             final Throwable failure = error == null
                 ? new IllegalStateException("Youtube returned no video info")
                 : error;
             LOGGER.error("Error during search video formats for youtube '{}'",
                 youTubeVideoId, failure);
-            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(MainFrame.this,
-                "Error during search video formats for youtube: " + failure.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE));
+            this.reportYoutubeFailure(youTubeVideoId, failure, allowSignIn,
+                () -> this.decodeYoutubeVideo(youTubeVideoId, false));
             return;
         }
 

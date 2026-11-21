@@ -653,7 +653,9 @@ public class ApplicationPreferences {
         JSON_REQUEST_TIMEOUT("json.request.timeout"),
         YOUTUBE_OPEN_URL_MODE("youtube.open.url.mode"),
         YOUTUBE_PREFERRED_QUALITY("youtube.preferred.quality"),
-        YOUTUBE_REQUIRED_FORMAT("youtube.required.format");
+        YOUTUBE_REQUIRED_FORMAT("youtube.required.format"),
+        YOUTUBE_SESSION("youtube.session"),
+        YOUTUBE_SESSION_KEY("youtube.session.key");
 
         private final String propertyName;
 

@@ -3,6 +3,7 @@ package com.igormaznitsa.ravikoodi.ytloader;
 import static com.igormaznitsa.ravikoodi.YoutubeUtils.extractYoutubeVideoId;
 import static org.junit.Assert.assertNull;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -15,11 +16,28 @@ public class YtLinkExtractorTest {
 
   @Test
   @Ignore
-  public void testFindVideo() {
+  public void testFindVideo() throws Exception {
     final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     try {
-      final YtLinkExtractor linkExtractor = new YtLinkExtractor(executor);
+      final YtLinkExtractor linkExtractor = new YtLinkExtractor(
+          executor,
+          new YoutubeSessionStore(new YoutubeSessionStore.PreferenceNode() {
+            @Override
+            public String get(final String key) {
+              return null;
+            }
+
+            @Override
+            public void put(final String key, final String value) {
+            }
+
+            @Override
+            public void remove(final String key) {
+            }
+          }, session -> {
+            throw new IOException("no refresh");
+          }));
       final String videoId =
           extractYoutubeVideoId("https://www.youtube.com/watch?v=R3GfuzLMPkA").orElseThrow();
 
