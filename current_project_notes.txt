@@ -21,6 +21,8 @@
 - In-memory payloads (`UploadFileRecord.predefinedData`, used for the clipboard screenshot) are the body. `File.length()` on the placeholder path is not the size.
 - `Accept-Ranges: bytes` is what tells the player that seeking is allowed. Screencast stays `Accept-Ranges: none`.
 - jsonrpc4j uses one `ObjectMapper`: `ParameterNamesModule` plus `ConstructorDetector.USE_PROPERTIES_BASED`. The compiler writes parameter names (`-parameters`). Lombok copies `@JsonProperty` onto generated constructors. Jackson 2.21 does not apply `@JsonProperty(defaultValue)` when a creator argument is absent, so `ListLimitsReturned` takes `Long` for `start` and `end` and uses 0 and -1 when those keys are missing.
+- `java-youtube-downloader` 4.0 replaces request/callback types with `YoutubeDownloader.builder()`, `videoInfoAsync`, and `playlist`. Formats are `muxed`, `videoOnly`, and `audioOnly`. There is no per-request client. The downloader tries its default profiles (visionOS, then Android VR). Samsung TV needs a JS challenge solver and is not used. Playlist videos load lazily and no longer expose `isPlayable`; direct playlist open takes the first listed video. `Empty` is a parameterless JSON-RPC body. Spring Boot 4.2 deprecates `jackson2.JsonComponent` for removal, and that annotation is not used.
+- `spring-boot-maven-plugin` `finalName` is read-only and ignored. The `publishsh` profile sets Maven `build/finalName` to `artifact-version.sh`, then renames that jar to drop `.jar`.
 
 ## 3. Technical Debt & Refactoring
 - `MainFrame.startPlaying` registers a file, then `KodiComm.openFileThroughRegistry` registers a second id and that second URL is what Kodi opens. On failure only the first id is unregistered.
@@ -37,6 +39,7 @@
 - Byte-range positioning fix is in the working tree and tested. Not committed.
 - Seek no longer leaves a finished range connection unable to accept the next request. Not committed.
 - Kodi reply types no longer use a forced no-arg constructor. Covered by `KodiJsonBindingTest`. Not committed. The packaged app in `~/Programs/ravikoodi` needs a rebuild.
+- Dependency bump to Spring Boot 4.2.0 and java-youtube-downloader 4.0.0 compiles, tests pass, and SpotBugs is clean. YouTube call sites use the 4.0 API. `publishsh` still emits the `.sh` archive. Not committed.
 
 ## 5. Known Issues & Limitations
 - Multipart ranges (`bytes=0-1,2-3`) are ignored and the whole payload is returned. One range is what players send for seek.

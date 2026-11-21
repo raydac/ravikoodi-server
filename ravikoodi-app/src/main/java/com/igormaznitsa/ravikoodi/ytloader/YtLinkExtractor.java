@@ -17,21 +17,19 @@
 package com.igormaznitsa.ravikoodi.ytloader;
 
 import com.github.kiulian.downloader.YoutubeDownloader;
-import com.github.kiulian.downloader.downloader.YoutubeCallback;
-import com.github.kiulian.downloader.downloader.client.ClientType;
-import com.github.kiulian.downloader.downloader.request.RequestPlaylistInfo;
-import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
-import com.github.kiulian.downloader.model.playlist.PlaylistInfo;
+import com.github.kiulian.downloader.model.playlist.Playlist;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
-import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
+import com.github.kiulian.downloader.model.videos.formats.Format;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.util.TriConsumer;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -41,25 +39,25 @@ public class YtLinkExtractor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(YtLinkExtractor.class);
 
-  final ExecutorService executor;
-  final YoutubeDownloader youtubeDownloader;
+  private final ExecutorService executor;
+  private final YoutubeDownloader youtubeDownloader;
 
   public YtLinkExtractor(@NonNull final ExecutorService executor) {
     this.executor = executor;
-    this.youtubeDownloader = new YoutubeDownloader();
-    this.youtubeDownloader.getConfig().setExecutorService(this.executor);
-    this.youtubeDownloader.getConfig().setMaxRetries(5);
-    this.youtubeDownloader.getConfig().setCompressionEnabled(true);
+    this.youtubeDownloader = YoutubeDownloader.builder()
+        .executor(executor)
+        .retries(5)
+        .build();
   }
 
   @NonNull
-  private static Optional<Pair<VideoFormat, YtQuality>> findAppropriateVideoFormat(
-      @NonNull final List<? extends VideoFormat> formats,
+  private static Optional<Pair<Format, YtQuality>> findAppropriateVideoFormat(
+      @NonNull final List<Format> formats,
       @NonNull final YtQuality preferredQuality,
       @NonNull final YtVideoType requiredVideoType) {
-    VideoFormat found = null;
+    Format found = null;
     YtQuality foundQuality = YtQuality.UNKNOWN;
-    for (var format : formats) {
+    for (final Format format : formats) {
       final YtQuality currentQuality = YtQuality.find(format.qualityLabel());
       final YtVideoType type = YtVideoType.find(format.mimeType());
 
@@ -68,8 +66,8 @@ public class YtLinkExtractor {
           found = format;
           foundQuality = currentQuality;
           break;
-        } else if (foundQuality.ordinal() < currentQuality.ordinal() &&
-            currentQuality.ordinal() < preferredQuality.ordinal()) {
+        } else if (foundQuality.ordinal() < currentQuality.ordinal()
+            && currentQuality.ordinal() < preferredQuality.ordinal()) {
           found = format;
           foundQuality = currentQuality;
         }
@@ -80,29 +78,29 @@ public class YtLinkExtractor {
 
   public void findPlayListInfoAsync(
       @NonNull final String youTubePlaylistId,
-      @NonNull final TriConsumer<String, PlaylistInfo, Throwable> resultConsumer) {
+      @NonNull final TriConsumer<String, Playlist, Throwable> resultConsumer) {
     LOGGER.info("Request to find Playlist on youtube: {}", youTubePlaylistId);
 
-    final RequestPlaylistInfo request = new RequestPlaylistInfo(youTubePlaylistId);
     try {
-      this.executor.submit(() -> {
-        try {
-          final PlaylistInfo playListInfo =
-              this.youtubeDownloader.getPlaylistInfo(request).data();
-          LOGGER.info("Resolved Youtube playlist request {}, items {} ",
-              youTubePlaylistId,
-              playListInfo.videos().size());
-          resultConsumer
-              .accept(youTubePlaylistId, playListInfo, null);
-        } catch (Throwable error) {
-          LOGGER.error("Error during search youtube playlist '{}'", youTubePlaylistId,
-              error);
-          resultConsumer.accept(youTubePlaylistId, null, error);
-        }
-      });
+      this.executor.submit(() -> this.resolvePlaylist(youTubePlaylistId, resultConsumer));
     } catch (RejectedExecutionException ex) {
       LOGGER.error("Can't submit task, rejected execution", ex);
       resultConsumer.accept(youTubePlaylistId, null, ex);
+    }
+  }
+
+  private void resolvePlaylist(
+      @NonNull final String youTubePlaylistId,
+      @NonNull final TriConsumer<String, Playlist, Throwable> resultConsumer) {
+    try {
+      final Playlist playlist = this.youtubeDownloader.playlist(youTubePlaylistId);
+      LOGGER.info("Resolved Youtube playlist request {}, items {} ",
+          youTubePlaylistId,
+          playlist.details().videoCount());
+      resultConsumer.accept(youTubePlaylistId, playlist, null);
+    } catch (Throwable error) {
+      LOGGER.error("Error during search youtube playlist '{}'", youTubePlaylistId, error);
+      resultConsumer.accept(youTubePlaylistId, null, error);
     }
   }
 
@@ -115,76 +113,68 @@ public class YtLinkExtractor {
       @NonNull final YtQuality preferredQuality,
       @NonNull final YtVideoType requiredVideoType,
       @NonNull final TriConsumer<String, String, Throwable> resultConsumer) {
-    this.findVideoUrlAsync(
-        youTubeVideoId,
-        ClientType.WEB_PARENT_TOOLS,
-        preferredQuality,
-        requiredVideoType,
-        resultConsumer
-    );
-  }
-
-  public void findVideoUrlAsync(
-      @NonNull final String youTubeVideoId,
-      @NonNull final ClientType clientType,
-      @NonNull final YtQuality preferredQuality,
-      @NonNull final YtVideoType requiredVideoType,
-      @NonNull final TriConsumer<String, String, Throwable> resultConsumer) {
     LOGGER.info("Request to find URL on youtube: {}", youTubeVideoId);
 
-    final RequestVideoInfo request = new RequestVideoInfo(youTubeVideoId)
-        .callback(new YoutubeCallback<>() {
-          @Override
-          public void onFinished(final VideoInfo videoInfo) {
-            final List<? extends VideoFormat> formatsWithSound =
-                videoInfo.videoWithAudioFormats();
-            final List<VideoFormat> formatsNoSound = videoInfo.videoFormats();
-            LOGGER.info(
-                "Resolved video info for {}, found {} sounded formats, found {} no sound formats",
-                youTubeVideoId,
-                formatsWithSound.size(), formatsNoSound.size());
+    final CompletableFuture<VideoInfo> pending;
+    try {
+      pending = this.youtubeDownloader.videoInfoAsync(youTubeVideoId);
+    } catch (RuntimeException error) {
+      LOGGER.error("Can't request youtube video '{}'", youTubeVideoId, error);
+      resultConsumer.accept(youTubeVideoId, null, error);
+      return;
+    }
 
-            final Pair<VideoFormat, YtQuality> found =
-                findAppropriateVideoFormat(formatsWithSound, preferredQuality,
-                    requiredVideoType)
-                    .orElseGet(
-                        () -> findAppropriateVideoFormat(formatsNoSound, preferredQuality,
-                            requiredVideoType).orElse(null));
+    pending.whenComplete((videoInfo, error) -> this.publishResolvedVideoUrl(
+        youTubeVideoId, preferredQuality, requiredVideoType, resultConsumer, videoInfo, error));
+  }
 
-            if (found == null) {
-              LOGGER.error(
-                  "Can't find any format for '{}', for preferred quality {} and required type {}",
-                  youTubeVideoId, preferredQuality, requiredVideoType);
-              resultConsumer.accept(youTubeVideoId, null, new NoSuchElementException(
-                  "Can't find required video format or resolution for '" +
-                      youTubeVideoId +
-                      '\''));
-            } else {
-              final String url = found.getLeft().url();
-              if (url != null) {
-                LOGGER.info("Detected URL for {}: {}", youTubeVideoId, url);
-                resultConsumer.accept(youTubeVideoId, url, null);
-              } else {
-                LOGGER.error("URL for {} is null!", youTubeVideoId);
-                resultConsumer.accept(youTubeVideoId, null,
-                    new NullPointerException(
-                        "URL is null for found link of video '" + youTubeVideoId +
-                            "'"));
-              }
-            }
-          }
+  private void publishResolvedVideoUrl(
+      @NonNull final String youTubeVideoId,
+      @NonNull final YtQuality preferredQuality,
+      @NonNull final YtVideoType requiredVideoType,
+      @NonNull final TriConsumer<String, String, Throwable> resultConsumer,
+      @Nullable final VideoInfo videoInfo,
+      @Nullable final Throwable error) {
+    if (error != null || videoInfo == null) {
+      final Throwable failure = error == null
+          ?
+          new IllegalStateException("Youtube returned no video info for '" + youTubeVideoId + '\'')
+          : error;
+      LOGGER.error("Error during search video formats for youtube '{}'", youTubeVideoId, failure);
+      resultConsumer.accept(youTubeVideoId, null, failure);
+      return;
+    }
 
-          @Override
-          public void onError(final Throwable throwable) {
-            LOGGER.error("Error during search video formats for youtube '{}'",
-                youTubeVideoId, throwable);
-            resultConsumer.accept(youTubeVideoId, null, throwable);
-          }
-        })
-        .header("Accept-language", "en-US,en;") // extra request header
-        .clientType(clientType)
-        .maxRetries(5)
-        .async();
-    this.youtubeDownloader.getVideoInfo(request);
+    final List<Format> formatsWithSound = videoInfo.formats().muxed();
+    final List<Format> formatsNoSound = videoInfo.formats().videoOnly();
+    LOGGER.info(
+        "Resolved video info for {}, found {} sounded formats, found {} no sound formats",
+        youTubeVideoId,
+        formatsWithSound.size(), formatsNoSound.size());
+
+    final Pair<Format, YtQuality> found = findAppropriateVideoFormat(
+        formatsWithSound, preferredQuality, requiredVideoType)
+        .orElseGet(() -> findAppropriateVideoFormat(
+            formatsNoSound, preferredQuality, requiredVideoType).orElse(null));
+
+    if (found == null) {
+      LOGGER.error(
+          "Can't find any format for '{}', for preferred quality {} and required type {}",
+          youTubeVideoId, preferredQuality, requiredVideoType);
+      resultConsumer.accept(youTubeVideoId, null, new NoSuchElementException(
+          "Can't find required video format or resolution for '" + youTubeVideoId + '\''));
+      return;
+    }
+
+    final String url = found.getLeft().url();
+    if (url.isBlank()) {
+      LOGGER.error("URL for {} is empty!", youTubeVideoId);
+      resultConsumer.accept(youTubeVideoId, null, new IllegalStateException(
+          "URL is empty for found link of video '" + youTubeVideoId + "'"));
+      return;
+    }
+
+    LOGGER.info("Detected URL for {}: {}", youTubeVideoId, url);
+    resultConsumer.accept(youTubeVideoId, url, null);
   }
 }

@@ -5,13 +5,9 @@ import static com.igormaznitsa.ravikoodi.Utils.isBlank;
 import static java.util.Objects.requireNonNull;
 import static javax.swing.tree.TreeSelectionModel.SINGLE_TREE_SELECTION;
 
-import com.github.kiulian.downloader.downloader.YoutubeCallback;
-import com.github.kiulian.downloader.downloader.client.ClientType;
-import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
-import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
+import com.github.kiulian.downloader.model.playlist.PlaylistVideo;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
-import com.github.kiulian.downloader.model.videos.formats.AudioFormat;
-import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
+import com.github.kiulian.downloader.model.videos.formats.Format;
 import com.igormaznitsa.ravikoodi.MimeTypes.ContentType;
 import com.igormaznitsa.ravikoodi.kodijsonapi.ActivePlayerInfo;
 import com.igormaznitsa.ravikoodi.kodijsonapi.KodiService;
@@ -1268,61 +1264,16 @@ public final class MainFrame extends javax.swing.JFrame
         this.openUrlLink(String.format(patternPlayList, youTubeVideoId));
     }
 
-    private void openYoutubeThroughDirectLinkSearch(
-        @NonNull final String youTubeVideoId,
-        @NonNull final YtQuality preferredQuality,
-        @NonNull final YtVideoType requiredFormat,
-        final boolean throughPlayList) {
-        LOGGER.info(
-            "Opening youtube (playlist flag is {}) through direct link search, preffered quality is {}, required format is {}: {}",
-            throughPlayList, preferredQuality, requiredFormat, youTubeVideoId);
-        if (throughPlayList) {
-            this.youTubeLinkExtractor.findPlayListInfoAsync(youTubeVideoId,
-                (playListId, playlistInfo, error) -> {
-                    if (error == null) {
-                        if (playlistInfo.videos().isEmpty()) {
-                            SwingUtilities.invokeLater(
-                                () -> JOptionPane.showMessageDialog(MainFrame.this,
-                                    "Youtube playlist is empty!", "Info '" + playListId + '\'',
-                                    JOptionPane.WARNING_MESSAGE));
-                        } else {
-                            var firstVideo = playlistInfo.videos().stream()
-                                .filter(PlaylistVideoDetails::isPlayable)
-                                .findFirst()
-                                .orElse(null);
-                            if (firstVideo == null) {
-                                LOGGER.info("Can't find any playable video in youtube playlist: {}",
-                                    playListId);
-                                SwingUtilities.invokeLater(
-                                    () -> JOptionPane.showMessageDialog(MainFrame.this,
-                                        "Youtube playlist doesn't have playable video!",
-                                        "Info '" + playListId + '\'',
-                                        JOptionPane.WARNING_MESSAGE));
-                            } else {
-                                SwingUtilities.invokeLater(() -> {
-                                    LOGGER.info(
-                                        "Opening first video in youtube playlist '{}': {} ({})",
-                                        playListId,
-                                        firstVideo.title(), firstVideo.videoId());
-                                    this.youTubeLinkExtractor.findVideoUrlAsync(
-                                        firstVideo.videoId(),
-                                        preferredQuality, requiredFormat,
-                                        this::onResolvedYoutubeUrlLink);
-                                });
-                            }
-                        }
-                    } else {
-                        SwingUtilities.invokeLater(
-                            () -> JOptionPane.showMessageDialog(MainFrame.this, error.getMessage(),
-                                "Error '" + youTubeLinkExtractor + '\'',
-                                JOptionPane.ERROR_MESSAGE));
-                    }
-                });
-        } else {
-            this.youTubeLinkExtractor.findVideoUrlAsync(youTubeVideoId, preferredQuality,
-                requiredFormat,
-                this::onResolvedYoutubeUrlLink);
+    private static void appendYoutubeFormats(
+        final StringBuilder buffer,
+        final String title,
+        final List<Format> formats,
+        final boolean audioOnly) {
+        buffer.append("<h2>").append(escapeYoutubeHtml(title)).append("</h2><ul>");
+        for (final Format format : formats) {
+            buffer.append(youtubeFormatItem(format, audioOnly));
         }
+        buffer.append("</ul>");
     }
 
     private void onResolvedYoutubeUrlLink(@NonNull final String youTubeVideoId,
@@ -1403,6 +1354,90 @@ public final class MainFrame extends javax.swing.JFrame
         }
     }
 
+    private static String youtubeFormatItem(final Format format, final boolean audioOnly) {
+        if (audioOnly) {
+            return "<li>%s %s %s samplerate: %d bitrate:%d <a href=\"%s\">url</a></li>".formatted(
+                escapeYoutubeHtml(youtubeFormatKind(format)),
+                escapeYoutubeHtml(format.mimeType()),
+                escapeYoutubeHtml(format.audioQuality().name()),
+                format.audioSampleRate(),
+                format.averageBitrate(),
+                escapeYoutubeHtml(format.url()));
+        }
+        return "<li>%s %s %s %s <a href=\"%s\">url</a></li>".formatted(
+            escapeYoutubeHtml(youtubeFormatKind(format)),
+            escapeYoutubeHtml(format.mimeType()),
+            escapeYoutubeHtml(format.qualityLabel()),
+            escapeYoutubeHtml(format.videoQuality().name()),
+            escapeYoutubeHtml(format.url()));
+    }
+
+    private static String youtubeFormatKind(final Format format) {
+        if (format.hasVideo() && format.hasAudio()) {
+            return "audio/video";
+        }
+        return format.hasVideo() ? "video" : "audio";
+    }
+
+    private static String escapeYoutubeHtml(final String value) {
+        return StringEscapeUtils.escapeHtml3(value == null ? "" : value);
+    }
+
+    private void openYoutubeThroughDirectLinkSearch(
+        @NonNull final String youTubeVideoId,
+        @NonNull final YtQuality preferredQuality,
+        @NonNull final YtVideoType requiredFormat,
+        final boolean throughPlayList) {
+        LOGGER.info(
+            "Opening youtube (playlist flag is {}) through direct link search, preffered quality is {}, required format is {}: {}",
+            throughPlayList, preferredQuality, requiredFormat, youTubeVideoId);
+        if (throughPlayList) {
+            this.youTubeLinkExtractor.findPlayListInfoAsync(youTubeVideoId,
+                (playListId, playlist, error) -> {
+                    if (error != null) {
+                        SwingUtilities.invokeLater(
+                            () -> JOptionPane.showMessageDialog(MainFrame.this, error.getMessage(),
+                                "Error '" + youTubeLinkExtractor + '\'',
+                                JOptionPane.ERROR_MESSAGE));
+                        return;
+                    }
+
+                    final PlaylistVideo firstVideo;
+                    try {
+                        firstVideo = playlist.stream().findFirst().orElse(null);
+                    } catch (RuntimeException failure) {
+                        LOGGER.error("Can't read youtube playlist '{}'", playListId, failure);
+                        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                            MainFrame.this, failure.getMessage(),
+                            "Error '" + playListId + '\'', JOptionPane.ERROR_MESSAGE));
+                        return;
+                    }
+                    if (firstVideo == null) {
+                        SwingUtilities.invokeLater(
+                            () -> JOptionPane.showMessageDialog(MainFrame.this,
+                                "Youtube playlist is empty!", "Info '" + playListId + '\'',
+                                JOptionPane.WARNING_MESSAGE));
+                        return;
+                    }
+
+                    SwingUtilities.invokeLater(() -> {
+                        LOGGER.info(
+                            "Opening first video in youtube playlist '{}': {} ({})",
+                            playListId,
+                            firstVideo.title(), firstVideo.videoId());
+                        this.youTubeLinkExtractor.findVideoUrlAsync(
+                            firstVideo.videoId(),
+                            preferredQuality, requiredFormat,
+                            this::onResolvedYoutubeUrlLink);
+                    });
+                });
+        } else {
+            this.youTubeLinkExtractor.findVideoUrlAsync(youTubeVideoId, preferredQuality,
+                requiredFormat,
+                this::onResolvedYoutubeUrlLink);
+        }
+    }
+
     private void menuMiscDecodeYoutubeUrlActionPerformed(ActionEvent evt) {
         final String youtubeLinkUrl = JOptionPane.showInputDialog(this, "Enter Youtube URL", "");
         if (youtubeLinkUrl == null || youtubeLinkUrl.isBlank()) {
@@ -1418,80 +1453,49 @@ public final class MainFrame extends javax.swing.JFrame
             return;
         }
 
-        final RequestVideoInfo request = new RequestVideoInfo(youTubeVideoId)
-            .callback(new YoutubeCallback<>() {
-                @Override
-                public void onFinished(final VideoInfo videoInfo) {
-                    final List<? extends VideoFormat> formatsWithSound =
-                        videoInfo.videoWithAudioFormats();
-                    final List<VideoFormat> formatsNoSound = videoInfo.videoFormats();
-                    final List<AudioFormat> formatsSound = videoInfo.audioFormats();
+        try {
+            this.youTubeLinkExtractor.getYoutubeDownloader()
+                .videoInfoAsync(youTubeVideoId)
+                .whenComplete((videoInfo, error) ->
+                    this.showDecodedYoutubeFormats(youTubeVideoId, videoInfo, error));
+        } catch (RuntimeException error) {
+            this.showDecodedYoutubeFormats(youTubeVideoId, null, error);
+        }
+    }
 
-                    final StringBuilder buffer = new StringBuilder();
-                    buffer.append("<html><body>");
+    private void showDecodedYoutubeFormats(
+        @NonNull final String youTubeVideoId,
+        @Nullable final VideoInfo videoInfo,
+        @Nullable final Throwable error) {
+        if (error != null || videoInfo == null) {
+            final Throwable failure = error == null
+                ? new IllegalStateException("Youtube returned no video info")
+                : error;
+            LOGGER.error("Error during search video formats for youtube '{}'",
+                youTubeVideoId, failure);
+            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(MainFrame.this,
+                "Error during search video formats for youtube: " + failure.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE));
+            return;
+        }
 
-                    buffer.append("<h2>With sound</h2><ul>");
+        final StringBuilder buffer = new StringBuilder("<html><body>");
+        appendYoutubeFormats(buffer, "With sound", videoInfo.formats().muxed(), false);
+        appendYoutubeFormats(buffer, "No sound", videoInfo.formats().videoOnly(), false);
+        appendYoutubeFormats(buffer, "Only sound", videoInfo.formats().audioOnly(), true);
+        buffer.append("</body></html>");
 
-                    formatsWithSound.forEach(
-                        x -> buffer.append(
-                            String.format("<li>%s %s %s %s <a href=\"%s\">url</a></li>",
-                                StringEscapeUtils.escapeHtml3(x.type()),
-                                StringEscapeUtils.escapeHtml3(x.mimeType()),
-                                StringEscapeUtils.escapeHtml3(x.qualityLabel()),
-                                StringEscapeUtils.escapeHtml3(x.videoQuality().name()),
-                                StringEscapeUtils.escapeHtml3(x.url()))));
-
-                    buffer.append("</ul><h2>No sound</h2><ul>");
-
-                    formatsNoSound.forEach(
-                        x -> buffer.append(
-                            String.format("<li>%s %s %s %s <a href=\"%s\">url</a></li>",
-                                StringEscapeUtils.escapeHtml3(x.type()),
-                                StringEscapeUtils.escapeHtml3(x.mimeType()),
-                                StringEscapeUtils.escapeHtml3(x.qualityLabel()),
-                                StringEscapeUtils.escapeHtml3(x.videoQuality().name()),
-                                StringEscapeUtils.escapeHtml3(x.url()))));
-
-                    buffer.append("</ul><h2>Only sound</h2><ul>");
-
-                    formatsSound.forEach(x -> buffer.append(String.format(
-                        "<li>%s %s %s samplerate: %d bitrate:%d <a href=\"%s\">url</a></li>",
-                        StringEscapeUtils.escapeHtml3(x.type()),
-                        StringEscapeUtils.escapeHtml3(x.mimeType()),
-                        StringEscapeUtils.escapeHtml3(x.audioQuality().name()),
-                        x.audioSampleRate(),
-                        x.averageBitrate(),
-                        StringEscapeUtils.escapeHtml3(x.url()))));
-
-                    buffer.append("</ul></body></html>");
-
-                    SwingUtilities.invokeLater(() -> {
-                        final JEditorPane ed1tor = new JEditorPane("text/html", buffer.toString());
-                        ed1tor.addHyperlinkListener(e -> {
-                            if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-                                Utils.showURLExternal(e.getURL());
-                            }
-                        });
-                        ed1tor.setEditable(false);
-                        JOptionPane.showMessageDialog(MainFrame.this, new JScrollPane(ed1tor),
-                            "Found Youtube links", JOptionPane.PLAIN_MESSAGE);
-                    });
+        SwingUtilities.invokeLater(() -> {
+            final JEditorPane editor = new JEditorPane("text/html", buffer.toString());
+            editor.addHyperlinkListener(e -> {
+                if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+                    Utils.showURLExternal(e.getURL());
                 }
-
-                @Override
-                public void onError(final Throwable throwable) {
-                    LOGGER.error("Error during search video formats for youtube '{}'",
-                        youTubeVideoId, throwable);
-                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(MainFrame.this,
-                        "Error during search video formats for youtube: " +
-                            throwable.getMessage(), "Error", JOptionPane.ERROR_MESSAGE));
-                }
-            })
-            .clientType(ClientType.WEB_PARENT_TOOLS)
-            .maxRetries(5)
-            .async();
-        this.youTubeLinkExtractor.getYoutubeDownloader().getVideoInfo(request);
-
+            });
+            editor.setEditable(false);
+            JOptionPane.showMessageDialog(MainFrame.this, new JScrollPane(editor),
+                "Found Youtube links", JOptionPane.PLAIN_MESSAGE);
+        });
     }
 
     public void startPlaying(@NonNull final ContentFile contentFile, @Nullable final byte[] data) {

@@ -5,8 +5,8 @@
   - player panel shows the newly opened link instead of the previous item
   - fixed seeking inside a served file so the player can request the next byte range without the video stopping
   - Kodi status updates no longer log a Java warning about final fields
-  - updated embedded JDK to 26.0.1+10
-  - updated Spring Boot to 4.1.0
+  - updated embedded JDK to 27.0.1.1+5
+  - updated Spring Boot to 4.2.0
   - updated dependencies
 
 # __1.2.1 (19-feb-2026)__

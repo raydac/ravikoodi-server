@@ -3,7 +3,6 @@ package com.igormaznitsa.ravikoodi.ytloader;
 import static com.igormaznitsa.ravikoodi.YoutubeUtils.extractYoutubeVideoId;
 import static org.junit.Assert.assertNull;
 
-import com.github.kiulian.downloader.downloader.client.ClientType;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,7 +30,6 @@ public class YtLinkExtractorTest {
 
       linkExtractor.findVideoUrlAsync(
           videoId,
-          ClientType.TVHTML5,
           YtQuality.p360,
           YtVideoType.MP4,
           (a, b, error) -> {

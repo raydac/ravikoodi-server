@@ -30,12 +30,11 @@
     <properties>
         <embedded.jdk.provider>BELLSOFT</embedded.jdk.provider>
         <embedded.jdk.type>jdk</embedded.jdk.type>
-        <embedded.jdk.version>27.0.1.0.3+5</embedded.jdk.version>
-        <spring.boot.version>4.1.2</spring.boot.version>
+        <embedded.jdk.version>27.0.1.1+5</embedded.jdk.version>
+        <spring.boot.version>4.2.0</spring.boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <app.name>${project.build.finalName}</app.name>
-        <final.ext></final.ext>
         <executable.jar>false</executable.jar>
     </properties>
 
@@ -44,9 +43,9 @@
             <id>publishsh</id>
             <properties>
                 <executable.jar>true</executable.jar>
-                <final.ext>.sh</final.ext>
             </properties>
             <build>
+                <finalName>${project.artifactId}-${project.version}.sh</finalName>
                 <plugins>
                     <plugin>
                         <groupId>com.coderplus.maven.plugins</groupId>
@@ -60,9 +59,11 @@
                                     <goal>rename</goal>
                                 </goals>
                                 <configuration>
-                                    <sourceFile>${project.build.directory}${file.separator}${app.name}.sh.jar
+                                    <sourceFile>
+                                        ${project.build.directory}${file.separator}${project.build.finalName}.jar
                                     </sourceFile>
-                                    <destinationFile>${project.build.directory}${file.separator}${app.name}.sh
+                                    <destinationFile>
+                                        ${project.build.directory}${file.separator}${project.build.finalName}
                                     </destinationFile>
                                 </configuration>
                             </execution>
@@ -668,7 +669,7 @@
         <dependency>
             <groupId>com.github.sealedtx</groupId>
             <artifactId>java-youtube-downloader</artifactId>
-            <version>3.3.1</version>
+            <version>4.0.0</version>
         </dependency>
 
         <dependency>
@@ -734,7 +735,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.10.4.1</version>
+                <version>4.10.5.0</version>
                 <configuration>
                     <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
                 </configuration>
@@ -785,9 +786,6 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring.boot.version}</version>
-                <configuration>
-                    <finalName>${project.build.finalName}${final.ext}</finalName>
-                </configuration>
                 <executions>
                     <execution>
                         <id>generate-build-info</id>
