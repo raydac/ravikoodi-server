@@ -8,14 +8,17 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class Config {
 
-  @Bean
+  @Bean(destroyMethod = "shutdownNow")
   public ScheduledExecutorService createScheduledExecutorService() {
-    return new ScheduledThreadPoolExecutor(
+    final ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(
         5,
-        (Runnable r) -> {
-          final Thread result = new Thread(r, "scheduled-executor-service-" + System.nanoTime());
+        (Runnable runnable) -> {
+          final Thread result =
+              new Thread(runnable, "scheduled-executor-service-" + System.nanoTime());
           result.setDaemon(true);
           return result;
         });
+    executor.setRemoveOnCancelPolicy(true);
+    return executor;
   }
 }

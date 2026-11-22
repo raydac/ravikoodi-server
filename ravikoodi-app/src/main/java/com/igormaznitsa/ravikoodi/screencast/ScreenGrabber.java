@@ -170,20 +170,24 @@ public final class ScreenGrabber implements Closeable {
   }
 
   public void dispose() {
-    if (this.disposed.compareAndSet(false, true)) {
-      final Thread currentGrabbingThread = this.grabbingThread.getAndSet(null);
-      currentGrabbingThread.interrupt();
-      try {
-        currentGrabbingThread.join();
-      } catch (InterruptedException ex) {
-        Thread.currentThread().interrupt();
-      } finally {
+    if (!this.disposed.compareAndSet(false, true)) {
+      return;
+    }
+    final Thread grabbing = this.grabbingThread.getAndSet(null);
+    if (grabbing != null) {
+      grabbing.interrupt();
+      if (grabbing != Thread.currentThread()) {
         try {
-          this.screenSource.dispose();
-        } finally {
-          this.listeners.forEach(x -> x.onDisposed(this));
+          grabbing.join();
+        } catch (InterruptedException ex) {
+          Thread.currentThread().interrupt();
         }
       }
+    }
+    try {
+      this.screenSource.dispose();
+    } finally {
+      this.listeners.forEach(listener -> listener.onDisposed(this));
     }
   }
 

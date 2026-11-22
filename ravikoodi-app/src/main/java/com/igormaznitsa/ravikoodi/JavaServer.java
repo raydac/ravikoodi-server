@@ -1,7 +1,6 @@
 package com.igormaznitsa.ravikoodi;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.Executors.newCachedThreadPool;
 
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -11,7 +10,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.security.KeyStore;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import org.slf4j.Logger;
@@ -21,13 +23,28 @@ import org.springframework.core.io.ClassPathResource;
 public final class JavaServer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(JavaServer.class);
+  private static final int REQUEST_THREADS = 16;
 
   private final HttpServer server;
-  private final ExecutorService executor = newCachedThreadPool(r -> {
-    final Thread thread = new Thread(r, JavaServer.class.getSimpleName() + "-" + System.nanoTime());
-    thread.setDaemon(true);
-    return thread;
-  });
+  private final ExecutorService executor = boundedRequestExecutor();
+
+  private static ExecutorService boundedRequestExecutor() {
+    final ThreadPoolExecutor executor = new ThreadPoolExecutor(
+        REQUEST_THREADS,
+        REQUEST_THREADS,
+        30L,
+        TimeUnit.SECONDS,
+        new ArrayBlockingQueue<>(REQUEST_THREADS),
+        runnable -> {
+          final Thread thread =
+              new Thread(runnable, JavaServer.class.getSimpleName() + "-" + System.nanoTime());
+          thread.setDaemon(true);
+          return thread;
+        },
+        new ThreadPoolExecutor.AbortPolicy());
+    executor.allowCoreThreadTimeOut(true);
+    return executor;
+  }
 
   public JavaServer(
       final String host,

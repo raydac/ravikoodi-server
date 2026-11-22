@@ -64,7 +64,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -1239,6 +1238,7 @@ public final class MainFrame extends javax.swing.JFrame
                     }, 30, TimeUnit.SECONDS);
                 } else {
                     LOGGER.warn("Detected already active screen grabber!");
+                    Utils.closeQuietly(newScreenGrabber);
                 }
             } catch (Exception ex) {
                 LOGGER.error("Can't create screen grabber");
@@ -1578,20 +1578,16 @@ public final class MainFrame extends javax.swing.JFrame
             infoPanel.setVisible(true);
 
             this.executorService.submit(() -> {
-                final String uuid = UUID.randomUUID().toString();
-                final UploadFileRecord record =
-                    this.fileRegstry.registerFile(uuid, contentFile.getFilePath(), data);
                 final AtomicReference<Throwable> error = new AtomicReference<>();
                 try {
-                    if (!this.kodiComm.openFileThroughRegistry(record.getFile(), data,
-                        Collections.singletonMap("repeat", "off")).isPresent()) {
+                    if (this.kodiComm.openFileThroughRegistry(contentFile.getFilePath(), data,
+                        Collections.singletonMap("repeat", "off")).isEmpty()) {
                         throw new IllegalStateException("Can't start play");
                     }
-                    notifyAllPlayersToRefreshFullData();
+                    this.notifyAllPlayersToRefreshFullData();
                 } catch (Throwable ex) {
                     error.set(ex);
                     LOGGER.error("Can't start file play", ex);
-                    this.fileRegstry.unregisterFile(uuid, false);
                 } finally {
                     SwingUtilities.invokeLater(() -> {
                         openingFileInfoPanel.get().setVisible(false);

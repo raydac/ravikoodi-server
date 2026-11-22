@@ -203,9 +203,17 @@ public class KodiComm {
         throws Throwable {
         final String uid = UUID.randomUUID().toString();
         final UploadFileRecord record = this.fileRegstry.registerFile(uid, path, data);
+      boolean opened = false;
+      try {
         final String fileUrl = this.internalServer.makeUrlFor(record);
         LOGGER.info("Opening file {} as {}, uuid={}", path, fileUrl, uid);
-        return Optional.ofNullable(this.doPlayerOpenFile(fileUrl, options) ? uid : null);
+        opened = this.doPlayerOpenFile(fileUrl, options);
+        return opened ? Optional.of(uid) : Optional.empty();
+      } finally {
+        if (!opened) {
+          this.fileRegstry.unregisterFile(uid, true);
+        }
+      }
     }
 
     @SafeVarargs
@@ -215,6 +223,8 @@ public class KodiComm {
         @NonNull final Map<String, String>... options) throws Throwable {
         final String uid = UUID.randomUUID().toString();
         final UploadFileRecord record = this.fileRegstry.registerFile(uid, path, data);
+      boolean opened = false;
+      try {
         final String fileUrl = this.internalServer.makeUrlFor(record);
         LOGGER.info("Opening file as playlist {} as {} through playlist, uuid={}", path, fileUrl,
             uid);
@@ -223,15 +233,15 @@ public class KodiComm {
 
         final String playListType;
         if (foundMimeRecord == null) {
-            playListType = "unknown";
+          playListType = "unknown";
         } else if (foundMimeRecord.getContentType() == MimeTypes.ContentType.AUDIO) {
-            playListType = "audio";
+          playListType = "audio";
         } else if (foundMimeRecord.getContentType() == MimeTypes.ContentType.VIDEO) {
-            playListType = "video";
+          playListType = "video";
         } else if (foundMimeRecord.getContentType() == MimeTypes.ContentType.PICTURE) {
-            playListType = "picture";
+          playListType = "picture";
         } else {
-            playListType = "mixed";
+          playListType = "mixed";
         }
 
         final KodiService service = this.makeKodiService()
@@ -242,14 +252,17 @@ public class KodiComm {
 
         Optional<Playlist> foundTargetList =
             Stream.of(foundLists).filter(x -> playListType.equalsIgnoreCase(x.getType()))
-            .findFirst();
+                .findFirst();
         if (foundTargetList.isEmpty()) {
-            foundTargetList =
-                Stream.of(foundLists).filter(x -> playListType.equalsIgnoreCase("unknown"))
-                    .findFirst();
+          foundTargetList =
+              Stream.of(foundLists).filter(x -> playListType.equalsIgnoreCase("unknown"))
+                  .findFirst();
         }
 
-        if (foundTargetList.isPresent()) {
+        if (foundTargetList.isEmpty()) {
+          throw new IOException("Can't find any player list for type: " + playListType);
+        }
+
             final Playlist targetList = foundTargetList.get();
             LOGGER.info("Selected target list is {}", targetList);
             if (!isOk(service.clearPlaylist(targetList))) {
@@ -259,17 +272,17 @@ public class KodiComm {
             final PlaylistFileItem item = new PlaylistFileItem();
             item.setFile(fileUrl);
             final String resultForAddPlayerItem = service.addPlaylistItem(targetList, item);
-            if (isOk(resultForAddPlayerItem)) {
-                return Optional.ofNullable(isOk(
-                    service.doPlayerOpenPlaylist(targetList,
-                        Collections.singletonMap("repeat", "one"))) ?
-                    Pair.of(targetList, uid) : null);
-            } else {
+        if (!isOk(resultForAddPlayerItem)) {
                 LOGGER.error("Can't add player list item");
                 throw new IOException("Can't add player list item: " + resultForAddPlayerItem);
             }
-        } else {
-            throw new IOException("Can't find any player list for type: " + playListType);
+        opened = isOk(service.doPlayerOpenPlaylist(targetList,
+            Collections.singletonMap("repeat", "one")));
+        return opened ? Optional.of(Pair.of(targetList, uid)) : Optional.empty();
+      } finally {
+        if (!opened) {
+          this.fileRegstry.unregisterFile(uid, true);
+        }
         }
     }
 

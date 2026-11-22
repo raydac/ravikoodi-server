@@ -88,70 +88,42 @@ public class ApplicationStatusPanel extends javax.swing.JPanel {
 
     final ChangeListener sliderListener = new ChangeListener() {
       @Override
-      public void stateChanged(ChangeEvent e) {
-        thePanel.ignoreRefresh = true;
-        try {
-          if (allowListenersProcessing) {
-            thePanel.updateStatusCounter.incrementAndGet();
-            if (!thePanel.sliderVolume.getValueIsAdjusting()) {
-              final int volume = thePanel.sliderVolume.getValue();
-              LOGGER.info("Change application volume: {}%", volume);
-
-              thePanel.sliderVolume.removeChangeListener(this);
-              try {
-                updateStatusCounter.incrementAndGet();
-                final long agreedValue = new KodiService(thePanel.makeKodiAddress(),
-                    preferences.getJsonRequestTimeout()).setApplicationVolume(volume);
-                LOGGER.info("Player agreed volume {}%", agreedValue);
-                thePanel.sliderVolume.setValue((int) agreedValue);
-              } catch (Throwable thr) {
-                LOGGER.error("Can't change volume : " + thr.getMessage());
-              } finally {
-                thePanel.sliderVolume.addChangeListener(this);
-              }
-            }
-          }
-        } finally {
-          thePanel.ignoreRefresh = false;
+      public void stateChanged(ChangeEvent event) {
+        if (!thePanel.allowListenersProcessing || thePanel.sliderVolume.getValueIsAdjusting()) {
+          return;
         }
+        final int volume = thePanel.sliderVolume.getValue();
+        thePanel.ignoreRefresh = true;
+        thePanel.updateStatusCounter.incrementAndGet();
+        LOGGER.info("Change application volume: {}%", volume);
+        thePanel.runOnKodi("change volume", service -> {
+          final long agreedValue = service.setApplicationVolume(volume);
+          LOGGER.info("Player agreed volume {}%", agreedValue);
+          SwingUtilities.invokeLater(() -> thePanel.showAgreedVolume(agreedValue));
+        }, () -> SwingUtilities.invokeLater(() -> thePanel.ignoreRefresh = false));
       }
     };
 
     this.sliderVolume.addChangeListener(sliderListener);
 
-    this.buttonMute.addActionListener(x -> {
+    this.buttonMute.addActionListener(event -> {
       if (this.allowListenersProcessing) {
         final boolean muted = this.buttonMute.isSelected();
-        try {
-          new KodiService(makeKodiAddress(),
-              this.preferences.getJsonRequestTimeout()).setApplicationMute(muted);
-        } catch (Throwable thr) {
-          LOGGER.error("Can't mute : " + thr.getMessage());
-        }
+        this.runOnKodi("mute", service -> service.setApplicationMute(muted));
       }
     });
 
-    this.buttonReboot.addActionListener(x -> {
+    this.buttonReboot.addActionListener(event -> {
       if (JOptionPane.showConfirmDialog(this.parent, "Do you really want reboot?", "Reboot",
           JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-        try {
-          new KodiService(makeKodiAddress(),
-              this.preferences.getJsonRequestTimeout()).doSystemReboot();
-        } catch (Throwable thr) {
-          LOGGER.error("Can't reboot : " + thr.getMessage());
-        }
+        this.runOnKodi("reboot", KodiService::doSystemReboot);
       }
     });
 
-    this.buttonShutdown.addActionListener(x -> {
+    this.buttonShutdown.addActionListener(event -> {
       if (JOptionPane.showConfirmDialog(this.parent, "Do you really want shutdown?", "Shutdown",
           JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-        try {
-          new KodiService(makeKodiAddress(),
-              this.preferences.getJsonRequestTimeout()).doSystemShutdown();
-        } catch (Throwable thr) {
-          LOGGER.error("Can't shutdown : " + thr.getMessage());
-        }
+        this.runOnKodi("shutdown", KodiService::doSystemShutdown);
       }
     });
 
@@ -259,22 +231,50 @@ public class ApplicationStatusPanel extends javax.swing.JPanel {
     }
   }
 
-  private void sendInputExecuteAction(final ExecuteAction action) {
+  private void showAgreedVolume(final long agreedValue) {
+    this.allowListenersProcessing = false;
     try {
-      new KodiService(makeKodiAddress(),
-          this.preferences.getJsonRequestTimeout()).sendInputExecuteAction(action);
-    } catch (Throwable thr) {
-      LOGGER.error("Can't send input execute action '" + action + "' : " + thr.getMessage());
+      this.sliderVolume.setValue((int) agreedValue);
+    } finally {
+      this.allowListenersProcessing = true;
+      this.ignoreRefresh = false;
     }
   }
 
+  private void sendInputExecuteAction(final ExecuteAction action) {
+    this.runOnKodi("send input execute action " + action,
+        service -> service.sendInputExecuteAction(action));
+  }
+
   private void sendControlEvent(final KodiService.Control event, final Object... args) {
-    try {
-      new KodiService(makeKodiAddress(), this.preferences.getJsonRequestTimeout()).sendControlEvent(
-          event, args);
-    } catch (Throwable thr) {
-      LOGGER.error("Can't send control event '" + event + "' : " + thr.getMessage());
+    this.runOnKodi("send control event " + event,
+        service -> service.sendControlEvent(event, args));
+  }
+
+  private void runOnKodi(final String action, final KodiCall call) {
+    this.runOnKodi(action, call, () -> {
+    });
+  }
+
+  private void runOnKodi(final String action, final KodiCall call, final Runnable onFailure) {
+    if (this.scheduledExecutor.isShutdown()) {
+      onFailure.run();
+      return;
     }
+    this.scheduledExecutor.execute(() -> {
+      try {
+        call.accept(
+            new KodiService(this.makeKodiAddress(), this.preferences.getJsonRequestTimeout()));
+      } catch (Throwable failure) {
+        LOGGER.error("Can't {}: {}", action, failure.getMessage());
+        onFailure.run();
+      }
+    });
+  }
+
+  @FunctionalInterface
+  private interface KodiCall {
+    void accept(KodiService service) throws Throwable;
   }
 
   @SuppressWarnings("unchecked")

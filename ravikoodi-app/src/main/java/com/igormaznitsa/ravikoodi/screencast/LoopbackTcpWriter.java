@@ -108,11 +108,7 @@ public final class LoopbackTcpWriter extends NetConnection {
       CloseUtil.closeQuietly(socket);
       CloseUtil.closeQuietly(this.serverSocket);
       this.thread.interrupt();
-      try {
-        this.thread.join();
-      } catch (InterruptedException ex) {
-        Thread.currentThread().interrupt();
-      }
+      this.joinWorker();
     }
   }
 
@@ -131,20 +127,22 @@ public final class LoopbackTcpWriter extends NetConnection {
         this.buffer.start();
         try {
           final long watchTimeDelayMs = this.dataFlowTimeout.toMillis();
-          long nextWatchTime = System.currentTimeMillis() + watchTimeDelayMs;
 
           while (!Thread.currentThread().isInterrupted() && !this.disposed.get() &&
               this.active.get()) {
-            final byte[] portion = this.buffer.next();
+            final byte[] portion = this.buffer.poll(watchTimeDelayMs);
+            if (this.disposed.get() || Thread.currentThread().isInterrupted() ||
+                !this.active.get()) {
+              break;
+            }
             if (portion == null) {
-              if (nextWatchTime < System.currentTimeMillis()) {
-                this.listeners.forEach(x -> x.onDataFlowTimeout(this, this.dataFlowTimeout));
-                nextWatchTime = System.currentTimeMillis() + watchTimeDelayMs;
+              this.listeners.forEach(x -> x.onDataFlowTimeout(this, this.dataFlowTimeout));
+              if (this.disposed.get()) {
+                break;
               }
             } else {
               outStream.write(portion);
               outStream.flush();
-              nextWatchTime = System.currentTimeMillis() + watchTimeDelayMs;
             }
           }
         } catch (IOException ex) {
@@ -172,6 +170,17 @@ public final class LoopbackTcpWriter extends NetConnection {
   public void close() throws IOException {
     if (!this.disposed.get()) {
       this.dispose();
+    }
+  }
+
+  private void joinWorker() {
+    if (Thread.currentThread() == this.thread) {
+      return;
+    }
+    try {
+      this.thread.join();
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
     }
   }
 }

@@ -270,44 +270,58 @@ public class InternalServer {
         } else if ("get".equalsIgnoreCase(exchange.getRequestMethod())) {
           addScreenCastHeaders(exchange.getResponseHeaders(), false);
           LOGGER.info("Starting screen cast retranslation");
-          exchange.sendResponseHeaders(200, -1);
-          final OutputStream out = exchange.getResponseBody();
+          exchange.sendResponseHeaders(200, 0);
+          OutputStream out = null;
           boolean waitDataEndDetected = false;
           try {
-            screencastActive.set(true);
-            screencastBuffer.clear();
-            screencastBuffer.start();
-            final long MAX_WAIT_DATA_MS = 15000;
-            long waitDataEnd = System.currentTimeMillis() + MAX_WAIT_DATA_MS;
+            out = exchange.getResponseBody();
+            this.screencastActive.set(true);
+            this.screencastBuffer.clear();
+            this.screencastBuffer.start();
+            final long maxWaitDataMs = 15000L;
+            long waitDataEnd = System.currentTimeMillis() + maxWaitDataMs;
             while (!Thread.currentThread().isInterrupted()) {
-              final byte[] next = screencastBuffer.next();
-              if (next == null) {
-                if (waitDataEnd < System.currentTimeMillis()) {
-                  LOGGER.warn(
-                      "There is no screen cast data longer than " + (MAX_WAIT_DATA_MS / 1000L) +
-                          " sec, stopping");
-                  waitDataEndDetected = true;
-                  break;
-                }
-              } else {
-                screencastActive.set(true);
-                if (next.length > 0) {
-                  try {
-                    out.write(next);
-                    out.flush();
-                  } catch (IOException ex) {
-                    break;
-                  } finally {
-                    waitDataEnd = System.currentTimeMillis() + MAX_WAIT_DATA_MS;
-                  }
-                }
+              final long remaining = waitDataEnd - System.currentTimeMillis();
+              if (remaining <= 0L) {
+                waitDataEndDetected = true;
+                break;
               }
+              final byte[] next = this.screencastBuffer.poll(remaining);
+              if (Thread.currentThread().isInterrupted()) {
+                break;
+              }
+              if (next == null) {
+                waitDataEndDetected = true;
+                break;
+              }
+              this.screencastActive.set(true);
+              if (next.length == 0) {
+                continue;
+              }
+              try {
+                out.write(next);
+                out.flush();
+              } catch (IOException ex) {
+                break;
+              }
+              waitDataEnd = System.currentTimeMillis() + maxWaitDataMs;
+            }
+            if (waitDataEndDetected) {
+              LOGGER.warn("There is no screen cast data longer than {} sec, stopping",
+                  maxWaitDataMs / 1000L);
             }
           } finally {
-            screencastActive.set(false);
+            this.screencastActive.set(false);
+            if (out != null) {
+              try {
+                out.close();
+              } catch (IOException ex) {
+                LOGGER.info("Screen cast connection closed: {}", ex.toString());
+              }
+            }
             LOGGER.info("Screen cast retranslation ended, waitDataEnd={}, thread interrupted = {}",
                 waitDataEndDetected, Thread.currentThread().isInterrupted());
-            listeners.forEach(x -> x.onScreencastEnded(InternalServer.this));
+            this.listeners.forEach(x -> x.onScreencastEnded(InternalServer.this));
           }
         } else {
           LOGGER.warn("Unsupported screen cast method {}", exchange.getRequestMethod());
@@ -386,6 +400,7 @@ public class InternalServer {
     stopServer(theServer);
 
     this.fileRegistry.clear();
+    this.removedFileRecords.clear();
 
     final String host = this.options.getServerHost();
     final int port = this.options.getServerPort();

@@ -127,8 +127,10 @@ public class TimerScheduler {
         private final KodiComm kodiComm;
         private final ScheduledExecutorService executorService;
         private final TimerResource timer;
+      private final Object scheduleLock = new Object();
         private final AtomicReference<ScheduledFuture<?>> scheduledFutureRef =
             new AtomicReference<>();
+      private boolean cancelled;
         private final AtomicReference<String> lastUuid = new AtomicReference<>();
         private final UploadingFileRegistry fileRegistry;
         private final AtomicReference<Playlist> playlist = new AtomicReference<>();
@@ -157,9 +159,28 @@ public class TimerScheduler {
         }
 
         void cancel() {
+          synchronized (this.scheduleLock) {
+            this.cancelled = true;
             final ScheduledFuture<?> scheduledAction = this.scheduledFutureRef.getAndSet(null);
             if (scheduledAction != null) {
-                scheduledAction.cancel(false);
+              scheduledAction.cancel(false);
+            }
+          }
+        }
+
+      private void arm(final ScheduledFuture<?> next) {
+        if (next == null) {
+          return;
+        }
+        synchronized (this.scheduleLock) {
+          if (this.cancelled) {
+            next.cancel(false);
+            return;
+          }
+          final ScheduledFuture<?> previous = this.scheduledFutureRef.getAndSet(next);
+          if (previous != null) {
+            previous.cancel(false);
+          }
             }
         }
 
@@ -214,9 +235,9 @@ public class TimerScheduler {
                             this.lastUuid.set(pair.getRight());
                             this.playlist.set(pair.getLeft());
                             if (this.timer.getTo() == null) {
-                                this.scheduledFutureRef.set(scheduleStart());
+                              this.arm(this.scheduleStart());
                             } else {
-                                this.scheduledFutureRef.set(scheduleEnd());
+                              this.arm(this.scheduleEnd());
                             }
                         });
                 } else {
@@ -225,9 +246,9 @@ public class TimerScheduler {
                             this.lastUuid.set(uuid);
                             this.playlist.set(null);
                             if (this.timer.getTo() == null) {
-                                this.scheduledFutureRef.set(scheduleStart());
+                              this.arm(this.scheduleStart());
                             } else {
-                                this.scheduledFutureRef.set(scheduleEnd());
+                              this.arm(this.scheduleEnd());
                             }
                         });
                 }
@@ -311,7 +332,7 @@ public class TimerScheduler {
             } catch (Throwable ex) {
                 LOGGER.error("Error during timer {} end processing", this, ex);
             }
-            this.scheduledFutureRef.set(scheduleStart());
+          this.arm(this.scheduleStart());
         }
 
         public void init() {
@@ -319,10 +340,12 @@ public class TimerScheduler {
                 throw new IllegalArgumentException(
                     "Can't find timer resource file: " + this.resource.getAbsolutePath());
             }
-
-            if (!this.scheduledFutureRef.compareAndSet(null, this.scheduleStart())) {
-                throw new IllegalStateException("Already scheduled action detected: " + this.id);
+          synchronized (this.scheduleLock) {
+            if (this.cancelled || this.scheduledFutureRef.get() != null) {
+              throw new IllegalStateException("Already scheduled action detected: " + this.id);
             }
+          }
+          this.arm(this.scheduleStart());
         }
 
         @Override

@@ -6,7 +6,7 @@
 - HTTP byte-range serving for `/vfile` and `/res` now follows RFC 9110 positioning: open ranges, suffix ranges, end past EOF clamped, unsatisfiable ranges return 416 with `Content-Range: bytes */size`.
 - Playback reads start at the requested offset through `FileChannel` (or the in-memory payload), and `Content-Length` is the selected slice, including HEAD and clipboard/in-memory payloads.
 - A finished range response closes the body stream so the JDK server accepts the next request on that keep-alive connection. A short or aborted body is failed immediately; Kodi otherwise waits about 10 seconds and then stops playback.
-- An expired file id is parked for restore before it leaves the live map. A second restore of the same id returns the record that is already registered.
+- An expired file id is parked for restore for 30 minutes, at most 32 records. A second restore of the same id returns the record that is already registered. Opening a file registers that id once; a failed open removes it. `restartServer` clears both the live map and the parked map.
 - Covered by `HttpRangeTest` and `InternalServerRangeTest` (including a second range on the same connection).
 - Kodi JSON replies are built through constructors. Jackson no longer writes `final` fields, so the JDK warning about `ActivePlayerInfo.playerid` is gone.
 
@@ -17,7 +17,7 @@
 - Kodi keeps the same player id when a new file replaces the current one. The panel must compare `Player.GetItem` file/label/type; a one-shot full refresh can observe the previous item and then never update the title.
 - A slower full refresh used to be discarded when a faster progress refresh painted first (`updateStatusCounter`).
 - Kodi seeks by sending `Range: bytes=<offset>-` (sometimes a closed or overshot end) to the embedded `com.sun.net.httpserver` handler in `InternalServer`. After a range is fully read it sends the next one on the same connection. The JDK server reads that request only after the response body is closed. Kodi's file cache waits 10 seconds for the first byte, then the player stops.
-- `sendResponseHeaders(status, length)` overwrites `Content-Length` on GET. HEAD does not: the header must be set to the selected length and the length argument must be `-1`. Passing `0` selects chunked encoding.
+- `sendResponseHeaders(status, length)` overwrites `Content-Length` on GET. HEAD does not: the header must be set to the selected length and the length argument must be `-1`. Passing `0` selects chunked encoding. The screencast GET uses `0` and closes the body when the cast ends.
 - In-memory payloads (`UploadFileRecord.predefinedData`, used for the clipboard screenshot) are the body. `File.length()` on the placeholder path is not the size.
 - `Accept-Ranges: bytes` is what tells the player that seeking is allowed. Screencast stays `Accept-Ranges: none`.
 - jsonrpc4j uses one `ObjectMapper`: `ParameterNamesModule` plus `ConstructorDetector.USE_PROPERTIES_BASED`. The compiler writes parameter names (`-parameters`). Lombok copies `@JsonProperty` onto generated constructors. Jackson 2.21 does not apply `@JsonProperty(defaultValue)` when a creator argument is absent, so `ListLimitsReturned` takes `Long` for `start` and `end` and uses 0 and -1 when those keys are missing.
@@ -26,13 +26,13 @@
 - `spring-boot-maven-plugin` `finalName` is read-only and ignored. The `publishsh` profile sets Maven `build/finalName` to `artifact-version.sh`, then renames that jar to drop `.jar`.
 
 ## 3. Technical Debt & Refactoring
-- `MainFrame.startPlaying` registers a file, then `KodiComm.openFileThroughRegistry` registers a second id and that second URL is what Kodi opens. On failure only the first id is unregistered.
 - `.webm` is mapped to `video/x-ms-wmv` in `MimeTypes`.
 - File-handler path parsing is still string-split on the raw request URI.
 - NetBeans `.form` files and `GEN` / `NOI18N` markers are gone. Swing layout lives in the Java sources.
 - Nullness annotations are `org.jspecify.annotations.NonNull` and `Nullable`. Spring's `org.springframework.lang` copies are deprecated. `jspecify` comes from the Spring Boot BOM.
 
 ## 4. Current Work In Progress
+- Concurrency review fixes are in the working tree: screencast dispose no longer joins its own thread, buffer waits instead of spinning, the cast response is chunked and closed, parked files expire, timers cannot reschedule after cancel, and Kodi control calls leave the Swing thread.
 - Open-file dialog filters come from `MimeTypes.makeOpenFileFilters()`. Broad filters are the single words Video, Audio, Picture. Format filters use the standard `Name (*.ext)` label. Covered by `MimeTypesTest`.
 - SpotBugs check is clean after the fixes. `mvn22 -pl ravikoodi-app -am verify`.
 - Chromium drops fail on the packaged app because the content window is not an XDnD target. The workspace now publishes `XdndProxy` after the frame is shown. Parser covered by `LinuxBrowserDropSiteTest`. A live Chromium drag still has to be tried on a rebuilt launch.
@@ -59,4 +59,5 @@
 
 ## 8. User Advice and Recommendations
 - Use `mvn22`, not `mvn`.
-- Changelog entries are user-facing and live under `1.2.2 (SNAPSHOT)` in `changelog.txt`.
+- Changelog entries are user-facing and live under `1.3.0 (SNAPSHOT)` in `changelog.txt`. The README snapshot lists the same release.
+- Project version is `1.3.0-SNAPSHOT` (parent POM, both modules, Windows version resources).

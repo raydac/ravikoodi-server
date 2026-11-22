@@ -16,19 +16,19 @@
 
 package com.igormaznitsa.ravikoodi.screencast;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import org.jspecify.annotations.Nullable;
 
 public final class PreemptiveBuffer {
 
-  private final List<byte[]> list;
+  private final Deque<byte[]> chunks;
   private final int max;
   private volatile boolean started = false;
 
   public PreemptiveBuffer(final int max) {
     this.max = max;
-    this.list = new ArrayList<>(max);
+    this.chunks = new ArrayDeque<>(max);
   }
 
   public boolean isStarted() {
@@ -44,38 +44,49 @@ public final class PreemptiveBuffer {
   }
 
   public int size() {
-    synchronized (this.list) {
-      return this.list.size();
+    synchronized (this.chunks) {
+      return this.chunks.size();
     }
   }
 
   public void clear() {
-    synchronized (this.list) {
-      this.list.clear();
+    synchronized (this.chunks) {
+      this.chunks.clear();
+      this.chunks.notifyAll();
     }
   }
 
   @Nullable
-  public byte[] next() {
-    synchronized (this.list) {
-      return this.list.isEmpty() ? null : this.list.remove(0);
+  public byte[] poll(final long waitMillis) {
+    synchronized (this.chunks) {
+      final long deadline = System.currentTimeMillis() + Math.max(0L, waitMillis);
+      while (this.chunks.isEmpty()) {
+        final long remaining = deadline - System.currentTimeMillis();
+        if (remaining <= 0L) {
+          return null;
+        }
+        try {
+          this.chunks.wait(remaining);
+        } catch (InterruptedException ex) {
+          Thread.currentThread().interrupt();
+          return null;
+        }
+      }
+      return this.chunks.removeFirst();
     }
   }
 
   public void put(final byte[] data) {
-    synchronized (this.list) {
+    synchronized (this.chunks) {
       if (this.started) {
-        if (this.list.size() == this.max) {
-          this.list.set(this.max - 1, data);
-        } else {
-          this.list.add(data);
+        if (this.chunks.size() == this.max) {
+          this.chunks.removeLast();
         }
-      } else {
-        if (this.list.size() == this.max) {
-          this.list.remove(0);
-        }
-        this.list.add(data);
+      } else if (this.chunks.size() == this.max) {
+        this.chunks.removeFirst();
       }
+      this.chunks.addLast(data);
+      this.chunks.notifyAll();
     }
   }
 }

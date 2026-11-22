@@ -6,9 +6,20 @@
 
 # Changelog
 
-- __1.2.2 (SNAPSHOT)__
-  - updated embedded JDK to 26.0.1+10
-  - updated Spring Boot to 4.1.0
+- __1.3.0 (SNAPSHOT)__
+    - file open dialog offers Video, Audio, and Picture, plus a separate filter for each extension
+    - timers with the same start time, or with no start time, sort in a stable order
+    - links dragged from Chrome and Chromium on Linux can be dropped onto the window
+    - player panel shows the newly opened link instead of the previous item
+    - fixed seeking inside a served file so the player can request the next byte range without the video stopping
+    - Kodi status updates no longer log a Java warning about final fields
+    - stopping a screencast no longer freezes the window
+    - a played file, including a clipboard picture, is dropped after it has been idle
+    - volume and remote-control buttons stay responsive while Kodi answers
+    - YouTube settings show whether a sign-in is saved and can set or remove it. A refused video asks for a code from
+      google.com/device, and the encrypted sign-in is kept with the other settings
+    - updated embedded JDK to 27.0.1.1+5
+    - updated Spring Boot to 4.2.0
   - updated dependencies
 
 - __1.2.1 (19-feb-2026)__

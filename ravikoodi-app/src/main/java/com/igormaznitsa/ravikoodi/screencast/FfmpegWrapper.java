@@ -102,10 +102,12 @@ public final class FfmpegWrapper implements ScreenGrabber.ScreenGrabberListener 
     });
     if (grabbingThread != null) {
       grabbingThread.interrupt();
-      try {
-        grabbingThread.join();
-      } catch (InterruptedException ex) {
-        Thread.currentThread().interrupt();
+      if (grabbingThread != Thread.currentThread()) {
+        try {
+          grabbingThread.join();
+        } catch (InterruptedException ex) {
+          Thread.currentThread().interrupt();
+        }
       }
     }
   }

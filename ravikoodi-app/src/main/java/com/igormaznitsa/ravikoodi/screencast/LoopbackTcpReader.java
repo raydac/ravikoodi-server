@@ -102,11 +102,7 @@ public final class LoopbackTcpReader extends NetConnection {
         }
       }
       CloseUtil.closeQuietly(currentSocket);
-      try {
-        this.thread.join();
-      } catch (InterruptedException ex) {
-        Thread.currentThread().interrupt();
-      }
+      this.joinWorker();
     }
   }
 
@@ -154,5 +150,16 @@ public final class LoopbackTcpReader extends NetConnection {
   @Override
   public void close() throws IOException {
     this.dispose();
+  }
+
+  private void joinWorker() {
+    if (Thread.currentThread() == this.thread) {
+      return;
+    }
+    try {
+      this.thread.join();
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+    }
   }
 }
