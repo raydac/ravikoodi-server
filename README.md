@@ -7,6 +7,8 @@
 # Changelog
 
 - __1.3.0 (SNAPSHOT)__
+    - a selected file in the folder tree can be moved to the trash. On Linux the file goes to the desktop trash, through
+      KIO when the session is KDE. The file list opens wide enough to show the trash button
     - file open dialog offers Video, Audio, and Picture, plus a separate filter for each extension
     - timers with the same start time, or with no start time, sort in a stable order
     - links dragged from Chrome and Chromium on Linux can be dropped onto the window

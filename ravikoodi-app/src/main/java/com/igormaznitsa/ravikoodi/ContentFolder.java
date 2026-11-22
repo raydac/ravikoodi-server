@@ -65,6 +65,10 @@ public final class ContentFolder implements ContentTreeItem {
         return List.copyOf(this.files);
     }
 
+  public boolean remove(@NonNull final ContentTreeItem item) {
+    return this.files.remove(item);
+  }
+
     @NonNull
     public Path getFilePath() {
         return this.filePath;

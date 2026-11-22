@@ -1,5 +1,6 @@
 # __1.3.0 (SNAPSHOT)__
-  - direct YouTube open lists videos that already include a soundtrack, and shows separate picture and soundtrack pairs when none do. Joining asks for confirmation, then downloads both files into the video folder with progress, merges them into a new file, and can be cancelled. The saved name stays inside that folder
+  - a selected file in the folder tree can be moved to the trash. On Linux the file goes to the desktop trash, through KIO when the session is KDE. The file list opens wide enough to show the trash button
+  - direct YouTube open lists videos that already include a soundtrack, and shows separate picture and soundtrack pairs when none do. Joining asks for confirmation, then downloads the picture and soundtrack at the same time, each with its own progress, into the video folder, merges them into a new file, and can be cancelled. The saved name stays inside that folder. If FFmpeg is missing or not allowed to run, joining explains that and where to set it
   - file open dialog offers Video, Audio, and Picture, plus a separate filter for each extension
   - timers with the same start time, or with no start time, sort in a stable order
   - links dragged from Chrome and Chromium on Linux can be dropped onto the window

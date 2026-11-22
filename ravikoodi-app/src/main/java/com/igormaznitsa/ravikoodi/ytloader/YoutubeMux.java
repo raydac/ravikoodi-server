@@ -28,6 +28,7 @@ import com.github.kiulian.downloader.model.videos.formats.Format;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -48,6 +49,68 @@ public final class YoutubeMux {
   private static final Pattern FFMPEG_TIME = Pattern.compile("time=(\\d+:\\d+:\\d+\\.\\d+)");
 
   private YoutubeMux() {
+  }
+
+  public static Optional<String> unavailable(final String ffmpeg) {
+    final String command = ffmpeg == null ? "" : ffmpeg.strip();
+    if (command.isEmpty()) {
+      return Optional.of(explain("FFmpeg is not installed.", command));
+    }
+
+    final Path file = Path.of(command);
+    final boolean direct = file.isAbsolute()
+        || command.indexOf('/') >= 0
+        || command.indexOf('\\') >= 0;
+    if (direct && !Files.isRegularFile(file)) {
+      return Optional.of(explain("FFmpeg is not installed.", command));
+    }
+    if (direct && !Files.isExecutable(file)) {
+      return Optional.of(explain("FFmpeg is not allowed to run.", command));
+    }
+
+    final Process process;
+    try {
+      process = new ProcessBuilder(command, "-hide_banner", "-version")
+          .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+          .redirectError(ProcessBuilder.Redirect.DISCARD)
+          .start();
+    } catch (IOException ex) {
+      final String detail = ex.getMessage() == null
+          ? ""
+          : ex.getMessage().toLowerCase(Locale.ROOT);
+      final String reason = detail.contains("permission") || detail.contains("error=13")
+          ? "FFmpeg is not allowed to run."
+          : "FFmpeg is not installed.";
+      LOGGER.info("FFmpeg command '{}' cannot start: {}", command, ex.toString());
+
+      return Optional.of(explain(reason, command));
+    }
+
+    try {
+      if (!process.waitFor(3, TimeUnit.SECONDS) || process.exitValue() != 0) {
+        process.destroyForcibly();
+        LOGGER.info("FFmpeg command '{}' did not report its version", command);
+
+        return Optional.of(explain("FFmpeg is not installed.", command));
+      }
+    } catch (InterruptedException ex) {
+      process.destroyForcibly();
+      Thread.currentThread().interrupt();
+
+      return Optional.of(explain("FFmpeg is not installed.", command));
+    }
+
+    return Optional.empty();
+  }
+
+  private static String explain(final String reason, final String command) {
+    final String current = command.isEmpty() ? "" : "\n\nCurrent command: " + command;
+
+    return reason
+        + "\n\nJoining a picture and a soundtrack needs FFmpeg."
+        + "\nInstall it from https://ffmpeg.org/download.html"
+        + "\nand set FFmpeg command in Options."
+        + current;
   }
 
   static Path freePath(final Path folder, final String fileName) {
@@ -181,7 +244,7 @@ public final class YoutubeMux {
         errors.append(line).append('\n');
         final Matcher matcher = FFMPEG_TIME.matcher(line);
         if (matcher.find()) {
-          progress.accept(new Status("Merging video and audio, " + matcher.group(1), -1));
+          progress.accept(Status.one("Merging video and audio, " + matcher.group(1)));
         }
       }
     } catch (IOException ex) {
@@ -200,91 +263,45 @@ public final class YoutubeMux {
     return last < 0 ? text : text.substring(last + 1);
   }
 
-  public record Status(String text, int percent) {
+  public record Status(String title, Line video, Line audio) {
+
+    static Status one(final String title) {
+      return new Status(title, new Line("", -1), null);
+    }
+
+    public record Line(String text, int percent) {
+    }
   }
 
   public static final class Join {
 
     private final AtomicReference<Thread> worker = new AtomicReference<>();
+    private final AtomicReference<Thread> videoThread = new AtomicReference<>();
+    private final AtomicReference<Thread> audioThread = new AtomicReference<>();
     private final AtomicReference<Process> process = new AtomicReference<>();
     private final AtomicBoolean cancelled = new AtomicBoolean();
+    private final Object progressLock = new Object();
+    private Status.Line videoLine = new Status.Line("Video", -1);
+    private Status.Line audioLine = new Status.Line("Audio", -1);
+    private long videoReportedAt;
+    private long audioReportedAt;
     private long reportedAt;
 
-    public void cancel() {
-      this.cancelled.set(true);
-      final Thread running = this.worker.get();
-      if (running != null) {
-        running.interrupt();
-      }
-      final Process ffmpeg = this.process.get();
-      if (ffmpeg != null) {
-        ffmpeg.destroyForcibly();
+    private static void await(final Thread thread) {
+      while (thread.isAlive()) {
+        try {
+          thread.join(200);
+        } catch (InterruptedException ex) {
+          thread.interrupt();
+          Thread.interrupted();
+        }
       }
     }
 
-    public Optional<Path> run(
-        final YoutubeDownloader loader,
-        final String ffmpeg,
-        final Path folder,
-        final String videoId,
-        final String title,
-        final Format video,
-        final Format audio,
-        final Consumer<Status> progress) throws IOException {
-      requireNonNull(loader, "loader");
-      requireNonNull(ffmpeg, "ffmpeg");
-      requireNonNull(folder, "folder");
-      requireNonNull(videoId, "videoId");
-      requireNonNull(title, "title");
-      requireNonNull(video, "video");
-      requireNonNull(audio, "audio");
-      requireNonNull(progress, "progress");
-
-      this.worker.set(Thread.currentThread());
-      if (this.cancelled.get()) {
-        return Optional.empty();
-      }
-
-      Files.createDirectories(folder);
-      final Path picture = freePath(folder, partName(videoId, "video", video));
-      final Path sound = freePath(folder, partName(videoId, "audio", audio));
-      final Path output = freePath(folder, movieName(title, video));
-      picture.toFile().deleteOnExit();
-      sound.toFile().deleteOnExit();
-      try {
-        this.download(loader, video, picture, "video", progress);
-        if (this.cancelled.get()) {
-          LOGGER.info("Cancelled YouTube download of {}", videoId);
-          return Optional.empty();
-        }
-        this.download(loader, audio, sound, "audio", progress);
-        if (this.cancelled.get()) {
-          LOGGER.info("Cancelled YouTube download of {}", videoId);
-          return Optional.empty();
-        }
-        this.report(progress, new Status("Merging video and audio", -1), true);
-        final Optional<Path> merged = this.execute(
-            command(ffmpeg, picture, sound, output), output, progress);
-        if (this.cancelled.get()) {
-          return Optional.empty();
-        }
-
-        return merged;
-      } catch (YoutubeException.DownloadException ex) {
-        if (this.cancelled.get()) {
-          LOGGER.info("Cancelled YouTube download of {}", videoId);
-          return Optional.empty();
-        }
-        final String message = ex.getMessage() == null
-            ? "Can't download the YouTube stream"
-            : ex.getMessage();
-        throw new IOException(message, ex);
-      } finally {
-        Files.deleteIfExists(picture);
-        Files.deleteIfExists(sound);
-        if (this.cancelled.get()) {
-          Files.deleteIfExists(output);
-        }
+    private static void interrupt(final AtomicReference<Thread> slot) {
+      final Thread thread = slot.get();
+      if (thread != null) {
+        thread.interrupt();
       }
     }
 
@@ -293,17 +310,45 @@ public final class YoutubeMux {
       });
     }
 
-    private void download(
-        final YoutubeDownloader loader,
-        final Format format,
-        final Path target,
-        final String label,
-        final Consumer<Status> progress) {
-      LOGGER.info("Downloading YouTube {} into {}", label, target);
-      this.report(progress, new Status("Downloading " + label, -1), true);
-      loader.download(format, target, DownloadOptions.defaults().onProgress(update ->
-          this.report(progress, new Status(
-              "Downloading " + label + ", " + sizeText(update), shownPercent(update)), false)));
+    private static Throwable failure(final Throwable video, final Throwable audio) {
+      if (video != null && !causedByStop(video)) {
+        return video;
+      }
+      if (audio != null && !causedByStop(audio)) {
+        return audio;
+      }
+      if (video == null && audio == null) {
+        return null;
+      }
+
+      return new IOException("Can't download the YouTube stream");
+    }
+
+    private static boolean causedByStop(final Throwable error) {
+      Throwable current = error;
+      while (current != null) {
+        if (current instanceof InterruptedException || current instanceof InterruptedIOException) {
+          return true;
+        }
+        final String message = current.getMessage();
+        if (message != null && message.toLowerCase(Locale.ROOT).contains("download cancelled")) {
+          return true;
+        }
+        current = current.getCause();
+      }
+
+      return false;
+    }
+
+    public void cancel() {
+      this.cancelled.set(true);
+      interrupt(this.worker);
+      interrupt(this.videoThread);
+      interrupt(this.audioThread);
+      final Process ffmpeg = this.process.get();
+      if (ffmpeg != null) {
+        ffmpeg.destroyForcibly();
+      }
     }
 
     private Optional<Path> execute(
@@ -358,6 +403,153 @@ public final class YoutubeMux {
         Thread.currentThread().interrupt();
         throw new IOException("Interrupted while preparing the YouTube video", ex);
       }
+    }
+
+    public Optional<Path> run(
+        final YoutubeDownloader loader,
+        final String ffmpeg,
+        final Path folder,
+        final String videoId,
+        final String title,
+        final Format video,
+        final Format audio,
+        final Consumer<Status> progress) throws IOException {
+      requireNonNull(loader, "loader");
+      requireNonNull(ffmpeg, "ffmpeg");
+      requireNonNull(folder, "folder");
+      requireNonNull(videoId, "videoId");
+      requireNonNull(title, "title");
+      requireNonNull(video, "video");
+      requireNonNull(audio, "audio");
+      requireNonNull(progress, "progress");
+
+      this.worker.set(Thread.currentThread());
+      if (this.cancelled.get()) {
+        return Optional.empty();
+      }
+
+      Files.createDirectories(folder);
+      final Path picture = freePath(folder, partName(videoId, "video", video));
+      final Path sound = freePath(folder, partName(videoId, "audio", audio));
+      final Path output = freePath(folder, movieName(title, video));
+      picture.toFile().deleteOnExit();
+      sound.toFile().deleteOnExit();
+      final AtomicReference<Throwable> videoFailure = new AtomicReference<>();
+      final AtomicReference<Throwable> audioFailure = new AtomicReference<>();
+      try {
+        this.publish("video", "Waiting", -1, true, progress);
+        this.publish("audio", "Waiting", -1, true, progress);
+        final Thread pictures = this.spawn(
+            "youtube-video", this.videoThread, videoFailure,
+            () -> this.download(loader, video, picture, "video", progress));
+        final Thread sounds = this.spawn(
+            "youtube-audio", this.audioThread, audioFailure,
+            () -> this.download(loader, audio, sound, "audio", progress));
+        await(pictures);
+        await(sounds);
+        if (this.cancelled.get()) {
+          LOGGER.info("Cancelled YouTube download of {}", videoId);
+          return Optional.empty();
+        }
+        final Throwable failed = failure(videoFailure.get(), audioFailure.get());
+        if (failed != null) {
+          throw failed instanceof IOException io
+              ? io
+              : new IOException(failed.getMessage() == null
+              ? "Can't download the YouTube stream"
+              : failed.getMessage(), failed);
+        }
+        this.report(progress, Status.one("Merging video and audio"), true);
+        final Optional<Path> merged = this.execute(
+            command(ffmpeg, picture, sound, output), output, progress);
+        if (this.cancelled.get()) {
+          return Optional.empty();
+        }
+
+        return merged;
+      } catch (YoutubeException.DownloadException ex) {
+        if (this.cancelled.get()) {
+          LOGGER.info("Cancelled YouTube download of {}", videoId);
+          return Optional.empty();
+        }
+        final String message = ex.getMessage() == null
+            ? "Can't download the YouTube stream"
+            : ex.getMessage();
+        throw new IOException(message, ex);
+      } finally {
+        Files.deleteIfExists(picture);
+        Files.deleteIfExists(sound);
+        if (this.cancelled.get()) {
+          Files.deleteIfExists(output);
+        }
+      }
+    }
+
+    private Thread spawn(
+        final String name,
+        final AtomicReference<Thread> slot,
+        final AtomicReference<Throwable> failure,
+        final Runnable body) {
+      final Thread thread = new Thread(() -> {
+        slot.set(Thread.currentThread());
+        if (this.cancelled.get()) {
+          return;
+        }
+        try {
+          body.run();
+        } catch (Throwable ex) {
+          failure.set(ex);
+          interrupt(this.videoThread);
+          interrupt(this.audioThread);
+        }
+      }, name);
+      thread.setDaemon(true);
+      thread.start();
+
+      return thread;
+    }
+
+    private void download(
+        final YoutubeDownloader loader,
+        final Format format,
+        final Path target,
+        final String label,
+        final Consumer<Status> progress) {
+      LOGGER.info("Downloading YouTube {} into {}", label, target);
+      this.publish(label, "Starting", -1, true, progress);
+      loader.download(format, target, DownloadOptions.defaults().onProgress(update ->
+          this.publish(label, sizeText(update), shownPercent(update), false, progress)));
+    }
+
+    private void publish(
+        final String label,
+        final String detail,
+        final int percent,
+        final boolean force,
+        final Consumer<Status> progress) {
+      final String caption = "video".equals(label) ? "Video" : "Audio";
+      final Status.Line line = new Status.Line(caption + "  " + detail, percent);
+      final Status status;
+      synchronized (this.progressLock) {
+        final long now = System.nanoTime();
+        final boolean video = "video".equals(label);
+        if (video) {
+          this.videoLine = line;
+        } else {
+          this.audioLine = line;
+        }
+        final long previous = video ? this.videoReportedAt : this.audioReportedAt;
+        if (!force && now - previous < 200_000_000L) {
+          return;
+        }
+        if (video) {
+          this.videoReportedAt = now;
+        } else {
+          this.audioReportedAt = now;
+        }
+        status = new Status("Downloading video and audio", this.videoLine, this.audioLine);
+      }
+      progress.accept(status);
     }
 
     private void report(

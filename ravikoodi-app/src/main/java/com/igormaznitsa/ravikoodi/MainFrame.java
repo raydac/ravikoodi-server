@@ -32,8 +32,10 @@ import jakarta.annotation.PreDestroy;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Desktop;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Image;
+import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.Taskbar;
 import java.awt.Toolkit;
@@ -133,6 +135,7 @@ public final class MainFrame extends javax.swing.JFrame
     private final AtomicReference<ScreenGrabber> currentScreenGrabber = new AtomicReference<>();
     private final AtomicLong timeWhenEndScreencastFlowEnable = new AtomicLong();
     private final List<ContentTreeItem> videoFiles = new ArrayList<>();
+    private final DesktopTrash desktopTrash = DesktopTrash.system();
     private Path currentRootFolder;
     @Autowired
     private DonationController donationController;
@@ -165,6 +168,7 @@ public final class MainFrame extends javax.swing.JFrame
     private File lastSelectedFileFolder = null;
     private WeakReference<FfmpegWrapper> lastFFmpegWrapper;
     private JButton buttonImageFromClipboard;
+    private JButton buttonMoveToTrash;
     private JButton buttonOpenSelectedFileInSystem;
     private JButton buttonPlaySelected;
     private JButton buttonRefreshFolder;
@@ -324,7 +328,28 @@ public final class MainFrame extends javax.swing.JFrame
             }
         }
         buttonOpenSelectedFileInSystem.setEnabled(contentFileFocused);
+        this.buttonMoveToTrash.setEnabled(contentFileFocused);
         this.repaint();
+    }
+
+    private void fitFileTreeWidthToToolbar() {
+        final Dimension toolbar = this.jToolBar1.getPreferredSize();
+        final int toolbarWidth = toolbar.width;
+        if (toolbarWidth <= 0) {
+            return;
+        }
+        final Insets panelInsets = this.panelFileTree.getInsets();
+        final Insets splitInsets = this.mainPanelSplit.getInsets();
+        final int paneWidth =
+            toolbarWidth + panelInsets.left + panelInsets.right + splitInsets.left;
+        final Dimension minimum = this.panelFileTree.getMinimumSize();
+        final int height = Math.max(minimum.height, toolbar.height);
+        this.panelFileTree.setMinimumSize(new Dimension(paneWidth, height));
+        this.panelFileTree.setPreferredSize(new Dimension(
+            paneWidth, Math.max(this.panelFileTree.getPreferredSize().height, height)));
+        if (this.mainPanelSplit.getDividerLocation() < paneWidth) {
+            this.mainPanelSplit.setDividerLocation(paneWidth);
+        }
     }
 
     @PostConstruct
@@ -538,6 +563,7 @@ public final class MainFrame extends javax.swing.JFrame
                     UIManager.setLookAndFeel(info.getClassName());
                     preferences.setLookAndFeelClassName(info.getClassName());
                     SwingUtilities.updateComponentTreeUI(MainFrame.this);
+                    this.fitFileTreeWidthToToolbar();
                     LinuxBrowserDropSite.publish(MainFrame.this);
                     this.treeVideoFiles.repaint();
                 } catch (Exception ex) {
@@ -567,9 +593,11 @@ public final class MainFrame extends javax.swing.JFrame
             this.setSize(640, 500);
 
             SwingUtilities.updateComponentTreeUI(this);
+            this.fitFileTreeWidthToToolbar();
             this.setExtendedState(this.getExtendedState() | MAXIMIZED_BOTH);
 
             this.setVisible(true);
+            SwingUtilities.invokeLater(this::fitFileTreeWidthToToolbar);
             LinuxBrowserDropSite.publish(this);
             this.executorService.scheduleAtFixedRate(this::updatePlayers, 1000L, 1500L,
                 TimeUnit.MILLISECONDS);
@@ -715,6 +743,7 @@ public final class MainFrame extends javax.swing.JFrame
         buttonImageFromClipboard = new JButton();
         buttonPlaySelected = new JButton();
         toggleButtonScreencast = new JToggleButton();
+        buttonMoveToTrash = new JButton();
         panelMain = this.makeMainPanel();
         panelPlayers = new JPanel();
         menuMain = new JMenuBar();
@@ -738,8 +767,6 @@ public final class MainFrame extends javax.swing.JFrame
         menuAbout = new JMenuItem();
 
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-
-        mainPanelSplit.setDividerLocation(255);
 
         panelFileTree.setLayout(new BorderLayout());
 
@@ -819,9 +846,21 @@ public final class MainFrame extends javax.swing.JFrame
         toggleButtonScreencast.addActionListener(this::toggleButtonScreencastActionPerformed);
         jToolBar1.add(toggleButtonScreencast);
 
+        buttonMoveToTrash.setIcon(
+            new ImageIcon(
+                requireNonNull(getClass().getResource("/icons/bin_recycle.png"))));
+        buttonMoveToTrash.setToolTipText("Move to trash");
+        buttonMoveToTrash.setEnabled(false);
+        buttonMoveToTrash.setFocusable(false);
+        buttonMoveToTrash.setHorizontalTextPosition(SwingConstants.CENTER);
+        buttonMoveToTrash.setVerticalTextPosition(SwingConstants.BOTTOM);
+        buttonMoveToTrash.addActionListener(this::buttonMoveToTrashActionPerformed);
+        jToolBar1.add(buttonMoveToTrash);
+
         panelFileTree.add(jToolBar1, BorderLayout.NORTH);
 
         mainPanelSplit.setLeftComponent(panelFileTree);
+        this.fitFileTreeWidthToToolbar();
 
         panelMain.setLayout(new BorderLayout());
 
@@ -999,6 +1038,83 @@ public final class MainFrame extends javax.swing.JFrame
         if (path.getLastPathComponent() instanceof ContentFile) {
             openInSystem((ContentFile) path.getLastPathComponent());
         }
+    }
+
+    private void buttonMoveToTrashActionPerformed(final ActionEvent evt) {
+        final TreePath path = this.treeVideoFiles.getSelectionPath();
+        if (path == null || !(path.getLastPathComponent() instanceof ContentFile file)) {
+            return;
+        }
+        if (!this.confirmMoveToTrash(file)) {
+            LOGGER.info("Move to trash cancelled for '{}'", file.getFilePathAsString());
+            return;
+        }
+        if (!this.moveFileToDesktopTrash(file)) {
+            return;
+        }
+        this.removeFileFromTree(path, file);
+        this.treeVideoFiles.clearSelection();
+        this.updateToolButtons();
+    }
+
+    private boolean confirmMoveToTrash(final ContentFile file) {
+        return JOptionPane.showConfirmDialog(
+            this,
+            "Move '" + file.getFileNameAsString() + "' to trash?",
+            "Confirmation",
+            JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION;
+    }
+
+    private boolean moveFileToDesktopTrash(final ContentFile file) {
+        final String path = file.getFilePathAsString();
+        LOGGER.info("Moving '{}' to trash", path);
+        try {
+            final boolean moved = this.desktopMoveToTrash(file);
+            LOGGER.info("Move to trash of '{}' finished with result {}", path, moved);
+            if (!moved) {
+                this.showMoveToTrashError(file, "The system refused to move the file");
+            }
+            return moved;
+        } catch (RuntimeException ex) {
+            LOGGER.error("Move to trash of '{}' failed", path, ex);
+            this.showMoveToTrashError(file, ex.getMessage());
+            return false;
+        }
+    }
+
+    private boolean desktopMoveToTrash(final ContentFile file) {
+        return this.desktopTrash.move(file.getFilePath());
+    }
+
+    private void showMoveToTrashError(final ContentFile file, @Nullable final String reason) {
+        final String detail = isBlank(reason) ? "" : ": " + Utils.cutStrLength(reason, STR_CUT_LEN);
+        JOptionPane.showMessageDialog(
+            this,
+            "Can't move '" + file.getFileNameAsString() + "' to trash" + detail,
+            "Error",
+            JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void removeFileFromTree(final TreePath path, final ContentFile file) {
+        final TreePath parentPath = path.getParentPath();
+        if (parentPath == null) {
+            return;
+        }
+        final Object parent = parentPath.getLastPathComponent();
+        final int index = this.getIndexOfChild(parent, file);
+        if (index < 0 || !this.removeChild(parent, file)) {
+            return;
+        }
+        final TreeModelEvent removed = new TreeModelEvent(
+            this, parentPath, new int[] {index}, new Object[] {file});
+        this.treeListeners.forEach(listener -> listener.treeNodesRemoved(removed));
+    }
+
+    private boolean removeChild(final Object parent, final ContentFile file) {
+        if (parent == this) {
+            return this.videoFiles.remove(file);
+        }
+        return parent instanceof ContentFolder folder && folder.remove(file);
     }
 
     private void menuExitActionPerformed(ActionEvent evt) {
@@ -1355,6 +1471,12 @@ public final class MainFrame extends javax.swing.JFrame
         }
 
         final Format audio = choice.audio().get();
+        final Optional<String> ffmpeg = YoutubeMux.unavailable(this.preferences.getFfmpegPath());
+        if (ffmpeg.isPresent()) {
+            JOptionPane.showMessageDialog(
+                this, ffmpeg.get(), "YouTube", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         if (!YoutubeFormatDialog.confirmJoin(this, choice)) {
             return;
         }
@@ -1404,8 +1526,12 @@ public final class MainFrame extends javax.swing.JFrame
                     title,
                     video,
                     audio,
-                    status -> SwingUtilities.invokeLater(
-                        () -> panel.setProgress(status.text(), status.percent())));
+                    status -> SwingUtilities.invokeLater(() -> panel.setTracks(
+                        status.title(),
+                        status.video().text(),
+                        status.video().percent(),
+                        status.audio() == null ? null : status.audio().text(),
+                        status.audio() == null ? -1 : status.audio().percent())));
                 if (file.isEmpty()) {
                     return;
                 }

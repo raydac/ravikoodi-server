@@ -65,4 +65,25 @@ public class YoutubeMuxTest {
     assertFalse(controls.getFileName().toString().contains(":"));
     assertFalse(controls.getFileName().toString().contains("*"));
   }
+
+  @Test
+  public void missingFfmpegExplainsWhatIsNeeded() {
+    final String message = YoutubeMux.unavailable("ravikoodi-missing-ffmpeg").orElseThrow();
+
+    assertTrue(message.contains("not installed"));
+    assertTrue(message.contains("https://ffmpeg.org/download.html"));
+    assertTrue(message.contains("Options"));
+    assertTrue(message.contains("ravikoodi-missing-ffmpeg"));
+  }
+
+  @Test
+  public void ffmpegWithoutPermissionExplainsThatItCannotRun() throws Exception {
+    final Path command = Files.createTempFile("ravikoodi-ffmpeg", ".bin");
+    command.toFile().setExecutable(false);
+    final String message = YoutubeMux.unavailable(command.toString()).orElseThrow();
+
+    assertTrue(message.contains("not allowed"));
+    assertTrue(message.contains("https://ffmpeg.org/download.html"));
+    assertTrue(message.contains(command.toString()));
+  }
 }
