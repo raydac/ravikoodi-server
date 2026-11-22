@@ -46,16 +46,12 @@ public class YtLinkExtractorTest {
       final AtomicReference<String> refB = new AtomicReference<>();
       final AtomicReference<Throwable> refError = new AtomicReference<>();
 
-      linkExtractor.findVideoUrlAsync(
-          videoId,
-          YtQuality.p360,
-          YtVideoType.MP4,
-          (a, b, error) -> {
-            refA.set(a);
-            refB.set(b);
-            refError.set(error);
-            countDownLatch.countDown();
-          });
+      linkExtractor.findVideoInfoAsync(videoId, (a, info, error) -> {
+        refA.set(a);
+        refB.set(info == null ? null : info.details().videoId());
+        refError.set(error);
+        countDownLatch.countDown();
+      });
 
       countDownLatch.await();
 

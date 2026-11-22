@@ -1,4 +1,5 @@
 # __1.3.0 (SNAPSHOT)__
+  - direct YouTube open lists videos that already include a soundtrack, and shows separate picture and soundtrack pairs when none do. Joining asks for confirmation, then downloads both files into the video folder with progress, merges them into a new file, and can be cancelled. The saved name stays inside that folder
   - file open dialog offers Video, Audio, and Picture, plus a separate filter for each extension
   - timers with the same start time, or with no start time, sort in a stable order
   - links dragged from Chrome and Chromium on Linux can be dropped onto the window
