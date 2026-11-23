@@ -6,9 +6,14 @@
 
 # Changelog
 
-- __1.3.0 (SNAPSHOT)__
+- __1.3.0 (23-nov-2026)__
     - a selected file in the folder tree can be moved to the trash. On Linux the file goes to the desktop trash, through
       KIO when the session is KDE. The file list opens wide enough to show the trash button
+    - direct YouTube open lists videos that already include a soundtrack, and shows separate picture and soundtrack
+      pairs
+      when none do. Joining asks for confirmation, then downloads the picture and soundtrack at the same time, each with
+      its own progress, into the video folder, merges them into a new file, and can be cancelled. The saved name stays
+      inside that folder. If FFmpeg is missing or not allowed to run, joining explains that and where to set it
     - file open dialog offers Video, Audio, and Picture, plus a separate filter for each extension
     - timers with the same start time, or with no start time, sort in a stable order
     - links dragged from Chrome and Chromium on Linux can be dropped onto the window
@@ -22,7 +27,7 @@
       google.com/device, and the encrypted sign-in is kept with the other settings
     - updated embedded JDK to 27.0.1.1+5
     - updated Spring Boot to 4.2.0
-  - updated dependencies
+    - updated dependencies
 
 - __1.2.1 (19-feb-2026)__
   - improved Youtube video ID extraction
@@ -40,13 +45,13 @@ At home I use [Raspberry PI 3](https://www.raspberrypi.org/products/raspberry-pi
 ## Pre-built versions
 
 | OS                                           | Download link                                                                                                                                                          | 
-| -------------------------------------------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Windows](assets/icons/win64x64.png)        | __[Application for Windows amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.2.1/ravikoodi-app-1.2.1-windows-jdk-amd64.zip)__       |
-| ![OSX](assets/icons/macos64x64.png)          | __[Application for OSX amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.2.1/ravikoodi-app-1.2.1-macos-jdk-amd64.zip)__             |
-| ![OSX Arm64](assets/icons/macosarm64x64.png) | __[Application for OSX aarch64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.2.1/ravikoodi-app-1.2.1-macos-jdk-aarch64.zip)__         |
-| ![Linux](assets/icons/linux64x64.png)        | __[Application TAR.GZ for Linux amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.2.1/ravikoodi-app-1.2.1-linux-jdk-amd64.tar.gz)__ |
-| ![Linux](assets/icons/appimage64x64.png)     | __[Application AppImage for Linux amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.2.1/ravikoodi-app-1.2.1-x86_64.AppImage)__      |
-| ![Java](assets/icons/java64x64.png)          | __[Application, cross-platform JAR file](https://github.com/raydac/ravikoodi-server/releases/download/1.2.1/ravikoodi-app-1.2.1.jar)__                                 | 
+|----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ![Windows](assets/icons/win64x64.png)        | __[Application for Windows amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.3.0/ravikoodi-app-1.3.0-windows-jdk-amd64.zip)__       |
+| ![OSX](assets/icons/macos64x64.png)          | __[Application for OSX amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.3.0/ravikoodi-app-1.3.0-macos-jdk-amd64.zip)__             |
+| ![OSX Arm64](assets/icons/macosarm64x64.png) | __[Application for OSX aarch64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.3.0/ravikoodi-app-1.3.0-macos-jdk-aarch64.zip)__         |
+| ![Linux](assets/icons/linux64x64.png)        | __[Application TAR.GZ for Linux amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.3.0/ravikoodi-app-1.3.0-linux-jdk-amd64.tar.gz)__ |
+| ![Linux](assets/icons/appimage64x64.png)     | __[Application AppImage for Linux amd64 (JRE included)](https://github.com/raydac/ravikoodi-server/releases/download/1.3.0/ravikoodi-app-1.3.0-x86_64.AppImage)__      |
+| ![Java](assets/icons/java64x64.png)          | __[Application, cross-platform JAR file](https://github.com/raydac/ravikoodi-server/releases/download/1.3.0/ravikoodi-app-1.3.0.jar)__                                 | 
 
 
 You can just load needed archive, unpack in a folder and start its executable file.
