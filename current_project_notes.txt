@@ -35,8 +35,7 @@
 - Nullness annotations are `org.jspecify.annotations.NonNull` and `Nullable`. Spring's `org.springframework.lang` copies are deprecated. `jspecify` comes from the Spring Boot BOM.
 
 ## 4. Current Work In Progress
-- 1.3.0 release is prepared in the working tree and not committed. Version is `1.3.0` in the parent POM and both modules. Changelog and README are dated `23-nov-2026`. README download links point at the `1.3.0` assets. Windows file and product versions stay `1.3.0.0`.
-- The next development version has not been opened. After the release commit, the following commit has been `started x.y.z-SNAPSHOT` and bumps the Windows numeric version.
+- 1.3.0 is released. Development version is `1.3.1-SNAPSHOT`. README download links still point at the `1.3.0` assets.
 
 ## 5. Known Issues & Limitations
 - Linux JDKs do not implement `Desktop.moveToTrash`. JNA `FileUtils.hasTrash()` is false here because it looks for a home `Trash` folder, so the button uses `gio trash` on GNOME and `kioclient move … trash:/` on KDE.
@@ -56,5 +55,5 @@
 
 ## 8. User Advice and Recommendations
 - Use `mvn22`, not `mvn`.
-- Changelog entries are user-facing. `1.3.0` is dated `23-nov-2026` in `changelog.txt`. The README lists the same release.
-- Project version is `1.3.0` (parent POM and both modules). Windows file and product versions are `1.3.0.0`.
+- Changelog entries are user-facing and live under `1.3.1 (SNAPSHOT)` in `changelog.txt`. The README still lists the released `1.3.0`.
+- Project version is `1.3.1-SNAPSHOT` (parent POM and both modules). Windows file and product versions are `1.3.1.0`.
